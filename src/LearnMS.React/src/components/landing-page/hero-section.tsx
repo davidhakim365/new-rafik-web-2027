@@ -16,6 +16,7 @@ import {
   WavePattern,
 } from "@/components/ui/physics-graphics";
 import { Atom, BookOpen, Users } from "lucide-react";
+import type { GetStudentProfileResult } from "@/generated/model";
 
 const getLeftToRightVariants = (isRTL: boolean) => ({
   hidden: { opacity: 0, filter: "blur(20px)", x: isRTL ? 300 : -300 },
@@ -52,6 +53,19 @@ const HeroSection = () => {
     { icon: Users, label: t("hero.stats.students") },
     { icon: Atom, label: t("hero.stats.subjects") },
   ];
+
+  const browseCoursesHref = (() => {
+    const isStudent =
+      profile?.data && profile.data.$type === "GetStudentProfileResult";
+    if (!isStudent) return "/courses";
+
+    const level = (profile.data as GetStudentProfileResult).level;
+    const match = /Level(\d+)/.exec(level);
+    if (match?.[1] !== undefined) {
+      return `/courses/levels/${match[1]}`;
+    }
+    return "/courses";
+  })();
 
   return (
     <motion.section
@@ -118,7 +132,7 @@ const HeroSection = () => {
                 <FlowButton text={t("hero.getStarted")} />
               </Link>
             )}
-            <Link to="/courses" className="relative z-10">
+            <Link to={browseCoursesHref} className="relative z-10">
               <button className="px-8 py-3 text-sm font-semibold rounded-full border-2 border-color2/30 text-color2 hover:bg-color2/5 transition-all duration-300 hover:border-color2/60">
                 {t("hero.browseCourses")}
               </button>
