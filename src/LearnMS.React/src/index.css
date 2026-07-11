@@ -1,11 +1,6 @@
-@import url("https://fonts.googleapis.com/css?family=Montserrat:500&display=swap");
-@import url("https://fonts.googleapis.com/css?family=Dancing+Script&display=swap");
-@import url("https://fonts.googleapis.com/css?family=Open+Sans&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Anta&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Catamaran:wght@100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Signika:wght@300..700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Patua+One&family=Signika:wght@300..700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -44,13 +39,16 @@
     --heading: 0 0% 14.9%;
     --subheading: 0 0% 45.1%;
     --paragraph: 0 0% 45.1%;
-    --hero: 0 0% 100%;
-    --gradesSection: 0 0% 100%;
-    --aboutSection: 0 0% 96.1%;
-    --seniorsSection: 0 0% 96.1%;
-    --memoriesSection: 0 0% 100%;
-    --footer: 0 0% 100%;
-    --footer-foreground: 0 0 45.1%;
+    --hero: 220 30% 98%;
+    --gradesSection: 220 25% 97%;
+    --featuresSection: 0 0% 100%;
+    --aboutSection: 220 30% 96%;
+    --seniorsSection: 220 25% 97%;
+    --memoriesSection: 220 30% 98%;
+    --footer: 224 40% 8%;
+    --color1: 224 67% 35%;
+    --color2: 224 82% 55%;
+    --footer-foreground: 220 20% 75%;
     --coursePage: 0 0% 96.1%;
     --lecturePage: 0 0% 96.1%;
     --paymentPage: 0 0% 96.1%;
@@ -87,13 +85,16 @@
     --heading: 0 0% 96.1%;
     --subheading: 0 0% 63.9%;
     --paragraph: 0 0% 63.9%;
-    --hero: 0 0% 0%;
-    --gradesSection: 0 0% 3.9%;
-    --seniorsSection: 0 0% 0%;
-    --memoriesSection: 0 0% 0%;
-    --aboutSection: 0 0% 3.9%;
-    --footer: 0 0% 0%;
-    --footer-foreground: 0 0% 63.9%;
+    --hero: 224 40% 6%;
+    --gradesSection: 224 35% 8%;
+    --featuresSection: 224 40% 7%;
+    --seniorsSection: 224 35% 8%;
+    --memoriesSection: 224 40% 6%;
+    --aboutSection: 224 35% 8%;
+    --footer: 224 45% 5%;
+    --footer-foreground: 220 20% 70%;
+    --color1: 224 67% 45%;
+    --color2: 224 82% 60%;
     --coursePage: 0 0% 9%;
     --lecturePage: 0 0% 9%;
     --paymentPage: 0 0% 9%;
@@ -107,16 +108,6 @@
   }
 
   body {
-    @apply p-0 m-0 overflow-x-hidden;
-  }
-
-  @font-face {
-    font-family: "Anta";
-    src: url("https://fonts.gstatic.com/s/anta/v1/2-cm9JN5rNqSj9eDvGvQWw.woff2")
-        format("woff2"),
-      url("https://fonts.gstatic.com/s/anta/v1/2-cm9JN5rNqSj9eDvGvQWw.woff")
-        format("woff");
-    font-weight: normal;
-    font-style: normal;
+    @apply p-0 m-0 overflow-x-hidden font-sans antialiased;
   }
 }

@@ -1,12 +1,50 @@
 {
   "hero": {
+    "badge": "Physics & Mathematics Academy",
     "title": "Mr Rafik Isaac",
     "subtitle": "Newton's Academy",
-    "description": "Welcome to Newton's Academy, where we transform learning into an exciting journey of discovery and growth Join us to explore the fascinating world of physics and mathematics",
+    "description": "Welcome to Newton's Academy, where we transform learning into an exciting journey of discovery and growth. Join us to explore the fascinating world of physics and mathematics.",
     "getStarted": "Get Started",
-    "browseCourses": "Browse Courses"
+    "browseCourses": "Browse Courses",
+    "stats": {
+      "courses": "Expert Courses",
+      "students": "1000+ Students",
+      "subjects": "Physics & Math"
+    }
+  },
+  "features": {
+    "badge": "Why Choose Us",
+    "title": "Master Physics & Mathematics",
+    "description": "Everything you need to excel in your academic journey, from interactive lectures to comprehensive exams.",
+    "items": {
+      "1": {
+        "title": "Physics Mastery",
+        "description": "Deep-dive into mechanics, electricity, waves, and modern physics with clear, engaging explanations."
+      },
+      "2": {
+        "title": "Mathematics Excellence",
+        "description": "Build strong foundations in algebra, calculus, geometry, and statistics step by step."
+      },
+      "3": {
+        "title": "HD Video Lectures",
+        "description": "Watch high-quality recorded lectures anytime, anywhere, at your own pace."
+      },
+      "4": {
+        "title": "Quizzes & Exams",
+        "description": "Test your knowledge with interactive quizzes and comprehensive exams to track your progress."
+      },
+      "5": {
+        "title": "Progress Tracking",
+        "description": "Monitor your learning journey with detailed performance analytics and feedback."
+      },
+      "6": {
+        "title": "Structured Curriculum",
+        "description": "Follow a carefully designed curriculum aligned with the Egyptian education system."
+      }
+    }
   },
   "grades": {
+    "badge": "Academic Levels",
     "title": "Grade Levels Overview",
     "description": "Explore the academic journey from middle school to graduation.",
     "items": {
@@ -141,11 +179,13 @@
   },
   "footer": {
     "brand": "Newton's Academy",
-    "copyright": "© {{year}} Newton's Academy, All rights reserved",
+    "tagline": "Empowering students to master physics and mathematics through innovative online education.",
+    "copyright": "© {{year}} Newton's Academy. All rights reserved.",
     "social": {
       "facebook": "Facebook",
       "youtube": "YouTube",
-      "whatsapp": "WhatsApp"
+      "whatsapp": "WhatsApp",
+      "tiktok": "TikTok"
     },
     "links": {
       "home": "Home",

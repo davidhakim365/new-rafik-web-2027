@@ -4,33 +4,25 @@ import { useTranslation } from "react-i18next";
 import { FeatureCard } from "@/components/ui/grid-feature-cards";
 import { Heading } from "../ui/heading";
 import { SubHeading } from "../ui/sub-heading";
-import { BlurryBackground } from "@/components/ui/blurry-background";
+import { PhysicsGrid, GlowOrb } from "@/components/ui/physics-graphics";
 
 const leftToRightVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", x: -300 },
+  hidden: { opacity: 0, filter: "blur(20px)", y: 40 },
   visible: {
     opacity: 1,
     filter: "blur(0px)",
-    x: 0,
-    transition: {
-      duration: 1.0,
-      ease: "easeInOut",
-    },
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut" },
   },
 };
 
 const cardItemVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", scale: 0, y: 300 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
-    filter: "blur(0px)",
-    scale: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      bounce: 0.4,
-      duration: 0.9,
-    },
+    scale: 1,
+    transition: { type: "spring", bounce: 0.3, duration: 0.7 },
   },
 };
 
@@ -66,92 +58,69 @@ function GradesSection() {
 
   const shouldReduceMotion = useReducedMotion();
 
-  const gradientColors = {
-    from: "oklch(0.7 0.1 200)",
-    to: "oklch(0.5 0.15 300)",
-  };
+  const header = (
+    <div className="max-w-3xl mx-auto text-center mb-12">
+      <span className="inline-block px-4 py-1.5 mb-4 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
+        {t("grades.badge")}
+      </span>
+      <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
+        {t("grades.title")}
+      </Heading>
+      <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
+        {t("grades.description")}
+      </SubHeading>
+    </div>
+  );
+
+  const grid = (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      {grades.map((grade, i) => (
+        <FeatureCard key={i} feature={grade} />
+      ))}
+    </div>
+  );
 
   if (shouldReduceMotion) {
     return (
-      <section className="relative py-16 md:py-28 bg-gradesSection">
-        {" "}
-        <BlurryBackground
-          gradientColors={gradientColors}
-          className="absolute inset-0 z-0"
-        />
-        <div className="relative z-10 w-full max-w-6xl px-4 mx-auto space-y-8">
-          {" "}
-          <div className="max-w-3xl mx-auto text-center">
-            <Heading className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl">
-              {t("grades.title")}
-            </Heading>
-            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
-              {t("grades.description")}
-            </SubHeading>
-          </div>
-          <div className="grid grid-cols-1 border border-dashed divide-x divide-y md:grid-cols-2 divide-dashed">
-            {grades.map((grade, i) => (
-              <FeatureCard key={i} feature={grade} />
-            ))}
-          </div>
+      <section className="relative py-16 md:py-28 bg-gradesSection overflow-hidden">
+        <PhysicsGrid className="opacity-40" />
+        <GlowOrb className="top-1/2 -right-32 size-80 from-color2/15 to-color1/10" />
+        <div className="relative z-10 w-full max-w-6xl px-4 mx-auto">
+          {header}
+          {grid}
         </div>
       </section>
     );
   }
 
   return (
-    <section className="relative py-16 md:py-28 bg-gradesSection">
-      {" "}
-      <BlurryBackground
-        gradientColors={gradientColors}
-        className="absolute inset-0 z-0"
-      />
-      <div className="relative z-10 w-full max-w-6xl px-4 mx-auto space-y-8">
-        {" "}
+    <section className="relative py-16 md:py-28 bg-gradesSection overflow-hidden">
+      <PhysicsGrid className="opacity-40" />
+      <GlowOrb className="top-1/2 -right-32 size-80 from-color2/15 to-color1/10" />
+
+      <div className="relative z-10 w-full max-w-6xl px-4 mx-auto">
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
           variants={{
-            visible: {
-              transition: {
-                staggerChildren: 0.15,
-                delayChildren: 0.2,
-              },
-            },
+            visible: { transition: { staggerChildren: 0.15, delayChildren: 0.2 } },
           }}
-          className="max-w-3xl mx-auto text-center"
         >
-          <motion.div variants={leftToRightVariants}>
-            <Heading className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl">
-              {t("grades.title")}
-            </Heading>
+          <motion.div variants={leftToRightVariants}>{header}</motion.div>
+
+          <motion.div
+            variants={{
+              visible: { transition: { staggerChildren: 0.1, delayChildren: 0.3 } },
+            }}
+            className="grid grid-cols-1 gap-5 md:grid-cols-2"
+          >
+            {grades.map((grade, i) => (
+              <motion.div key={i} variants={cardItemVariants}>
+                <FeatureCard feature={grade} />
+              </motion.div>
+            ))}
           </motion.div>
-          <motion.div variants={leftToRightVariants}>
-            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
-              {t("grades.description")}
-            </SubHeading>
-          </motion.div>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{
-            visible: {
-              transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.4,
-              },
-            },
-          }}
-          className="grid grid-cols-1 border border-dashed divide-x divide-y border-muted-foreground/20 md:grid-cols-2 divide-dashed"
-        >
-          {grades.map((grade, i) => (
-            <motion.div key={i} variants={cardItemVariants}>
-              <FeatureCard feature={grade} />
-            </motion.div>
-          ))}
         </motion.div>
       </div>
     </section>

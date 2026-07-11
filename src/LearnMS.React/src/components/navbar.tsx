@@ -100,7 +100,9 @@ const NavBar: React.FC<NavBarProps> = ({
         <div
           className={cn(
             "mx-auto max-w-7xl rounded-3xl px-3 sm:px-6 transition-all duration-300 lg:px-12",
-            scrolled && "bg-background/50 backdrop-blur-2xl"
+            scrolled
+              ? "bg-background/70 backdrop-blur-2xl border border-color2/10 shadow-lg shadow-color2/5"
+              : "bg-transparent"
           )}
         >
           <motion.div
@@ -148,8 +150,8 @@ const NavBar: React.FC<NavBarProps> = ({
                             }}
                             layoutId="tab"
                             className={cn(
-                              "absolute inset-0 rounded-lg bg-neutral-200 dark:bg-neutral-800",
-                              scrolled && "bg-neutral-300 dark:bg-neutral-700"
+                              "absolute inset-0 rounded-lg bg-color2/10 dark:bg-color2/20",
+                              scrolled && "bg-color2/15 dark:bg-color2/25"
                             )}
                             transition={{ duration: 0.2 }}
                           ></motion.span>

@@ -18,9 +18,9 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        patua: "Patua One",
+        sans: ["Plus Jakarta Sans", "Signika", "system-ui", "sans-serif"],
         signika: "Signika",
-        catamaran: "Catamaran",
+        mono: ["JetBrains Mono", "monospace"],
       },
       typography: {
         DEFAULT: {
@@ -138,12 +138,19 @@ module.exports = {
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
         },
-        color1: "#1E4196",
-        color2: "#2E65EB",
+        color1: {
+          DEFAULT: "#1E4196",
+          hsl: "hsl(var(--color1))",
+        },
+        color2: {
+          DEFAULT: "#2E65EB",
+          hsl: "hsl(var(--color2))",
+        },
         heading: "hsl(var(--heading))",
         subheading: "hsl(var(--subheading))",
         paragraph: "hsl(var(--paragraph))",
         hero: "hsl(var(--hero))",
+        featuresSection: "hsl(var(--featuresSection))",
         gradesSection: "hsl(var(--gradesSection))",
         aboutSection: "hsl(var(--aboutSection))",
         seniorsSection: "hsl(var(--seniorsSection))",
@@ -191,9 +198,24 @@ module.exports = {
             transform: "translate(-75%, 0%) scale(1.5)",
           },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        orbit: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.8" },
+        },
       },
       animation: {
         spotlight: "spotlight 2s cubic-bezier(0.55, 0, 0.1, 1) .75s 1 forwards",
+        float: "float 6s ease-in-out infinite",
+        orbit: "orbit 20s linear infinite",
+        "pulse-glow": "pulse-glow 4s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },

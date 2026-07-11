@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Heading } from "../ui/heading";
 import { SubHeading } from "../ui/sub-heading";
-import { BlurryBackground } from "@/components/ui/blurry-background";
+import { PhysicsGrid, GlowOrb } from "@/components/ui/physics-graphics";
 
 const seniors = [
   {
@@ -200,31 +200,25 @@ function SeniorsSection() {
     [activeYear, t]
   );
 
-  const gradientColors = {
-    from: "oklch(0.7 0.2 60)",
-    to: "oklch(0.5 0.2 260)",
-  };
 
   if (shouldReduceMotion) {
     return (
-      <section className="relative w-full pt-16 bg-seniorsSection">
-        {" "}
-        <BlurryBackground
-          gradientColors={gradientColors}
-          className="absolute inset-0 z-0"
-        />
+      <section className="relative w-full pt-16 pb-20 bg-seniorsSection overflow-hidden">
+        <PhysicsGrid className="opacity-30" />
+        <GlowOrb className="top-1/2 -left-32 size-80 from-color2/15 to-color1/10" />
         <div className="container relative z-10 px-4 mx-auto">
-          {" "}
-          {/* Added z-10 to ensure content is above background */}
           <div className="flex flex-col gap-6 text-center">
-            <Heading className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl">
+            <span className="inline-block px-4 py-1.5 mb-2 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
+              {t("seniors.badge")}
+            </span>
+            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
               {t("seniors.title")}
             </Heading>
             <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
               {t("seniors.description")}
             </SubHeading>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
               {seniors.map((batch, index) => (
                 <button
                   key={batch.year}
@@ -232,12 +226,12 @@ function SeniorsSection() {
                     setActiveYear(index);
                     setSelectedTab(index);
                   }}
-                  className="relative px-6 py-2 transition-all rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-200"
+                  className="relative px-6 py-2.5 text-sm font-medium transition-all rounded-full bg-background/80 border border-color2/10 text-paragraph hover:border-color2/30"
                 >
                   {selectedTab === index && (
-                    <span className="absolute inset-0 z-10 rounded-full bg-neutral-200 dark:bg-neutral-600"></span>
+                    <span className="absolute inset-0 z-10 rounded-full bg-gradient-to-r from-color1 to-color2"></span>
                   )}
-                  <span className="relative z-20">
+                  <span className={`relative z-20 ${selectedTab === index ? "text-white" : ""}`}>
                     {t(`seniors.classes.${index + 1}.title`)}
                   </span>
                 </button>
@@ -251,17 +245,10 @@ function SeniorsSection() {
   }
 
   return (
-    <section className="relative w-full pt-16 bg-seniorsSection">
-      {" "}
-      {/* Added relative positioning */}
-      {/* Blurry Background */}
-      <BlurryBackground
-        gradientColors={gradientColors}
-        className="absolute inset-0 z-0"
-      />
+    <section className="relative w-full pt-16 pb-20 bg-seniorsSection overflow-hidden">
+      <PhysicsGrid className="opacity-30" />
+      <GlowOrb className="top-1/2 -left-32 size-80 from-color2/15 to-color1/10" />
       <div className="container relative z-10 px-4 mx-auto">
-        {" "}
-        {/* Added z-10 to ensure content is above background */}
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -277,7 +264,10 @@ function SeniorsSection() {
           className="flex flex-col gap-6 text-center"
         >
           <motion.div variants={leftToRightVariants}>
-            <Heading className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl">
+            <span className="inline-block px-4 py-1.5 mb-4 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
+              {t("seniors.badge")}
+            </span>
+            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
               {t("seniors.title")}
             </Heading>
           </motion.div>
@@ -289,7 +279,7 @@ function SeniorsSection() {
 
           <motion.div
             variants={leftToRightVariants}
-            className="flex justify-center gap-4"
+            className="flex flex-wrap justify-center gap-3"
           >
             {seniors.map((batch, index) => (
               <button
@@ -298,17 +288,17 @@ function SeniorsSection() {
                   setActiveYear(index);
                   setSelectedTab(index);
                 }}
-                className="relative px-6 py-2 transition-all rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-200"
+                className="relative px-6 py-2.5 text-sm font-medium transition-all rounded-full bg-background/80 border border-color2/10 text-paragraph hover:border-color2/30"
               >
                 {selectedTab === index && (
                   <motion.span
                     layoutId="active-year"
-                    className="absolute inset-0 z-10 rounded-full bg-neutral-200 dark:bg-neutral-600"
+                    className="absolute inset-0 z-10 rounded-full bg-gradient-to-r from-color1 to-color2"
                     transition={{ duration: 0.2 }}
                   ></motion.span>
                 )}
 
-                <span className="relative z-20">
+                <span className={`relative z-20 ${selectedTab === index ? "text-white" : ""}`}>
                   {t(`seniors.classes.${index + 1}.title`)}
                 </span>
               </button>

@@ -6,167 +6,105 @@ import { Heading } from "../ui/heading";
 import { SubHeading } from "../ui/sub-heading";
 import { WobbleCard } from "../ui/wobble-card";
 import { CardContent, CardHeader } from "@/components/ui/card";
-import { BlurryBackground } from "@/components/ui/blurry-background";
+import { PhysicsGrid, GlowOrb } from "@/components/ui/physics-graphics";
 
 const leftToRightVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", x: -300 },
+  hidden: { opacity: 0, filter: "blur(20px)", y: 40 },
   visible: {
     opacity: 1,
     filter: "blur(0px)",
-    x: 0,
-    transition: {
-      duration: 1.0,
-      ease: "easeInOut",
-    },
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut" },
   },
 };
 
 const cardItemVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", scale: 0, y: 300 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
-    filter: "blur(0px)",
-    scale: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      bounce: 0.4,
-      duration: 0.9,
-    },
+    scale: 1,
+    transition: { type: "spring", bounce: 0.3, duration: 0.7 },
   },
 };
+
+const cardStyles = [
+  "bg-gradient-to-br from-color1 to-color2",
+  "bg-gradient-to-br from-[#1a3a8a] to-[#2563eb]",
+  "bg-gradient-to-br from-[#0f2d6e] to-color2",
+];
 
 function AboutSection() {
   const { t } = useTranslation();
 
-  const sectionContentVariants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const textGroupVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0,
-      },
-    },
-  };
-
-  const cardGridContainerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.4,
-      },
-    },
-  };
-
-  const gradientColors = {
-    from: "oklch(0.65 0.15 70)",
-    to: "oklch(0.45 0.15 240)",
-  };
+  const cards = [
+    { icon: Briefcase, key: "1" },
+    { icon: School, key: "2" },
+    { icon: Laptop, key: "3" },
+  ];
 
   return (
     <motion.section
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
-      variants={sectionContentVariants}
-      className="relative py-16 bg-aboutSection md:py-32"
+      variants={{
+        visible: { transition: { staggerChildren: 0.15, delayChildren: 0.2 } },
+      }}
+      className="relative py-16 bg-aboutSection md:py-32 overflow-hidden"
     >
-      <BlurryBackground
-        gradientColors={gradientColors}
-        className="absolute inset-0 z-0"
-      />
+      <PhysicsGrid className="opacity-30" />
+      <GlowOrb className="bottom-0 -left-40 size-96 from-color1/15 to-color2/10" />
 
       <div className="relative z-10 px-6 mx-auto max-w-7xl">
-        {" "}
-        <motion.div variants={textGroupVariants} className="text-center">
+        <motion.div
+          variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
+          className="text-center"
+        >
           <motion.div variants={leftToRightVariants}>
-            <Badge className="px-4 py-1 mb-4 text-sm font-medium text-neutral-700 bg-neutral-100 border-neutral-200 hover:bg-neutral-200 dark:text-neutral-200 dark:bg-neutral-700 dark:border-neutral-600 dark:hover:bg-neutral-600">
+            <Badge className="px-4 py-1.5 mb-4 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20 hover:bg-color2/15">
               {t("about.badge")}
             </Badge>
           </motion.div>
 
           <motion.div variants={leftToRightVariants}>
-            <Heading className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl text-neutral-900 dark:text-neutral-50">
+            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
               {t("about.title")}
             </Heading>
           </motion.div>
 
           <motion.div variants={leftToRightVariants}>
-            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl text-neutral-600 dark:text-neutral-400">
+            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl max-w-2xl mx-auto">
               {t("about.description")}
             </SubHeading>
           </motion.div>
         </motion.div>
+
         <motion.div
-          variants={cardGridContainerVariants}
-          className="md:max-w-full md:grid-cols-3 mx-auto mt-8 grid max-w-sm gap-6 *:text-center md:mt-16"
+          variants={{
+            visible: { transition: { staggerChildren: 0.1, delayChildren: 0.4 } },
+          }}
+          className="md:max-w-full md:grid-cols-3 mx-auto mt-10 grid max-w-sm gap-6 md:mt-16"
         >
-          <motion.div variants={cardItemVariants}>
-            <WobbleCard containerClassName="h-full group bg-pink-800">
-              <CardHeader className="pb-3">
-                <CardDecorator>
-                  <Briefcase className="text-white size-6" aria-hidden />
-                </CardDecorator>
-                <Heading className="text-white">
-                  {t("about.items.1.title")}
-                </Heading>
-              </CardHeader>
-              <CardContent>
-                <SubHeading className="mt-4 tracking-wide text-md text-balance md:text-lg text-neutral-200">
-                  {t("about.items.1.description")}
-                </SubHeading>
-              </CardContent>
-            </WobbleCard>
-          </motion.div>
-
-          <motion.div variants={cardItemVariants}>
-            <WobbleCard containerClassName="group shadow-black-950/5">
-              <CardHeader className="pb-3">
-                <CardDecorator>
-                  <School className="text-white size-6" aria-hidden />
-                </CardDecorator>
-                <Heading className="text-white">
-                  {t("about.items.2.title")}
-                </Heading>
-              </CardHeader>
-              <CardContent>
-                <SubHeading className="mt-4 tracking-wide text-md text-balance md:text-lg text-neutral-200">
-                  {t("about.items.2.description")}
-                </SubHeading>
-              </CardContent>
-            </WobbleCard>
-          </motion.div>
-
-          <motion.div variants={cardItemVariants}>
-            <WobbleCard containerClassName="group shadow-black-950/5 bg-blue-900">
-              <CardHeader className="pb-3">
-                <CardDecorator>
-                  <Laptop className="text-white size-6" aria-hidden />
-                </CardDecorator>
-                <Heading className="text-white">
-                  {t("about.items.3.title")}
-                </Heading>
-              </CardHeader>
-              <CardContent>
-                <SubHeading className="mt-4 tracking-wide text-md text-balance md:text-lg text-neutral-200">
-                  {t("about.items.3.description")}
-                </SubHeading>
-              </CardContent>
-            </WobbleCard>
-          </motion.div>
+          {cards.map(({ icon: Icon, key }, i) => (
+            <motion.div key={key} variants={cardItemVariants}>
+              <WobbleCard containerClassName={`h-full group ${cardStyles[i]}`}>
+                <CardHeader className="pb-3 text-center">
+                  <CardDecorator>
+                    <Icon className="text-white size-6" aria-hidden />
+                  </CardDecorator>
+                  <Heading className="text-white text-xl md:text-2xl">
+                    {t(`about.items.${key}.title`)}
+                  </Heading>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <SubHeading className="mt-2 tracking-wide text-sm text-balance md:text-base text-white/80">
+                    {t(`about.items.${key}.description`)}
+                  </SubHeading>
+                </CardContent>
+              </WobbleCard>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </motion.section>
@@ -176,13 +114,10 @@ function AboutSection() {
 const CardDecorator = ({ children }: { children: React.ReactNode }) => (
   <div
     aria-hidden
-    className="relative mx-auto size-36 [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
+    className="relative mx-auto size-24 mb-4 [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
   >
-    <div className="absolute inset-0 [--border:black] dark:[--border:white] bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
-    <div
-      className="absolute inset-0 flex items-center justify-center m-auto border-t border-l size-12"
-      style={{ backgroundColor: "var(--background)" }}
-    >
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+    <div className="absolute inset-0 flex items-center justify-center m-auto border border-white/20 rounded-xl size-14 bg-white/10 backdrop-blur-sm">
       {children}
     </div>
   </div>

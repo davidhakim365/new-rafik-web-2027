@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useGetProfile } from "@/generated/api";
 import type { GetStudentProfileResult } from "@/generated/model";
 import { Heading } from "./ui/heading";
+import { Atom } from "lucide-react";
 
 const Footer = () => {
   const { t } = useTranslation();
@@ -15,32 +16,27 @@ const Footer = () => {
     {
       icon: FaFacebook,
       href: "https://www.facebook.com/people/Newtons-Academy-Mr-Rafik-Isaac/100064151013051",
-      hoverColor:
-        "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white",
+      hoverColor: "hover:bg-blue-600 hover:text-white",
       label: t("footer.social.facebook"),
     },
     {
       icon: FaYoutube,
       href: "https://www.youtube.com/@newtonacademy9097",
-      hoverColor:
-        "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white",
+      hoverColor: "hover:bg-red-600 hover:text-white",
       label: t("footer.social.youtube"),
     },
     {
       icon: FaWhatsapp,
       href: "https://wa.me/1222343492",
-      hoverColor:
-        "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white",
+      hoverColor: "hover:bg-green-600 hover:text-white",
       label: t("footer.social.whatsapp"),
     },
     {
       icon: FaTiktok,
       href: "https://www.tiktok.com/@mr.rafik.isaac",
-      hoverColor:
-        "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white",
-      label: t("footer.social.whatsapp"),
+      hoverColor: "hover:bg-neutral-800 hover:text-white dark:hover:bg-white dark:hover:text-black",
+      label: t("footer.social.tiktok"),
     },
-    
   ];
 
   const coursesHref = (() => {
@@ -64,21 +60,33 @@ const Footer = () => {
 
   return (
     <div className="bg-footer">
-      <footer className="md:rounded-t-3xl relative w-full max-w-7xl mx-auto flex flex-col items-center justify-center rounded-t-4xl border-t bg-[radial-gradient(35%_128px_at_50%_0%,theme(backgroundColor.white/8%),transparent)] px-6 py-16 lg:py-24">
-        <div className="grid w-full gap-8 xl:grid-cols-3 xl:gap-8">
+      <footer className="relative w-full max-w-7xl mx-auto flex flex-col items-center justify-center border-t border-white/10 px-6 py-16 lg:py-20">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 size-96 rounded-full bg-color2/10 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 grid w-full gap-10 xl:grid-cols-3 xl:gap-8">
           <AnimatedContainer className="flex flex-col items-center space-y-4">
-            <Heading className="text-2xl font-bold md:text-3xl">
-              {t("footer.brand")}
-            </Heading>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-color1 to-color2">
+                <Atom className="size-5 text-white" />
+              </div>
+              <Heading className="text-2xl font-bold md:text-3xl text-white">
+                {t("footer.brand")}
+              </Heading>
+            </div>
+            <p className="text-sm text-center text-footer-foreground max-w-xs">
+              {t("footer.tagline")}
+            </p>
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.1} className="flex flex-col items-center">
-            <ul className="flex flex-wrap justify-center gap-6 my-8 text-sm">
+            <ul className="flex flex-wrap justify-center gap-6 my-4 text-sm">
               {navLinks.map((link, index) => (
                 <li key={index}>
                   <Link
                     to={link.href}
-                    className="hover:underline text-footer-foreground"
+                    className="text-footer-foreground hover:text-white transition-colors duration-200"
                   >
                     {link.title}
                   </Link>
@@ -88,7 +96,7 @@ const Footer = () => {
           </AnimatedContainer>
 
           <AnimatedContainer delay={0.2} className="flex flex-col items-center">
-            <ul className="flex flex-wrap justify-center gap-6 my-8">
+            <ul className="flex flex-wrap justify-center gap-3 my-4">
               {socialLinks.map((social, index) => (
                 <li key={index}>
                   <a
@@ -96,9 +104,9 @@ const Footer = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className={`group ${social.hoverColor} duration-150 inline-flex`}
+                    className={`inline-flex items-center justify-center size-10 rounded-full bg-white/10 text-footer-foreground transition-all duration-200 ${social.hoverColor}`}
                   >
-                    <social.icon className="size-6" />
+                    <social.icon className="size-5" />
                   </a>
                 </li>
               ))}
@@ -106,12 +114,8 @@ const Footer = () => {
           </AnimatedContainer>
         </div>
 
-        <div className="flex flex-col items-center gap-4 mt-8">
+        <div className="relative z-10 flex flex-col items-center gap-2 mt-10 pt-8 border-t border-white/10 w-full">
           <span className="block text-sm text-center text-footer-foreground">
-            BY
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer">
-        1D_Comapny 
-            </a>
             {t("footer.copyright", { year: new Date().getFullYear() })}
           </span>
         </div>
@@ -126,11 +130,7 @@ type ViewAnimationProps = {
   children: ReactNode;
 };
 
-function AnimatedContainer({
-  className,
-  delay = 0,
-  children,
-}: ViewAnimationProps) {
+function AnimatedContainer({ className, delay = 0, children }: ViewAnimationProps) {
   const shouldReduceMotion = useReducedMotion();
 
   if (shouldReduceMotion) {

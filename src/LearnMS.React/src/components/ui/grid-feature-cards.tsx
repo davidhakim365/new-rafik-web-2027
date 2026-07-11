@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Heading } from "./heading";
 import { Paragraph } from "./paragraph";
 import { useNavigate } from "react-router-dom";
+import { ArrowUpRight } from "lucide-react";
 
 type FeatureType = {
   title: string;
@@ -21,15 +22,16 @@ export const FeatureCard = ({
   className,
   ...props
 }: FeatureCardPorps) => {
-  const p = genRandomPattern(20);
   const [hovered, setHovered] = useState<boolean>(false);
-
   const navigate = useNavigate();
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden px-16 py-10 cursor-pointer",
+        "group relative overflow-hidden px-8 py-8 cursor-pointer rounded-2xl",
+        "bg-background/70 backdrop-blur-sm border border-color2/10",
+        "hover:border-color2/30 hover:shadow-xl hover:shadow-color2/5 transition-all duration-300",
+        "hover:-translate-y-1",
         className
       )}
       {...props}
@@ -37,36 +39,31 @@ export const FeatureCard = ({
       onMouseLeave={() => setHovered(false)}
       onClick={() => navigate(`/courses/levels/${feature.level}`)}
     >
-      <div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full [mask-image:linear-gradient(white,transparent)]">
-        <div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
-          <GridPattern
-            width={35}
-            height={35}
-            x="-12"
-            y="4"
-            squares={p}
-            className="absolute inset-0 w-full h-full fill-foreground/5 stroke-foreground/25 mix-blend-overlay"
-          />
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-color2/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center justify-center size-14 rounded-xl bg-gradient-to-br from-color1 to-color2 text-white shadow-md shadow-color2/20 group-hover:scale-110 transition-transform duration-300">
+          <feature.icon className="size-7" strokeWidth={1.5} aria-hidden />
         </div>
+        <ArrowUpRight className="size-5 text-color2/40 group-hover:text-color2 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
       </div>
 
-      <feature.icon
-        className="text-foreground/75 size-6"
-        strokeWidth={1}
-        aria-hidden
-      />
       <motion.div
         animate={
           hovered
-            ? { x: 30, transition: { ease: "easeInOut", duration: 0.2 } }
+            ? { x: 4, transition: { ease: "easeInOut", duration: 0.2 } }
             : { x: 0, transition: { ease: "easeInOut", duration: 0.2 } }
         }
       >
-        <Heading className="mt-10 text-xl md:text-3xl">{feature.title}</Heading>
-        <Paragraph className="relative z-20 mt-2">
+        <Heading className="text-xl md:text-2xl font-bold">{feature.title}</Heading>
+        <Paragraph className="relative z-20 mt-2 text-sm leading-relaxed">
           {feature.description}
         </Paragraph>
       </motion.div>
+
+      <div className="mt-4 text-xs font-semibold text-color2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        Explore courses →
+      </div>
     </div>
   );
 };
@@ -101,12 +98,7 @@ export function GridPattern({
           <path d={`M.5 ${height}V.5H${width}`} fill="none" />
         </pattern>
       </defs>
-      <rect
-        width="100%"
-        height="100%"
-        strokeWidth={0}
-        fill={`url(#${patternId})`}
-      />
+      <rect width="100%" height="100%" strokeWidth={0} fill={`url(#${patternId})`} />
       {squares && (
         <svg x={x} y={y} className="overflow-visible">
           {squares.map(([x, y], index) => (
