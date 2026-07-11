@@ -19,11 +19,11 @@ const StudentHomePage = () => {
     <div className="flex flex-col w-full min-h-screen">
       <main className="flex-1">
         <HeroSection />
-        <FeaturesSection />
-        <GradesSection />
+        {!isSignedIn && <FeaturesSection />}
+        {!isSignedIn && <GradesSection />}
         {isSignedIn && <ImportantLecturesSection />}
         {isSignedIn && <LatestLecturesSection />}
-        <SeniorsSection />
+        {!isSignedIn && <SeniorsSection />}
         <MemoriesSection />
         <AboutSection />
       </main>
