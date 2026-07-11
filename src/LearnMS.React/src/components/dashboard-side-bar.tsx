@@ -2,7 +2,7 @@ import { useLogoutMutation } from "@/api/auth-api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
-import { File, LogOut, QrCode, School, Shield, Star, User } from "lucide-react";
+import { File, Gift, LogOut, QrCode, School, Shield, Star, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./theme-toggle";
@@ -106,6 +106,15 @@ const DashboardSideBar = () => {
                   >
                     <User className="w-4 h-4 mr-2" />
                     Students
+                  </Button>
+                </Link>
+                <Link to="/dashboard/granted-access">
+                  <Button
+                    variant={is("/granted-access") ? "default" : "secondary"}
+                    className="inline-flex justify-start w-full"
+                  >
+                    <Gift className="w-4 h-4 mr-2" />
+                    Granted Access
                   </Button>
                 </Link>
               </div>

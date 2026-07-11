@@ -12,6 +12,7 @@ import CreditCodesPage from "@/pages/dashboard/credit-codes/credit-code-page";
 import ExamPage from "@/pages/dashboard/exams/exam-page";
 import ExamStudentsPage from "@/pages/dashboard/exams/exam-students-page";
 import FilesPage from "@/pages/dashboard/files/files-page";
+import GrantedAccessPage from "@/pages/dashboard/granted-access/granted-access-page";
 import ImportantLecturesPage from "@/pages/dashboard/important-lectures/important-lectures-page";
 import LectureDetailsPage from "@/pages/dashboard/lectures/lecture-details-page";
 import LessonDetailsPage from "@/pages/dashboard/lessons/lesson-details-page";
@@ -299,6 +300,17 @@ function App() {
                     permissions={["ManageStudents"]}
                   >
                     <StudentDetailsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="granted-access"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageCourses"]}
+                  >
+                    <GrantedAccessPage />
                   </RequireAuth>
                 }
               />
