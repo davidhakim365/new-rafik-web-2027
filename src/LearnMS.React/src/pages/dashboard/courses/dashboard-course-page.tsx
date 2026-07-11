@@ -1,5 +1,6 @@
 import { AddLectureRequest } from "@/api/lectures-api";
 import Confirmation from "@/components/confirmation";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ import {
 import { GetDashboardCourseResult, SingleCourseItem } from "@/generated/model";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Edit2, ListCollapse, LucideMove, Menu, Settings2 } from "lucide-react";
+import { Edit2, ListCollapse, LucideMove, Menu, Settings2, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -119,30 +120,33 @@ const DashboardCoursePage = () => {
   };
 
   return (
-    <div className='w-full h-full p-4'>
-      <div className='flex justify-between w-full'>
-        <h1 className='text-3xl'>Course Setup</h1>
-        <div className='flex gap-2 item-center'>
+    <DashboardPageShell
+      title="Course Setup"
+      description={course.title}
+      icon={BookOpen}
+      fullWidth
+      actions={
+        <div className="flex gap-2">
           <Confirmation
             disabled={deleteCourseMutation.isPending}
-            // button={<Button variant='destructive'>Delete</Button>}
-            description='Are you sure you want to delete this course?'
-            title='Delete Course'
+            description="Are you sure you want to delete this course?"
+            title="Delete Course"
             onConfirm={onDeleting}
           />
           <Button
             onClick={onPublishing}
-            className='text-blue-500 bg-white border border-blue-500 rounded hover:bg-blue-500 hover:text-white'>
-            {course.isPublished ? "UnPublish" : "Publish"}
+            className="border border-color2/40 bg-gradient-to-r from-color1 to-color2 text-white shadow-md shadow-color2/20 hover:opacity-90"
+          >
+            {course.isPublished ? "Unpublish" : "Publish"}
           </Button>
         </div>
-      </div>
-
-      <div className='grid w-full grid-cols-2 mt-10'>
+      }
+    >
+      <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
         <CourseDetailsForm {...course} />
         <CourseContentForm {...course} />
       </div>
-    </div>
+    </DashboardPageShell>
   );
 };
 
@@ -219,15 +223,15 @@ function CourseDetailsForm({
           <fieldset
             className='flex items-center gap-2 p-2 text-xl'
             disabled={updateCourseMutation.isPending}>
-            <Settings2 className='text-blue-400 bg-blue-200 rounded-[50%] w-10 h-10 p-1' />
+            <Settings2 className='text-color2 bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
             Course Details
             {form.formState.isDirty && (
               <div className='space-x-1 ms-auto'>
-                <Button className='bg-blue-500'>Save</Button>
+                <Button className='bg-color2/50'>Save</Button>
                 <Button
                   variant='outline'
                   type='button'
-                  className='border-blue-200'
+                  className='border-color2/20'
                   onClick={() => form.reset()}>
                   Reset
                 </Button>
@@ -238,10 +242,10 @@ function CourseDetailsForm({
             control={form.control}
             name='title'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Title</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Title</FormLabel>
                 <FormControl>
-                  <Input className='text-blue-500' {...field} />
+                  <Input className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -251,10 +255,10 @@ function CourseDetailsForm({
             control={form.control}
             name='description'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Description</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Description</FormLabel>
                 <FormControl>
-                  <Input className='text-blue-500' {...field} />
+                  <Input className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -263,13 +267,13 @@ function CourseDetailsForm({
           <FormField
             name='level'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Level</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Level</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger className='text-blue-500'>
+                    <SelectTrigger className='text-color2'>
                       <SelectValue placeholder='Select a level' />
                     </SelectTrigger>
                   </FormControl>
@@ -288,10 +292,10 @@ function CourseDetailsForm({
             control={form.control}
             name='price'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Price</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Price</FormLabel>
                 <FormControl>
-                  <Input type='number' className='text-blue-500' {...field} />
+                  <Input type='number' className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -301,10 +305,10 @@ function CourseDetailsForm({
             control={form.control}
             name='renewalPrice'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>RenewalPrice</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>RenewalPrice</FormLabel>
                 <FormControl>
-                  <Input type='number' className='text-blue-500' {...field} />
+                  <Input type='number' className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -314,7 +318,7 @@ function CourseDetailsForm({
             control={form.control}
             name='expirationDays'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>Expiration Days</FormLabel>
                 <FormControl>
                   <Input type='number' className='text-primary' {...field} />
@@ -327,10 +331,10 @@ function CourseDetailsForm({
             control={form.control}
             name='imageUrl'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Image</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Image</FormLabel>
                 <FormControl>
-                  <Input className='text-blue-500' {...field} />
+                  <Input className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -351,7 +355,7 @@ function CourseContentForm({ items, id }: GetDashboardCourseResult) {
     <div className='flex flex-col gap-4 p-4'>
       <div className='flex items-center justify-between text-xl'>
         <div className='flex items-center gap-2'>
-          <ListCollapse className='text-blue-400 bg-blue-200 rounded-[50%] w-10 h-10 p-1' />
+          <ListCollapse className='text-color2 bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
           Course Content
         </div>
         <div className='flex items-center justify-center gap-2'>
@@ -363,7 +367,7 @@ function CourseContentForm({ items, id }: GetDashboardCourseResult) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem
-                    className='hover:bg-blue-400 hover:text-white hover:cursor-pointer'
+                    className='hover:bg-color2 hover:text-white hover:cursor-pointer'
                     onClick={() => setIsAddingLecture(true)}>
                     Add Lecture
                   </DropdownMenuItem>
@@ -372,7 +376,7 @@ function CourseContentForm({ items, id }: GetDashboardCourseResult) {
                     onClick={() =>
                       navigate(`/dashboard/courses/${id}/exams/add`)
                     }
-                    className='hover:bg-blue-400 hover:text-white hover:cursor-pointer'>
+                    className='hover:bg-color2 hover:text-white hover:cursor-pointer'>
                     Add Exam
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -414,7 +418,7 @@ function CourseItem({
   courseId: string;
 }) {
   return (
-    <div className='flex items-center justify-between w-full gap-2 text-blue-500 bg-blue-100 border border-blue-300 rounded'>
+    <div className='flex items-center justify-between w-full gap-2 text-color2 bg-color2/10 border border-color2/25 rounded'>
       <div className='flex gap-2'>
 
         <div className='p-2'>{item.title}</div>
@@ -472,16 +476,16 @@ function AddLectureForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <fieldset
-          className='p-2 space-y-2 border-2 border-blue-400 rounded'
+          className='p-2 space-y-2 border-2 border-color2/30 rounded'
           disabled={createLectureMutation.isPending}>
           <FormField
             control={form.control}
             name='title'
             render={({ field }) => (
               <FormItem>
-                <FormLabel className='text-blue-500'>Title</FormLabel>
+                <FormLabel className='text-color2'>Title</FormLabel>
                 <FormControl>
-                  <Input type='text' className='text-blue-500' {...field} />
+                  <Input type='text' className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

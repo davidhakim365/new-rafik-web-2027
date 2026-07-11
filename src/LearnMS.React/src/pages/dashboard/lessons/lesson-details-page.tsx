@@ -152,15 +152,15 @@ function LessonDetailsContent({
           <fieldset
             className='flex items-center gap-2 p-2 text-xl'
             disabled={updateLessonMutation.isPending}>
-            <Settings2 className='text-blue-400 bg-blue-200 rounded-[50%] w-10 h-10 p-1' />
+            <Settings2 className='text-color2 bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
             Lesson Details
             {form.formState.isDirty && (
               <div className='space-x-1 ms-auto'>
-                <Button className='bg-blue-500'>Save</Button>
+                <Button className='bg-color2/50'>Save</Button>
                 <Button
                   variant='outline'
                   type='button'
-                  className='border-blue-200'
+                  className='border-color2/20'
                   onClick={() => form.reset()}>
                   Reset
                 </Button>
@@ -171,10 +171,10 @@ function LessonDetailsContent({
             control={form.control}
             name='title'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Title</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Title</FormLabel>
                 <FormControl>
-                  <Input className='text-blue-500' {...field} />
+                  <Input className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -184,10 +184,10 @@ function LessonDetailsContent({
             control={form.control}
             name='description'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Description</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Description</FormLabel>
                 <FormControl>
-                  <Textarea className='text-blue-500' {...field} />
+                  <Textarea className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -198,10 +198,10 @@ function LessonDetailsContent({
             control={form.control}
             name='renewalPrice'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Renewal Price</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Renewal Price</FormLabel>
                 <FormControl>
-                  <Input type='number' className='text-blue-500' {...field} />
+                  <Input type='number' className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -211,12 +211,12 @@ function LessonDetailsContent({
             control={form.control}
             name='expirationHours'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>
                   Expiration Hours
                 </FormLabel>
                 <FormControl>
-                  <Input type='number' className='text-blue-500' {...field} />
+                  <Input type='number' className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -226,10 +226,10 @@ function LessonDetailsContent({
             control={form.control}
             name='videoId'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
-                <FormLabel className='text-blue-500'>Video Id</FormLabel>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-color2'>Video Id</FormLabel>
                 <FormControl>
-                  <Input type='string' className='text-blue-500' {...field} />
+                  <Input type='string' className='text-color2' {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -302,7 +302,7 @@ function LessonVideo({
     <div className='flex flex-col gap-4 p-4' id='lesson-video-drop-zone'>
       <div className='flex items-center justify-between text-xl'>
         <div className='flex items-center gap-2'>
-          <ListCollapse className='text-primary bg-blue-200 rounded-[50%] w-10 h-10 p-1' />
+          <ListCollapse className='text-primary bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
           Lesson Content
         </div>
       </div>

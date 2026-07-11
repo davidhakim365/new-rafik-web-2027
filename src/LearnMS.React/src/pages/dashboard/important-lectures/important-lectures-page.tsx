@@ -1,7 +1,9 @@
 import { useCoursesQuery } from "@/api/courses-api";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Button } from "@/components/ui/button";
-import { Card, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardFooter, CardHeader } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -13,13 +15,13 @@ import {
 } from "@/components/ui/select";
 import { useGetCourse, useToggleLectureImportant } from "@/generated/api";
 import { StudentLevel } from "@/generated/model";
-import { Heart } from "lucide-react";
+import { ArrowRight, Heart, Star } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 const ImportantLecturesPage = () => {
   const [level, setLevel] = useState<StudentLevel | undefined>();
-  const [courseId, setCourseId] = useState<string | undefined>(undefined);
+  const [courseId, setCourseId] = useState<string | undefined>();
 
   const { data: coursesData, isLoading: coursesLoading } = useCoursesQuery();
 
@@ -28,63 +30,62 @@ const ImportantLecturesPage = () => {
   }
 
   const courses = coursesData.data.items.filter((item) => item.level === level);
-
   const course = courses.find((item) => item.id === courseId);
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center gap-2 text-foreground">
-        <Select
-          value={level}
-          onValueChange={(value) => setLevel(value as StudentLevel)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select a level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Levels</SelectLabel>
-              <SelectItem value="Level0">3rd Prep</SelectItem>
-              <SelectItem value="Level1">1st Secondary</SelectItem>
-              <SelectItem value="Level2">2nd Secondary</SelectItem>
-              <SelectItem value="Level3">3rd Secondary</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        {level && (
+    <DashboardPageShell
+      title="Important Lectures"
+      description="Highlight and manage your most important lectures."
+      icon={Star}
+    >
+      <DashboardCard>
+        <div className="flex flex-wrap items-center gap-3">
           <Select
-            value={courseId}
-            onValueChange={(value) => setCourseId(value)}
+            value={level}
+            onValueChange={(value) => setLevel(value as StudentLevel)}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select a course" />
+              <SelectValue placeholder="Select level" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Courses</SelectLabel>
-                {courses.map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.title}
-                  </SelectItem>
-                ))}
+                <SelectLabel>Levels</SelectLabel>
+                <SelectItem value="Level0">3rd Prep</SelectItem>
+                <SelectItem value="Level1">1st Secondary</SelectItem>
+                <SelectItem value="Level2">2nd Secondary</SelectItem>
+                <SelectItem value="Level3">3rd Secondary</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
-        )}
-      </div>
+          {level && (
+            <Select value={courseId} onValueChange={setCourseId}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Select course" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Courses</SelectLabel>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </DashboardCard>
+
       {course && <CourseLectures courseId={course.id} />}
-    </div>
+    </DashboardPageShell>
   );
 };
 
-function CourseLectures({ courseId: courseId }: { courseId: string }) {
+function CourseLectures({ courseId }: { courseId: string }) {
   const { data: courseData, isLoading, refetch } = useGetCourse(courseId);
   const { mutate: toggleLectureImportant } = useToggleLectureImportant({
-    mutation: {
-      onSuccess() {
-        refetch();
-      },
-    },
+    mutation: { onSuccess: () => refetch() },
   });
 
   if (isLoading || !courseData?.data) {
@@ -96,38 +97,34 @@ function CourseLectures({ courseId: courseId }: { courseId: string }) {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       {lectures.map((lecture) => (
-        <Card
-          key={lecture.id}
-          className="p-4 overflow-hidden transition-all duration-500 group hover:shadow-lg hover:shadow-ebluemerald-100"
-        >
-          {/* Image Container with Gradient Overlay */}
-          <div className="relative mb-4 overflow-hidden rounded-lg h-52">
+        <DashboardCard key={lecture.id} padding="sm" className="group">
+          <div className="relative mb-4 h-48 overflow-hidden rounded-xl">
             <img
               src={lecture.imageUrl!}
               alt={lecture.title}
-              className="object-cover w-full h-full transition duration-700 group-hover:scale-105"
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
             />
-            <div className="absolute inset-0 transition-opacity duration-300 opacity-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:opacity-100" />
+            <div className="absolute inset-0 bg-gradient-to-t from-color1/60 via-transparent to-transparent opacity-60" />
             <Button
               size="icon"
-              variant={"outline"}
+              variant="outline"
               onClick={() =>
                 toggleLectureImportant({ lectureId: lecture.id, courseId })
               }
-              className="absolute top-2 right-2"
+              className="absolute right-2 top-2 border-white/30 bg-black/20 backdrop-blur-sm hover:bg-black/40"
             >
-              {lecture.isImportant ? (
-                <Heart className="text-pink-500" />
-              ) : (
-                <Heart className="text-zinc-500" />
-              )}
+              <Heart
+                className={
+                  lecture.isImportant ? "fill-pink-500 text-pink-500" : "text-white"
+                }
+              />
             </Button>
           </div>
 
-          <CardHeader className="p-0 mb-4">
-            <h3 className="text-xl font-semibold transition-colors duration-300 text-foreground line-clamp-2">
+          <CardHeader className="mb-3 p-0">
+            <h3 className="line-clamp-2 text-lg font-semibold text-foreground">
               {lecture.title}
             </h3>
           </CardHeader>
@@ -135,25 +132,13 @@ function CourseLectures({ courseId: courseId }: { courseId: string }) {
           <CardFooter className="p-0">
             <Link
               to={`/dashboard/courses/${courseId}/lectures/${lecture.id}`}
-              className="flex items-center justify-center w-full gap-2 px-6 py-3 font-semibold transition-all duration-300 bg-transparent border-2 rounded-full text-emerald-500 border-emerald-200 hover:bg-emerald-500 hover:text-white focus:ring-4 focus:ring-emerald-200"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-color2/30 bg-color2/5 px-4 py-2.5 text-sm font-semibold text-color2 transition-all hover:bg-gradient-to-r hover:from-color1 hover:to-color2 hover:text-white"
             >
               View Lecture
-              <svg
-                className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </CardFooter>
-        </Card>
+        </DashboardCard>
       ))}
     </div>
   );

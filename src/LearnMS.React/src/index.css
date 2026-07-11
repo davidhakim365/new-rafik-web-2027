@@ -54,6 +54,7 @@
     --lecturePage: 0 0% 96.1%;
     --paymentPage: 0 0% 96.1%;
     --navbar-foreground: 0 0% 0%;
+    --dashboard: 220 30% 97%;
   }
 
   .dark {
@@ -101,6 +102,7 @@
     --lecturePage: 0 0% 9%;
     --paymentPage: 0 0% 9%;
     --navbar-foreground: 0 0% 100%;
+    --dashboard: 224 40% 6%;
   }
 }
 

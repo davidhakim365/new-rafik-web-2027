@@ -166,6 +166,7 @@ module.exports = {
         navbar: {
           foreground: "hsl(var(--navbar-foreground))",
         },
+        dashboard: "hsl(var(--dashboard))",
       },
       borderRadius: {
         lg: "var(--radius)",

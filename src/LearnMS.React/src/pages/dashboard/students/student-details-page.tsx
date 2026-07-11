@@ -5,6 +5,8 @@ import {
   useUpdateStudentMutation,
 } from "@/api/students-api";
 import Confirmation from "@/components/confirmation";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { DataTable } from "@/components/data-table";
 import Loading from "@/components/loading/loading";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -43,7 +45,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ResetIcon } from "@radix-ui/react-icons";
 import { PaginationState } from "@tanstack/react-table";
-import { Save, Trash } from "lucide-react";
+import { Save, Trash, User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -53,28 +55,35 @@ const StudentDetailsPage = () => {
   const { studentId } = useParams();
 
   return (
-    <div className="w-full h-full p-0 overflow-x-auto">
-      <Tabs defaultValue="profile" className="w-full h-full m-0">
-        <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="lectures">Sessions</TabsTrigger>
-          <TabsTrigger value="exams">Exams</TabsTrigger>
-        </TabsList>
-        <TabsContent value="profile">
-          <StudentProfile studentId={studentId!} />
-        </TabsContent>
-        <TabsContent value="events">
-          <StudentEvents studentId={studentId!} />
-        </TabsContent>
-        <TabsContent value="lectures">
-          <StudentLectures studentId={studentId!} />
-        </TabsContent>
-        <TabsContent value="exams">
-          <StudentExams studentId={studentId!} />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <DashboardPageShell
+      title="Student Details"
+      description="View and manage student profile, events, and enrollments."
+      icon={User}
+      fullWidth
+    >
+      <DashboardCard padding="sm">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="mb-4 bg-color2/5">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="lectures">Sessions</TabsTrigger>
+            <TabsTrigger value="exams">Exams</TabsTrigger>
+          </TabsList>
+          <TabsContent value="profile">
+            <StudentProfile studentId={studentId!} />
+          </TabsContent>
+          <TabsContent value="events">
+            <StudentEvents studentId={studentId!} />
+          </TabsContent>
+          <TabsContent value="lectures">
+            <StudentLectures studentId={studentId!} />
+          </TabsContent>
+          <TabsContent value="exams">
+            <StudentExams studentId={studentId!} />
+          </TabsContent>
+        </Tabs>
+      </DashboardCard>
+    </DashboardPageShell>
   );
 };
 

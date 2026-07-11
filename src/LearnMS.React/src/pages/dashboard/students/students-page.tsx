@@ -1,4 +1,6 @@
 import { DataTable } from "@/components/data-table";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +17,8 @@ import useDownloadFile from "@/hooks/useDownloadFile";
 import { studentsColumns } from "@/pages/dashboard/students/columns";
 import { useModalStore } from "@/store/use-modal-store";
 import { PaginationState } from "@tanstack/react-table";
-import { Loader2, Plus } from "lucide-react";
+import { Download, Loader2, Plus, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaFileExport } from "react-icons/fa";
 import { useSearchParams } from "react-router-dom";
 
 const StudentsPage = () => {
@@ -52,47 +53,52 @@ const StudentsPage = () => {
   }, [pageIndex, pageSize, search, level]);
 
   return (
-    <div className="relative flex flex-col w-full h-full p-2 sm:p-4 text-foreground">
-      {/* Header Section - Responsive Layout */}
-      <div className="flex flex-col gap-4 w-full mb-4">
-        {/* Top Row - Add Student Button and Search */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between w-full">
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <Button
-              onClick={() => openModal("add-student-modal")}
-              className="transition-all duration-300 hover:scale-105 w-full sm:w-auto"
-            >
-              <Plus className="mr-2 w-4 h-4" /> 
-              <span className="hidden sm:inline">Add Student</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
+    <DashboardPageShell
+      title="Students"
+      description="Search, manage, and export your student roster."
+      icon={Users}
+      actions={
+        <Button
+          onClick={() => openModal("add-student-modal")}
+          className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Student
+        </Button>
+      }
+      fullWidth
+    >
+      <DashboardCard>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="w-full sm:w-64"
-              placeholder="Search for a student"
+              className="pl-9"
+              placeholder="Search students..."
               onChange={(e) => setSearch(e.target.value)}
               value={search}
             />
           </div>
-
-          {/* Controls Row - Export and Level Filter */}
-          <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               disabled={isDownloading}
               variant="outline"
-              className="h-8 text-primary w-full sm:w-auto"
+              className="border-color2/20"
               onClick={onExport}
             >
-              {(!isDownloading && <FaFileExport className="w-4 h-4" />) || (
-                <Loader2 className="w-4 h-4 animate-spin" />
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
               )}
-              <span className="ml-2 hidden sm:inline">Export</span>
+              <span className="ml-2">Export</span>
             </Button>
             <Select onValueChange={setLevel} value={level}>
-              <SelectTrigger className="h-8 w-full sm:w-40">
-                <SelectValue placeholder="Select a level" />
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={"all"}>All</SelectItem>
+                <SelectItem value="all">All Levels</SelectItem>
                 <SelectItem value={StudentLevel.Level0}>3rd Prep</SelectItem>
                 <SelectItem value={StudentLevel.Level1}>1st Secondary</SelectItem>
                 <SelectItem value={StudentLevel.Level2}>2nd Secondary</SelectItem>
@@ -101,14 +107,11 @@ const StudentsPage = () => {
             </Select>
           </div>
         </div>
-      </div>
 
-      {/* Table Section */}
-      {isLoading ? (
-        <Loading />
-      ) : (
-        <div className="overflow-x-auto w-full">
-          <div className="min-w-[1200px]">
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <div className="overflow-x-auto">
             <DataTable
               pagination={{
                 hasNextPage: students?.data!.hasNextPage!,
@@ -123,9 +126,9 @@ const StudentsPage = () => {
               columns={studentsColumns}
             />
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </DashboardCard>
+    </DashboardPageShell>
   );
 };
 

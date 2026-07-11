@@ -1,8 +1,9 @@
 import { DataTable } from "@/components/data-table";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -37,22 +38,14 @@ const GrantedAccessPage = () => {
   });
 
   const { data: studentsData, isLoading: studentsLoading } = useGetAllStudents(
-    {
-      page: 1,
-      pageSize: 50,
-      search: studentSearch,
-    },
+    { page: 1, pageSize: 50, search: studentSearch },
     { query: { enabled: !selectedStudent } }
   );
 
   const { data: lecturesData, isLoading: lecturesLoading } =
     useGetStudentLectures(
       selectedStudent?.id ?? "",
-      {
-        page: pageIndex + 1,
-        pageSize,
-        search: lectureSearch,
-      },
+      { page: pageIndex + 1, pageSize, search: lectureSearch },
       { query: { enabled: !!selectedStudent } }
     );
 
@@ -86,126 +79,114 @@ const GrantedAccessPage = () => {
   };
 
   return (
-    <div className="flex flex-col w-full h-full p-2 sm:p-4 gap-4 text-foreground">
-      <div className="flex items-center gap-2">
-        <Gift className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold">Granted Access</h1>
-      </div>
-      <p className="text-sm text-muted-foreground max-w-2xl">
-        Select a student, then grant free lecture access. Only lectures matching
-        the student&apos;s grade level are shown.
-      </p>
+    <DashboardPageShell
+      title="Granted Access"
+      description="Select a student and grant free lecture access matching their grade level."
+      icon={Gift}
+      fullWidth
+    >
+      <DashboardCard>
+        <div className="mb-3 flex items-center gap-2 text-lg font-semibold">
+          <User className="h-5 w-5 text-color2" />
+          Select Student
+        </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Select Student
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {selectedStudent ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border bg-muted/30">
-              <div className="space-y-1">
-                <p className="font-medium">{selectedStudent.fullName}</p>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <span>ID: {selectedStudent.studentCode}</span>
-                  <Badge variant="outline">
-                    {levelMap[selectedStudent.level]}
-                  </Badge>
-                </div>
+        {selectedStudent ? (
+          <div className="flex flex-col justify-between gap-3 rounded-xl border border-color2/10 bg-color2/5 p-4 sm:flex-row sm:items-center">
+            <div className="space-y-1">
+              <p className="font-medium">{selectedStudent.fullName}</p>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>ID: {selectedStudent.studentCode}</span>
+                <Badge variant="outline" className="border-color2/20">
+                  {levelMap[selectedStudent.level]}
+                </Badge>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearStudent}
-                className="gap-2 shrink-0"
-              >
-                <X className="w-4 h-4" />
-                Change Student
-              </Button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Search by name, email, or student ID..."
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                />
-              </div>
-
-              {studentsLoading ? (
-                <Loading />
-              ) : (
-                <Select onValueChange={handleSelectStudent}>
-                  <SelectTrigger className="max-w-md">
-                    <SelectValue placeholder="Choose a student from results" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {studentsData?.data?.items?.length ? (
-                      studentsData.data.items.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.fullName} — {student.studentCode} (
-                          {levelMap[student.level]})
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="none" disabled>
-                        {studentSearch
-                          ? "No students found"
-                          : "Type to search for students"}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {selectedStudent && (
-        <Card className="flex-1">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <CardTitle className="text-lg">
-                Lectures for {levelMap[selectedStudent.level]}
-              </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearStudent}
+              className="gap-2 border-color2/20"
+            >
+              <X className="h-4 w-4" />
+              Change Student
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="max-w-xs"
-                placeholder="Search lectures..."
-                value={lectureSearch}
-                onChange={(e) => {
-                  setLectureSearch(e.target.value);
-                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-                }}
+                className="pl-9"
+                placeholder="Search by name, email, or student ID..."
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
               />
             </div>
-          </CardHeader>
-          <CardContent>
-            {lecturesLoading ? (
+            {studentsLoading ? (
               <Loading />
             ) : (
-              <DataTable
-                data={lecturesData?.data?.items ?? []}
-                columns={columns}
-                setPagination={setPagination}
-                pagination={{
-                  pageCount: lecturesData?.data?.totalCount ?? 0,
-                  pageSize,
-                  pageIndex,
-                  hasPreviousPage: lecturesData?.data?.hasPreviousPage ?? false,
-                  hasNextPage: lecturesData?.data?.hasNextPage ?? false,
-                }}
-              />
+              <Select onValueChange={handleSelectStudent}>
+                <SelectTrigger className="max-w-md">
+                  <SelectValue placeholder="Choose a student from results" />
+                </SelectTrigger>
+                <SelectContent>
+                  {studentsData?.data?.items?.length ? (
+                    studentsData.data.items.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.fullName} — {student.studentCode} (
+                        {levelMap[student.level]})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      {studentSearch
+                        ? "No students found"
+                        : "Type to search for students"}
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
+      </DashboardCard>
+
+      {selectedStudent && (
+        <DashboardCard>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-lg font-semibold">
+              Lectures for {levelMap[selectedStudent.level]}
+            </h3>
+            <Input
+              className="max-w-xs"
+              placeholder="Search lectures..."
+              value={lectureSearch}
+              onChange={(e) => {
+                setLectureSearch(e.target.value);
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+            />
+          </div>
+          {lecturesLoading ? (
+            <Loading />
+          ) : (
+            <DataTable
+              data={lecturesData?.data?.items ?? []}
+              columns={columns}
+              setPagination={setPagination}
+              pagination={{
+                pageCount: lecturesData?.data?.totalCount ?? 0,
+                pageSize,
+                pageIndex,
+                hasPreviousPage: lecturesData?.data?.hasPreviousPage ?? false,
+                hasNextPage: lecturesData?.data?.hasNextPage ?? false,
+              }}
+            />
+          )}
+        </DashboardCard>
       )}
-    </div>
+    </DashboardPageShell>
   );
 };
 

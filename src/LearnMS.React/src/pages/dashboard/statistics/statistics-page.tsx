@@ -1,9 +1,10 @@
 import { useCoursesQuery } from "@/api/courses-api";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -32,6 +33,7 @@ import {
   CalendarIcon,
   Globe,
   GraduationCap,
+  LayoutDashboard,
   TrendingUp,
   Users,
   Wallet,
@@ -138,27 +140,25 @@ function StatCard({
   accentClass: string;
 }) {
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
-            )}
-          </div>
-          <div
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-              accentClass
-            )}
-          >
-            <Icon className="h-5 w-5" />
-          </div>
+    <DashboardCard padding="sm" spotlight>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            accentClass
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </DashboardCard>
   );
 }
 
@@ -196,31 +196,27 @@ const StatisticsPageInner = () => {
   });
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
-        <p className="text-sm text-muted-foreground">
-          Track student attendance and calculate income from your lecture price.
-          Offline center attendance deducts {OFFLINE_CENTER_FEE_RATE * 100}% from
-          the price.
-        </p>
-      </div>
-
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-end md:justify-between">
+    <DashboardPageShell
+      title="Statistics"
+      description={`Track attendance and income. Offline center attendance deducts ${OFFLINE_CENTER_FEE_RATE * 100}% from the price.`}
+      icon={LayoutDashboard}
+      decorative
+    >
+      <DashboardCard className="border-dashed border-color2/20">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <PriceInput price={lecturePrice} onChange={setLecturePrice} />
           <DateRangePicker
             date={dateRange}
             onSelect={setDateRange}
-            className="w-full md:w-[320px]"
+            className="w-full border-color2/20 md:w-[320px]"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </DashboardCard>
 
       <IncomesStatistics lecturePrice={lecturePrice} dateRange={dateRange} />
       <LecturesStatistics lecturePrice={lecturePrice} dateRange={dateRange} />
       <CoursesStatistics lecturePrice={lecturePrice} />
-    </div>
+    </DashboardPageShell>
   );
 };
 
@@ -252,7 +248,7 @@ function IncomesStatistics({
       value: data?.data?.totalStudents ?? 0,
       subtitle: "All registered students",
       icon: Users,
-      accentClass: "bg-blue-500/10 text-blue-600",
+      accentClass: "bg-color2/10 text-color2",
     },
     {
       title: "Offline Students",
@@ -292,31 +288,29 @@ function IncomesStatistics({
   ];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+    <DashboardCard>
+      <div className="mb-4 flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="space-y-1">
-          <CardTitle>Income Overview</CardTitle>
+          <h3 className="text-lg font-semibold">Income Overview</h3>
           <p className="text-sm text-muted-foreground">
             Based on your lecture price and student counts in the selected date
             range
           </p>
         </div>
-        <Badge variant="secondary">
+        <Badge variant="secondary" className="bg-color2/10 text-color2">
           {OFFLINE_CENTER_FEE_RATE * 100}% center fee on offline
         </Badge>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Loading />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <StatCard key={item.title} {...item} />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <StatCard key={item.title} {...item} />
+          ))}
+        </div>
+      )}
+    </DashboardCard>
   );
 }
 
@@ -364,7 +358,7 @@ function LecturesStatistics({
       value: lectureStatistics?.data?.enrolledStudents ?? 0,
       subtitle: "Total with course access",
       icon: Users,
-      accentClass: "bg-blue-500/10 text-blue-600",
+      accentClass: "bg-color2/10 text-color2",
     },
     {
       title: "Offline Students",
@@ -427,15 +421,15 @@ function LecturesStatistics({
   const uniqueLevels = Array.from(new Set(levels));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Lecture Statistics</CardTitle>
+    <DashboardCard>
+      <div className="mb-4 space-y-1">
+        <h3 className="text-lg font-semibold">Lecture Statistics</h3>
         <p className="text-sm text-muted-foreground">
           Select a lecture for detailed stats. Uses the lecture&apos;s saved
           price when available, otherwise the global price above.
         </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <Select value={level} onValueChange={setLevel}>
             <SelectTrigger className="w-[180px]">
@@ -495,8 +489,8 @@ function LecturesStatistics({
             </div>
           )
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </DashboardCard>
   );
 }
 
@@ -552,15 +546,15 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Course Statistics</CardTitle>
+    <DashboardCard>
+      <div className="mb-4 space-y-1">
+        <h3 className="text-lg font-semibold">Course Statistics</h3>
         <p className="text-sm text-muted-foreground">
           Compare student distribution and performance across lectures in a
           course
         </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Select value={courseId} onValueChange={setCourseId}>
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Select Course" />
@@ -576,11 +570,8 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
 
         {courseId && (
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Students by Lecture</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <DashboardCard padding="sm" spotlight={false}>
+              <h4 className="mb-3 text-base font-semibold">Students by Lecture</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={studentsData}>
                     <CartesianGrid
@@ -625,16 +616,12 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
                     />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            </DashboardCard>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">
+            <DashboardCard padding="sm" spotlight={false}>
+              <h4 className="mb-3 text-base font-semibold">
                   Estimated Income by Lecture
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={studentsData}>
                     <CartesianGrid
@@ -683,14 +670,10 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
                     />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            </DashboardCard>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Homework Scores</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <DashboardCard padding="sm" spotlight={false}>
+              <h4 className="mb-3 text-base font-semibold">Homework Scores</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={homeworkScoresData}>
                     <CartesianGrid
@@ -726,14 +709,10 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
                     />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            </DashboardCard>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Quiz Scores</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <DashboardCard padding="sm" spotlight={false}>
+              <h4 className="mb-3 text-base font-semibold">Quiz Scores</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={quizScoresData}>
                     <CartesianGrid
@@ -769,12 +748,11 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
                     />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            </DashboardCard>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </DashboardCard>
   );
 }
 

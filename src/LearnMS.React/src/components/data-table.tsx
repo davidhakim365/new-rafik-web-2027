@@ -83,19 +83,20 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full">
-      {/* View Options - Hidden on mobile for space */}
-      <div className="flex items-center py-4 text-foreground">
+      <div className="mb-3 flex items-center justify-end">
         <DataTableViewOptions table={table} />
       </div>
-      
-      {/* Table Container */}
-      <div className="border rounded-md overflow-hidden">
+
+      <div className="overflow-hidden rounded-xl border border-color2/10 bg-card/50 shadow-sm backdrop-blur-sm">
         <div className="max-h-[calc(100vh-12rem)] overflow-auto">
           <div className="min-w-full">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="bg-muted/50">
+                  <TableRow
+                    key={headerGroup.id}
+                    className="border-color2/10 bg-color2/5 hover:bg-color2/5"
+                  >
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
@@ -123,7 +124,7 @@ export function DataTable<TData, TValue>({
                     <TableRow
                       key={row.id}
                       data-state={row.getIsSelected() && "selected"}
-                      className="hover:bg-muted/50 transition-colors"
+                      className="border-color2/5 transition-colors hover:bg-color2/5"
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell

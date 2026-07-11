@@ -301,7 +301,7 @@ export const studentLecturesColumns: ColumnDef<SingleStudentLecture>[] = [
       return (
         <div>
           <Link
-            className="underline hover:cursor-pointer hover:text-blue-500"
+            className="underline hover:cursor-pointer hover:text-color2"
             to={`/dashboard/courses/${lecture.courseId}/lectures/${lecture.id}`}
           >
             {lecture.title}
@@ -395,7 +395,7 @@ export const studentExamsColumns: ColumnDef<SingleStudentExam>[] = [
       return (
         <div>
           <Link
-            className="underline hover:cursor-pointer hover:text-blue-500"
+            className="underline hover:cursor-pointer hover:text-color2"
             to={`/dashboard/courses/${exam.courseId}/exams/${exam.id}`}
           >
             {exam.title}

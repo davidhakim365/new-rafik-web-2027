@@ -488,7 +488,7 @@ function LectureDetailsForm({
           <fieldset
             className='flex items-center gap-2 p-2 text-xl'
             disabled={isPending}>
-            <Settings2 className='text-blue-400 bg-blue-200 rounded-[50%] w-10 h-10 p-1' />
+            <Settings2 className='text-color2 bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
             Session Details
             {form.formState.isDirty && (
               <div className='space-x-1 ms-auto'>
@@ -496,7 +496,7 @@ function LectureDetailsForm({
                 <Button
                   variant='outline'
                   type='button'
-                  className='border-blue-200'
+                  className='border-color2/20'
                   onClick={() => form.reset()}>
                   Reset
                 </Button>
@@ -507,7 +507,7 @@ function LectureDetailsForm({
             control={form.control}
             name='title'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>Title</FormLabel>
                 <FormControl>
                   <Input className='text-primary' {...field} />
@@ -520,12 +520,12 @@ function LectureDetailsForm({
             control={form.control}
             name='description'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded '>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded '>
                 <FormLabel className='text-primary'>Description</FormLabel>
                 <FormControl>
                   <div style={{ height: "200px", width: "100%" }}>
                     <textarea
-                      className='text-blue-500'
+                      className='text-color2'
                       style={{
                         height: "100%",
                         width: "100%",
@@ -544,7 +544,7 @@ function LectureDetailsForm({
             control={form.control}
             name='price'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>Price</FormLabel>
                 <FormControl>
                   <Input type='number' className='text-primary' {...field} />
@@ -557,7 +557,7 @@ function LectureDetailsForm({
             control={form.control}
             name='renewalPrice'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>RenewalPrice</FormLabel>
                 <FormControl>
                   <Input type='number' className='text-primary' {...field} />
@@ -570,7 +570,7 @@ function LectureDetailsForm({
             control={form.control}
             name='expirationDays'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>Expiration Days</FormLabel>
                 <FormControl>
                   <Input type='number' className='text-primary' {...field} />
@@ -583,7 +583,7 @@ function LectureDetailsForm({
             control={form.control}
             name='imageUrl'
             render={({ field }) => (
-              <FormItem className='p-3 bg-blue-200 border-2 border-blue-400 rounded'>
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>Image</FormLabel>
                 <FormControl>
                   <Input className='text-primary' {...field} />
@@ -608,7 +608,7 @@ function LectureContentForm({
     <div className='flex flex-col gap-4 p-4'>
       <div className='flex items-center justify-between text-xl'>
         <div className='flex items-center gap-2'>
-          <ListCollapse className='text-blue-400 bg-blue-200 rounded-[50%] w-10 h-10 p-1' />
+          <ListCollapse className='text-color2 bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
           Session Content
         </div>
         <div className='flex items-center justify-center gap-2'>
@@ -620,7 +620,7 @@ function LectureContentForm({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem
-                    className='hover:bg-blue-400 hover:text-white hover:cursor-pointer'
+                    className='hover:bg-color2 hover:text-white hover:cursor-pointer'
                     onClick={() => setIsAddingLecture(true)}>
                     Add Lesson
                   </DropdownMenuItem>
@@ -699,7 +699,7 @@ function LectureItem({
   };
 
   return (
-    <div className='flex items-center justify-between w-full gap-2 bg-blue-100 border border-blue-300 rounded text-primary'>
+    <div className='flex items-center justify-between w-full gap-2 bg-color2/10 border border-color2/25 rounded text-primary'>
       <div className='flex gap-2'>
         <div className='p-2'>{item.title}</div>
       </div>
@@ -786,7 +786,7 @@ function AddLessonForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <fieldset
-          className='p-2 space-y-2 border-2 border-blue-400 rounded'
+          className='p-2 space-y-2 border-2 border-color2/30 rounded'
           disabled={createLessonMutation.isPending}>
           <FormField
             control={form.control}

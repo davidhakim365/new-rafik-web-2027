@@ -6,6 +6,7 @@ import DropTarget from "@uppy/drop-target";
 import { useEffect, useMemo, useState } from "react";
 import { useAssetsQuery, useDeleteAssetsMutation } from "@/api/assets-api";
 import { DataTable } from "@/components/data-table";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import Loading from "@/components/loading/loading";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/utils";
@@ -13,6 +14,7 @@ import { assetsColumns } from "@/pages/dashboard/files/columns";
 import { useAssetsStore } from "@/store/use-assets-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { PaginationState, RowSelectionState } from "@tanstack/react-table";
+import { Trash2, Upload } from "lucide-react";
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
 import "@uppy/drop-target/dist/style.css";
@@ -115,26 +117,33 @@ const AssetsList = () => {
     }
   };
   return (
-    <div className="w-full h-full text-foreground" id="files-drop-zone">
-      <h1 className="mb-4">Assets</h1>
+    <div className="w-full text-foreground" id="files-drop-zone">
       {isLoading ? (
         <Loading />
       ) : (
-        <div className="relative">
-          <Button onClick={openUppyDashboard} className="mb-4">
-            Upload Files
-          </Button>
-          <Button
-            onClick={onDelete}
-            variant="destructive"
-            disabled={
-              deleteAssetsMutation.isPending ||
-              Object.keys(rowSelection).length === 0
-            }
-          >
-            Delete
-          </Button>
-          <DataTable
+        <DashboardCard>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Button
+              onClick={openUppyDashboard}
+              className="bg-gradient-to-r from-color1 to-color2 hover:opacity-90"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Files
+            </Button>
+            <Button
+              onClick={onDelete}
+              variant="destructive"
+              disabled={
+                deleteAssetsMutation.isPending ||
+                Object.keys(rowSelection).length === 0
+              }
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected
+            </Button>
+          </div>
+          <div className="relative">
+            <DataTable
             columns={assetsColumns}
             data={data?.data.items ?? []}
             pagination={{
@@ -160,7 +169,8 @@ const AssetsList = () => {
               </Button>
             </div>
           )}
-        </div>
+          </div>
+        </DashboardCard>
       )}
     </div>
   );

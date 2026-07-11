@@ -1,8 +1,10 @@
 import { useCoursesQuery } from "@/api/courses-api";
 import { DataTable } from "@/components/data-table";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { BookOpen, PlusCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { coursesColumns } from "./columns";
 
@@ -10,28 +12,28 @@ const CoursesPage = () => {
   const { data: courses, isLoading } = useCoursesQuery();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center w-full h-full">
-        <Loading />;
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full ">
-      <Link
-        className="pt-[3vh] items-center justify-center"
-        to={"/dashboard/courses/add"}
-      >
-        <Button>
-          <PlusCircle className="w-4 h-4 mr-2 align-center" />
-          Add Course
-        </Button>
-      </Link>
-      <div className="m-4 max-w-[120vh] align-left w-full overflow-y-auto">
+    <DashboardPageShell
+      title="Courses"
+      description="Manage your courses, lectures, and exams from one place."
+      icon={BookOpen}
+      actions={
+        <Link to="/dashboard/courses/add">
+          <Button className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Course
+          </Button>
+        </Link>
+      }
+      fullWidth
+    >
+      <DashboardCard padding="sm">
         <DataTable columns={coursesColumns} data={courses?.data!.items!} />
-      </div>
-    </div>
+      </DashboardCard>
+    </DashboardPageShell>
   );
 };
 
