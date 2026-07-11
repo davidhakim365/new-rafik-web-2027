@@ -30,7 +30,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useCoursesQuery } from "@/api/courses-api";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { BlurryBackground } from "@/components/ui/blurry-background";
+import { PhysicsGrid, GlowOrb } from "@/components/ui/physics-graphics";
 import { Heading } from "../ui/heading";
 import { SubHeading } from "../ui/sub-heading";
 import { Link } from "react-router-dom";
@@ -39,30 +39,22 @@ import { FlowButton } from "../ui/flow-button";
 const ITEMS_PER_PAGE = 6;
 
 const leftToRightVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", x: -300 },
+  hidden: { opacity: 0, filter: "blur(20px)", y: 40 },
   visible: {
     opacity: 1,
     filter: "blur(0px)",
-    x: 0,
-    transition: {
-      duration: 1.0,
-      ease: "easeInOut",
-    },
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut" },
   },
 };
 
 const cardItemVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", scale: 0, y: 300 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
-    filter: "blur(0px)",
-    scale: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      bounce: 0.4,
-      duration: 0.9,
-    },
+    scale: 1,
+    transition: { type: "spring", bounce: 0.3, duration: 0.7 },
   },
 };
 
@@ -103,8 +95,8 @@ const ImportantLecturesSection = () => {
             }}
             className={
               i === currentPage
-                ? "bg-emerald-500 text-white dark:bg-emerald-600 dark:text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
-                : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                ? "bg-color2 text-white hover:bg-color2/90"
+                : "text-paragraph hover:bg-color2/10"
             }
           >
             {i}
@@ -116,7 +108,7 @@ const ImportantLecturesSection = () => {
     if (startPage > 1) {
       items.unshift(
         <PaginationItem key="start-ellipsis">
-          <PaginationEllipsis className="text-zinc-700 dark:text-zinc-300" />
+          <PaginationEllipsis className="text-paragraph" />
         </PaginationItem>
       );
     }
@@ -124,7 +116,7 @@ const ImportantLecturesSection = () => {
     if (endPage < totalPages) {
       items.push(
         <PaginationItem key="end-ellipsis">
-          <PaginationEllipsis className="text-zinc-700 dark:text-zinc-300" />
+          <PaginationEllipsis className="text-paragraph" />
         </PaginationItem>
       );
     }
@@ -132,23 +124,16 @@ const ImportantLecturesSection = () => {
     return items;
   };
 
-  const importantLecturesGradientColors = {
-    from: "oklch(0.75 0.1 270)",
-    to: "oklch(0.55 0.15 290)",
-  };
-
   if (shouldReduceMotion) {
     return (
-      <section className="relative py-24 bg-zinc-100 dark:bg-zinc-950">
-        <BlurryBackground
-          gradientColors={importantLecturesGradientColors}
-          className="absolute inset-0 z-0"
-        />
+      <section className="relative py-24 bg-lecturesSection overflow-hidden">
+        <PhysicsGrid className="opacity-40" />
+        <GlowOrb className="top-0 -left-32 size-96 from-color2/15 to-color1/10" />
         <div className="container relative z-10 px-4 mx-auto max-w-7xl">
           <div className="relative max-w-2xl mx-auto mb-16 text-center">
-            <Badge className="px-4 py-1 mb-10 text-sm font-medium text-zinc-700 bg-zinc-100 border-zinc-200 hover:bg-zinc-200 dark:text-zinc-200 dark:bg-zinc-700 dark:border-zinc-600 dark:hover:bg-zinc-600">
+            <span className="inline-block px-4 py-1.5 mb-4 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
               {t("importantLectures.badge")}
-            </Badge>
+            </span>
             <Heading className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl">
               {t("importantLectures.title")}
             </Heading>
@@ -163,7 +148,7 @@ const ImportantLecturesSection = () => {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-8">
-              <p className="hidden text-sm font-medium text-zinc-700 md:block dark:text-zinc-300">
+              <p className="hidden text-sm font-medium text-paragraph md:block">
                 {t("latestLectures.pagination.showing")} {currentPage}{" "}
                 {t("latestLectures.pagination.of")} {totalPages} /{" "}
                 {t("latestLectures.pagination.totalResults")}: {totalItems}
@@ -205,12 +190,10 @@ const ImportantLecturesSection = () => {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
-      className="relative py-24 bg-zinc-100 dark:bg-zinc-950"
+      className="relative py-24 bg-lecturesSection overflow-hidden"
     >
-      <BlurryBackground
-        gradientColors={importantLecturesGradientColors}
-        className="absolute inset-0 z-0"
-      />
+      <PhysicsGrid className="opacity-40" />
+      <GlowOrb className="top-0 -left-32 size-96 from-color2/15 to-color1/10" />
       <div className="container relative z-10 px-4 mx-auto max-w-7xl">
         <motion.div
           variants={{
@@ -223,12 +206,10 @@ const ImportantLecturesSection = () => {
           }}
           className="relative max-w-2xl mx-auto mb-16 text-center"
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[100%] bg-emerald-300 rounded-full blur-[80px] opacity-20 pointer-events-none" />
-
-          <motion.div variants={leftToRightVariants} className="mb-10">
-            <Badge className="px-4 py-1 text-sm font-medium text-zinc-700 bg-zinc-100 border-zinc-200 hover:bg-zinc-200 dark:text-zinc-200 dark:bg-zinc-700 dark:border-zinc-600 dark:hover:bg-zinc-600">
+          <motion.div variants={leftToRightVariants} className="mb-4">
+            <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
               {t("importantLectures.badge")}
-            </Badge>
+            </span>
           </motion.div>
 
           <motion.div variants={leftToRightVariants}>
@@ -273,7 +254,7 @@ const ImportantLecturesSection = () => {
             variants={cardItemVariants}
           >
             <Pagination className="container flex items-center justify-between mt-8">
-              <p className="hidden text-sm font-medium text-zinc-700 md:block dark:text-zinc-300">
+              <p className="hidden text-sm font-medium text-paragraph md:block">
                 {t("latestLectures.pagination.showing")} {currentPage}{" "}
                 {t("latestLectures.pagination.of")} {totalPages} /{" "}
                 {t("latestLectures.pagination.totalResults")}: {totalItems}
@@ -367,8 +348,8 @@ const LatestLecturesSection = () => {
             }}
             className={
               i === currentPage
-                ? "bg-emerald-500 text-white dark:bg-emerald-600 dark:text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
-                : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                ? "bg-color2 text-white hover:bg-color2/90"
+                : "text-paragraph hover:bg-color2/10"
             }
           >
             {i}
@@ -380,7 +361,7 @@ const LatestLecturesSection = () => {
     if (startPage > 1) {
       items.unshift(
         <PaginationItem key="start-ellipsis">
-          <PaginationEllipsis className="text-zinc-700 dark:text-zinc-300" />
+          <PaginationEllipsis className="text-paragraph" />
         </PaginationItem>
       );
     }
@@ -388,7 +369,7 @@ const LatestLecturesSection = () => {
     if (endPage < totalPages) {
       items.push(
         <PaginationItem key="end-ellipsis">
-          <PaginationEllipsis className="text-zinc-700 dark:text-zinc-300" />
+          <PaginationEllipsis className="text-paragraph" />
         </PaginationItem>
       );
     }
@@ -396,29 +377,22 @@ const LatestLecturesSection = () => {
     return items;
   };
 
-  const latestLecturesGradientColors = {
-    from: "oklch(0.75 0.1 120)",
-    to: "oklch(0.55 0.15 90)",
-  };
-
   if (shouldReduceMotion) {
     return (
-      <section className="relative py-24 bg-zinc-100 dark:bg-zinc-950">
-        <BlurryBackground
-          gradientColors={latestLecturesGradientColors}
-          className="absolute inset-0 z-0"
-        />
+      <section className="relative py-24 bg-lecturesSection overflow-hidden">
+        <PhysicsGrid className="opacity-40" />
+        <GlowOrb className="bottom-0 -right-32 size-80 from-color1/15 to-color2/10" />
         <div className="container relative z-10 px-4 mx-auto max-w-7xl">
           <div className="relative max-w-2xl mx-auto mb-16 text-center">
-            <Badge className="px-4 py-1 mb-10 text-sm font-medium text-zinc-700 bg-emerald-100 border-emerald-200 hover:bg-emerald-200 dark:text-zinc-200 dark:bg-emerald-700 dark:border-emerald-600 dark:hover:bg-emerald-600">
+            <span className="inline-block px-4 py-1.5 mb-4 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
               {t("latestLectures.badge")}
-            </Badge>
-            <h2 className="mb-6 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
+            </span>
+            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
               {t("latestLectures.title")}
-            </h2>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400">
+            </Heading>
+            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
               {t("latestLectures.description")}
-            </p>
+            </SubHeading>
           </div>
           <div className="flex flex-col items-center justify-center gap-4 mb-16 md:flex-row">
             <Select
@@ -428,10 +402,10 @@ const LatestLecturesSection = () => {
                 setCourseId(undefined);
               }}
             >
-              <SelectTrigger className="w-[180px] bg-zinc-200 dark:bg-zinc-800 dark:border-zinc-900">
+              <SelectTrigger className="w-[180px] bg-background/80 border border-color2/10">
                 <SelectValue placeholder={t("latestLectures.selectLevel")} />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-200 dark:bg-zinc-700 dark:border-zinc-800">
+              <SelectContent className="bg-background border border-color2/10">
                 <SelectGroup>
                   <SelectLabel>Levels</SelectLabel>
                   <SelectItem value="ALL">
@@ -460,10 +434,10 @@ const LatestLecturesSection = () => {
                   setCourseId(value);
                 }}
               >
-                <SelectTrigger className="w-[300px] bg-zinc-100 dark:bg-zinc-700 dark:border-zinc-600">
+                <SelectTrigger className="w-[300px] bg-background/80 border border-color2/10">
                   <SelectValue placeholder={t("latestLectures.selectCourse")} />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-100 dark:bg-zinc-700 dark:border-zinc-600">
+                <SelectContent className="bg-background border border-color2/10">
                   <SelectGroup>
                     <SelectLabel>Courses</SelectLabel>
                     {courses.map((course) => (
@@ -483,7 +457,7 @@ const LatestLecturesSection = () => {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-8">
-              <p className="hidden text-sm font-medium text-zinc-700 md:block dark:text-zinc-300">
+              <p className="hidden text-sm font-medium text-paragraph md:block">
                 {t("latestLectures.pagination.showing")} {currentPage}{" "}
                 {t("latestLectures.pagination.of")} {totalPages} /{" "}
                 {t("latestLectures.pagination.totalResults")}: {totalItems}
@@ -525,12 +499,10 @@ const LatestLecturesSection = () => {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
-      className="relative py-24 bg-zinc-100 dark:bg-zinc-950"
+      className="relative py-24 bg-lecturesSection overflow-hidden"
     >
-      <BlurryBackground
-        gradientColors={latestLecturesGradientColors}
-        className="absolute inset-0 z-0"
-      />
+      <PhysicsGrid className="opacity-40" />
+      <GlowOrb className="bottom-0 -right-32 size-80 from-color1/15 to-color2/10" />
       <div className="container relative z-10 px-4 mx-auto max-w-7xl">
         <motion.div
           variants={{
@@ -543,21 +515,20 @@ const LatestLecturesSection = () => {
           }}
           className="relative max-w-2xl mx-auto mb-16 text-center"
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[100%] bg-emerald-300 rounded-full blur-[80px] opacity-20 pointer-events-none" />
-          <motion.div variants={leftToRightVariants} className="mb-10">
-            <Badge className="px-4 py-1 text-sm font-medium text-zinc-700 bg-emerald-100 border-emerald-200 hover:bg-emerald-200 dark:text-zinc-200 dark:bg-emerald-700 dark:border-emerald-600 dark:hover:bg-emerald-600">
+          <motion.div variants={leftToRightVariants} className="mb-4">
+            <span className="inline-block px-4 py-1.5 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
               {t("latestLectures.badge")}
-            </Badge>
+            </span>
           </motion.div>
 
           <motion.div variants={leftToRightVariants}>
-            <Heading className="mb-6 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
+            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
               {t("latestLectures.title")}
             </Heading>
           </motion.div>
 
           <motion.div variants={leftToRightVariants}>
-            <SubHeading className="text-lg text-zinc-600 dark:text-zinc-400">
+            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
               {t("latestLectures.description")}
             </SubHeading>
           </motion.div>
@@ -577,10 +548,10 @@ const LatestLecturesSection = () => {
               setCourseId(undefined);
             }}
           >
-            <SelectTrigger className="w-[180px] bg-zinc-200 dark:bg-zinc-800 dark:border-zinc-900">
+            <SelectTrigger className="w-[180px] bg-background/80 border border-color2/10">
               <SelectValue placeholder={t("latestLectures.selectLevel")} />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-200 dark:bg-zinc-700 dark:border-zinc-800">
+            <SelectContent className="bg-background border border-color2/10">
               <SelectGroup>
                 <SelectLabel>Levels</SelectLabel>
                 <SelectItem value="ALL">
@@ -609,10 +580,10 @@ const LatestLecturesSection = () => {
                 setCourseId(value);
               }}
             >
-              <SelectTrigger className="w-[300px] bg-zinc-100 dark:bg-zinc-700 dark:border-zinc-600">
+              <SelectTrigger className="w-[300px] bg-background/80 border border-color2/10">
                 <SelectValue placeholder={t("latestLectures.selectCourse")} />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-100 dark:bg-zinc-700 dark:border-zinc-600">
+              <SelectContent className="bg-background border border-color2/10">
                 <SelectGroup>
                   <SelectLabel>Courses</SelectLabel>
                   {courses.map((course) => (
@@ -655,7 +626,7 @@ const LatestLecturesSection = () => {
             variants={cardItemVariants}
           >
             <Pagination className="container flex items-center justify-between mt-8">
-              <p className="hidden text-sm font-medium text-zinc-700 md:block dark:text-zinc-300">
+              <p className="hidden text-sm font-medium text-paragraph md:block">
                 {t("latestLectures.pagination.showing")} {currentPage}{" "}
                 {t("latestLectures.pagination.of")} {totalPages} /{" "}
                 {t("latestLectures.pagination.totalResults")}: {totalItems}
@@ -698,7 +669,7 @@ function FeaturedLecture(props: { lecture: LectureItem }) {
 
   return (
     <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
-      <Card className="relative overflow-hidden transition-all duration-300 bg-white border-none shadow-lg dark:bg-zinc-900 rounded-2xl hover:shadow-2xl hover:-translate-y-2 group">
+      <Card className="relative overflow-hidden transition-all duration-300 bg-background/80 backdrop-blur-sm border border-color2/10 rounded-2xl hover:border-color2/30 hover:shadow-xl hover:shadow-color2/5 hover:-translate-y-2 group">
         <div className="relative overflow-hidden h-52">
           <img
             src={
@@ -714,52 +685,52 @@ function FeaturedLecture(props: { lecture: LectureItem }) {
           />
           <div className="absolute inset-0 transition-opacity duration-300 bg-gradient-to-t from-black/50 to-transparent opacity-20 group-hover:opacity-40" />
           <div className="absolute transition-opacity duration-300 opacity-0 top-3 right-3 group-hover:opacity-100">
-            <Badge className="px-2 py-1 text-xs font-medium text-white bg-emerald-600">
+            <Badge className="px-2 py-1 text-xs font-medium text-white bg-color2">
               {t("importantLectures.featured")}
             </Badge>
           </div>
         </div>
 
         <CardHeader className="px-6 pt-5 pb-3">
-          <h3 className="text-xl font-semibold transition-colors duration-300 text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 line-clamp-2">
+          <h3 className="text-xl font-semibold transition-colors duration-300 text-heading group-hover:text-color2 line-clamp-2">
             {props.lecture.title}
           </h3>
-          <span className="inline-block px-3 py-1 mt-2 text-sm font-medium rounded-full text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300">
+          <span className="inline-block px-3 py-1 mt-2 text-sm font-medium rounded-full text-paragraph bg-color2/10">
             {props.lecture.courseTitle}
           </span>
         </CardHeader>
 
         <CardContent className="px-6 py-4">
           <div className="grid grid-cols-3 gap-3">
-            <div className="flex items-center gap-2 p-3 transition-colors duration-300 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700/50">
-              <Users className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+            <div className="flex items-center gap-2 p-3 transition-colors duration-300 rounded-lg bg-color2/5 group-hover:bg-color2/10">
+              <Users className="w-5 h-5 text-color1" />
               <div>
-                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs font-medium text-paragraph">
                   Students
                 </p>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <p className="text-sm font-semibold text-heading">
                   {props.lecture.enrollmentsCount}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 transition-colors duration-300 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700/50">
-              <BookOpen className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+            <div className="flex items-center gap-2 p-3 transition-colors duration-300 rounded-lg bg-color2/5 group-hover:bg-color2/10">
+              <BookOpen className="w-5 h-5 text-color2" />
               <div>
-                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs font-medium text-paragraph">
                   Lessons
                 </p>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <p className="text-sm font-semibold text-heading">
                   {props.lecture.lessonsCount}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 transition-colors duration-300 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700/50">
-              <Brain className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+            <div className="flex items-center gap-2 p-3 transition-colors duration-300 rounded-lg bg-color2/5 group-hover:bg-color2/10">
+              <Brain className="w-5 h-5 text-color1" />
               <div>
-                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs font-medium text-paragraph">
                   Quizzes
                 </p>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <p className="text-sm font-semibold text-heading">
                   {props.lecture.quizzesCount}
                 </p>
               </div>
