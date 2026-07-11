@@ -1,9 +1,11 @@
 import { useCoursesQuery } from "@/api/courses-api";
 import Loading from "@/components/loading/loading";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -25,8 +27,16 @@ import {
 } from "@/generated/api";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import React, { useState } from "react";
+import {
+  Building2,
+  CalendarIcon,
+  Globe,
+  GraduationCap,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
 import {
   Bar,
@@ -38,6 +48,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  calculateOfflineIncome,
+  calculateOnlineIncome,
+  calculateTotalIncome,
+  formatCurrency,
+  OFFLINE_CENTER_FEE_RATE,
+  toApiDateString,
+} from "./income-utils";
 
 const StatisticsPage = () => {
   const { data: profile, isLoading } = useGetProfile();
@@ -57,84 +75,351 @@ const StatisticsPage = () => {
   return null;
 };
 
+function DateRangePicker({
+  date,
+  onSelect,
+  className,
+}: {
+  date: DateRange | undefined;
+  onSelect: (range: DateRange | undefined) => void;
+  className?: string;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          id="date"
+          variant="outline"
+          className={cn(
+            "justify-start text-left font-normal",
+            !date && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date?.from ? (
+            date.to ? (
+              <>
+                {format(date.from, "LLL dd, y")} – {format(date.to, "LLL dd, y")}
+              </>
+            ) : (
+              format(date.from, "LLL dd, y")
+            )
+          ) : (
+            <span>Pick a date range</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          initialFocus
+          mode="range"
+          defaultMonth={date?.from}
+          selected={date}
+          onSelect={onSelect}
+          numberOfMonths={2}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  accentClass,
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  accentClass: string;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold tracking-tight">{value}</p>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+              accentClass
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PriceInput({
+  price,
+  onChange,
+  label = "Lecture Price (LE)",
+}: {
+  price: number;
+  onChange: (price: number) => void;
+  label?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="lecture-price">{label}</Label>
+      <Input
+        id="lecture-price"
+        type="number"
+        min={0}
+        step={1}
+        value={price || ""}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        className="w-[180px]"
+        placeholder="Enter price"
+      />
+    </div>
+  );
+}
+
 const StatisticsPageInner = () => {
-  const [scale, setScale] = useState(1);
+  const [lecturePrice, setLecturePrice] = useState(0);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center self-end gap-2 text-foreground">
-        Scale
-        <Input
-          type="number"
-          max={100}
-          min={1}
-          value={scale}
-          onChange={(e) => setScale(parseInt(e.target.value))}
-        />
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
+        <p className="text-sm text-muted-foreground">
+          Track student attendance and calculate income from your lecture price.
+          Offline center attendance deducts {OFFLINE_CENTER_FEE_RATE * 100}% from
+          the price.
+        </p>
       </div>
 
-      <IncomesStatistics scale={scale} />
-      <CoursesStatistics scale={scale} />
-      <LecturesStatistics scale={scale} />
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-end md:justify-between">
+          <PriceInput price={lecturePrice} onChange={setLecturePrice} />
+          <DateRangePicker
+            date={dateRange}
+            onSelect={setDateRange}
+            className="w-full md:w-[320px]"
+          />
+        </CardContent>
+      </Card>
+
+      <IncomesStatistics lecturePrice={lecturePrice} dateRange={dateRange} />
+      <LecturesStatistics lecturePrice={lecturePrice} dateRange={dateRange} />
+      <CoursesStatistics lecturePrice={lecturePrice} />
     </div>
   );
 };
 
-function LecturesStatistics({ scale }: { scale: number }) {
-  const [level, setLevel] = React.useState<string | undefined>();
-  const [courseId, setCourseId] = React.useState<string | undefined>(undefined);
-  const [lectureId, setLectureId] = React.useState<string | undefined>(
-    undefined
+function IncomesStatistics({
+  lecturePrice,
+  dateRange,
+}: {
+  lecturePrice: number;
+  dateRange: DateRange | undefined;
+}) {
+  const { data, isLoading } = useGetIncomesStatistics({
+    startDate: toApiDateString(dateRange?.from),
+    endDate: toApiDateString(dateRange?.to),
+  });
+
+  const offlineStudents = data?.data?.offlineIncomes ?? 0;
+  const onlineStudents = data?.data?.onlineIncomes ?? 0;
+  const offlineIncome = calculateOfflineIncome(offlineStudents, lecturePrice);
+  const onlineIncome = calculateOnlineIncome(onlineStudents, lecturePrice);
+  const totalIncome = calculateTotalIncome(
+    offlineStudents,
+    onlineStudents,
+    lecturePrice
   );
+
+  const items = [
+    {
+      title: "Total Students",
+      value: data?.data?.totalStudents ?? 0,
+      subtitle: "All registered students",
+      icon: Users,
+      accentClass: "bg-blue-500/10 text-blue-600",
+    },
+    {
+      title: "Offline Students",
+      value: offlineStudents,
+      subtitle: `Attended at center · ${formatCurrency(lecturePrice * (1 - OFFLINE_CENTER_FEE_RATE))} each`,
+      icon: Building2,
+      accentClass: "bg-amber-500/10 text-amber-600",
+    },
+    {
+      title: "Online Students",
+      value: onlineStudents,
+      subtitle: `Enrolled online · ${formatCurrency(lecturePrice)} each`,
+      icon: Globe,
+      accentClass: "bg-emerald-500/10 text-emerald-600",
+    },
+    {
+      title: "Offline Income",
+      value: formatCurrency(offlineIncome),
+      subtitle: `After ${OFFLINE_CENTER_FEE_RATE * 100}% center fee`,
+      icon: Wallet,
+      accentClass: "bg-amber-500/10 text-amber-600",
+    },
+    {
+      title: "Online Income",
+      value: formatCurrency(onlineIncome),
+      subtitle: "Full lecture price",
+      icon: TrendingUp,
+      accentClass: "bg-emerald-500/10 text-emerald-600",
+    },
+    {
+      title: "Total Income",
+      value: formatCurrency(totalIncome),
+      subtitle: "Offline + online combined",
+      icon: Wallet,
+      accentClass: "bg-primary/10 text-primary",
+    },
+  ];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div className="space-y-1">
+          <CardTitle>Income Overview</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Based on your lecture price and student counts in the selected date
+            range
+          </p>
+        </div>
+        <Badge variant="secondary">
+          {OFFLINE_CENTER_FEE_RATE * 100}% center fee on offline
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => (
+              <StatCard key={item.title} {...item} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LecturesStatistics({
+  lecturePrice,
+  dateRange,
+}: {
+  lecturePrice: number;
+  dateRange: DateRange | undefined;
+}) {
+  const [level, setLevel] = useState<string | undefined>();
+  const [courseId, setCourseId] = useState<string | undefined>();
+  const [lectureId, setLectureId] = useState<string | undefined>();
 
   const { data: courses, isLoading: coursesLoading } = useCoursesQuery();
   const { data: course, isLoading: lecturesLoading } = useGetCourse(
     courseId as string
   );
   const { data: lectureStatistics, isLoading } = useGetLectureStatistics(
-    { lectureId },
+    {
+      lectureId,
+      startDate: toApiDateString(dateRange?.from),
+      endDate: toApiDateString(dateRange?.to),
+    },
     { query: { enabled: !!lectureId } }
   );
 
-  const lectures = course?.data?.items.filter(
-    (item) => item.type === "Lecture"
-  );
+  const lectures = course?.data?.items.filter((item) => item.type === "Lecture");
+  const selectedLecture = lectures?.find((lecture) => lecture.id === lectureId);
 
-  const offlineIncome =
-    (lectureStatistics?.data?.offlineIncome ?? 0) * (scale / 100);
+  const offlineStudents = lectureStatistics?.data?.offlineIncome ?? 0;
+  const onlineStudents = lectureStatistics?.data?.onlineIncome ?? 0;
+  const effectivePrice = selectedLecture?.price || lecturePrice;
+  const offlineIncome = calculateOfflineIncome(offlineStudents, effectivePrice);
+  const onlineIncome = calculateOnlineIncome(onlineStudents, effectivePrice);
+  const totalIncome = calculateTotalIncome(
+    offlineStudents,
+    onlineStudents,
+    effectivePrice
+  );
 
   const items = [
     {
       title: "Enrolled Students",
-      value: lectureStatistics?.data?.enrolledStudents,
+      value: lectureStatistics?.data?.enrolledStudents ?? 0,
+      subtitle: "Total with course access",
+      icon: Users,
+      accentClass: "bg-blue-500/10 text-blue-600",
     },
     {
-      title: "Attended Students",
-      value: lectureStatistics?.data?.attendedStudents,
+      title: "Offline Students",
+      value: offlineStudents,
+      subtitle: "Attended at center",
+      icon: Building2,
+      accentClass: "bg-amber-500/10 text-amber-600",
     },
     {
-      title: "Average Homeworks Score",
-      value: lectureStatistics?.data?.averageHomeworksScore?.toFixed(2),
+      title: "Online Students",
+      value: onlineStudents,
+      subtitle: "Enrolled online",
+      icon: Globe,
+      accentClass: "bg-emerald-500/10 text-emerald-600",
     },
     {
-      title: "Average Quizzes Score",
-      value: lectureStatistics?.data?.averageQuizzesScore?.toFixed(2),
+      title: "Avg. Homework Score",
+      value: `${(lectureStatistics?.data?.averageHomeworksScore ?? 0).toFixed(1)}%`,
+      subtitle: "Class average",
+      icon: GraduationCap,
+      accentClass: "bg-violet-500/10 text-violet-600",
+    },
+    {
+      title: "Avg. Quiz Score",
+      value: `${(lectureStatistics?.data?.averageQuizzesScore ?? 0).toFixed(1)}%`,
+      subtitle: "Class average",
+      icon: GraduationCap,
+      accentClass: "bg-violet-500/10 text-violet-600",
     },
     {
       title: "Offline Income",
-      value: offlineIncome,
+      value: formatCurrency(offlineIncome),
+      subtitle: `After ${OFFLINE_CENTER_FEE_RATE * 100}% center fee`,
+      icon: Wallet,
+      accentClass: "bg-amber-500/10 text-amber-600",
     },
     {
       title: "Online Income",
-      value: lectureStatistics?.data?.onlineIncome,
+      value: formatCurrency(onlineIncome),
+      subtitle: "Full lecture price",
+      icon: TrendingUp,
+      accentClass: "bg-emerald-500/10 text-emerald-600",
     },
     {
       title: "Total Income",
-      value: offlineIncome + (lectureStatistics?.data?.onlineIncome ?? 0),
+      value: formatCurrency(totalIncome),
+      subtitle: selectedLecture
+        ? `Using ${formatCurrency(effectivePrice)} per student`
+        : "Set lecture price above",
+      icon: Wallet,
+      accentClass: "bg-primary/10 text-primary",
     },
   ];
 
-  if (coursesLoading || lecturesLoading || isLoading) {
+  if (coursesLoading || lecturesLoading) {
     return <Loading />;
   }
 
@@ -142,37 +427,39 @@ function LecturesStatistics({ scale }: { scale: number }) {
   const uniqueLevels = Array.from(new Set(levels));
 
   return (
-    <Card className="p-4">
-      <CardTitle className="mb-4">Lecture Statistics</CardTitle>
-      <div className="flex flex-col gap-4">
-        <div className="flex gap-2">
+    <Card>
+      <CardHeader>
+        <CardTitle>Lecture Statistics</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Select a lecture for detailed stats. Uses the lecture&apos;s saved
+          price when available, otherwise the global price above.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
           <Select value={level} onValueChange={setLevel}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select Level" />
             </SelectTrigger>
             <SelectContent>
-              {uniqueLevels.map((level) => (
-                <SelectItem key={level} value={level}>
-                  {level}
+              {uniqueLevels.map((lvl) => (
+                <SelectItem key={lvl} value={lvl}>
+                  {lvl}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Select
-            value={courseId}
-            onValueChange={setCourseId}
-            disabled={!level}
-          >
-            <SelectTrigger className="w-[200px]">
+          <Select value={courseId} onValueChange={setCourseId} disabled={!level}>
+            <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Select Course" />
             </SelectTrigger>
             <SelectContent>
               {courses?.data?.items
                 .filter((item) => !level || item.level === level)
-                .map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.title}
+                .map((courseItem) => (
+                  <SelectItem key={courseItem.id} value={courseItem.id}>
+                    {courseItem.title}
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -183,13 +470,14 @@ function LecturesStatistics({ scale }: { scale: number }) {
             onValueChange={setLectureId}
             disabled={!courseId}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Select Lecture" />
             </SelectTrigger>
             <SelectContent>
               {lectures?.map((lecture) => (
                 <SelectItem key={lecture.id} value={lecture.id}>
                   {lecture.title}
+                  {lecture.price ? ` (${lecture.price} LE)` : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -197,44 +485,49 @@ function LecturesStatistics({ scale }: { scale: number }) {
         </div>
 
         {lectureId && (
-          <div className="grid items-center justify-center grid-cols-4 gap-4">
-            {items.map((item) => (
-              <Card key={item.title} className="p-4">
-                <CardTitle className="text-sm">{item.title}</CardTitle>
-                <CardContent className="p-0 pt-2">
-                  <span className="text-2xl font-bold">{item.value}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          isLoading ? (
+            <Loading />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {items.map((item) => (
+                <StatCard key={item.title} {...item} />
+              ))}
+            </div>
+          )
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }
 
-function CoursesStatistics({ scale }: { scale: number }) {
+function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
   const { data: courses, isLoading: coursesLoading } = useCoursesQuery();
-  const [courseId, setCourseId] = React.useState<string | undefined>(undefined);
+  const [courseId, setCourseId] = useState<string | undefined>();
 
   const { data: coursesStatistics, isLoading } = useGetCourseStatistics(
     { courseId },
     { query: { enabled: !!courseId } }
   );
 
-  if (coursesLoading || isLoading) {
-    return <Loading />;
-  }
+  const studentsData = useMemo(
+    () =>
+      coursesStatistics?.data?.totalStudents?.map((item, index) => {
+        const online =
+          coursesStatistics?.data?.onlineStudents?.[index]?.studentCount || 0;
+        const attended =
+          coursesStatistics?.data?.attendedStudents?.[index]?.studentCount || 0;
 
-  const studentsData = coursesStatistics?.data?.totalStudents?.map(
-    (item, index) => ({
-      name: item.lectureName,
-      total: item.studentCount,
-      online:
-        coursesStatistics?.data?.onlineStudents?.[index]?.studentCount || 0,
-      attended:
-        coursesStatistics?.data?.attendedStudents?.[index]?.studentCount || 0,
-    })
+        return {
+          name: item.lectureName,
+          total: item.studentCount,
+          online,
+          attended,
+          offlineIncome: calculateOfflineIncome(attended, lecturePrice),
+          onlineIncome: calculateOnlineIncome(online, lecturePrice),
+          totalIncome: calculateTotalIncome(attended, online, lecturePrice),
+        };
+      }) ?? [],
+    [coursesStatistics, lecturePrice]
   );
 
   const homeworkScoresData =
@@ -250,12 +543,26 @@ function CoursesStatistics({ scale }: { scale: number }) {
     })
   );
 
+  if (coursesLoading) {
+    return <Loading />;
+  }
+
+  if (courseId && isLoading) {
+    return <Loading />;
+  }
+
   return (
-    <Card className="p-4">
-      <CardTitle className="mb-4">Course Statistics</CardTitle>
-      <div className="flex flex-col gap-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Course Statistics</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Compare student distribution and performance across lectures in a
+          course
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <Select value={courseId} onValueChange={setCourseId}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Select Course" />
           </SelectTrigger>
           <SelectContent>
@@ -268,10 +575,12 @@ function CoursesStatistics({ scale }: { scale: number }) {
         </Select>
 
         {courseId && (
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-4">
-              <CardTitle className="text-sm">Students Statistics</CardTitle>
-              <CardContent className="pt-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Students by Lecture</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={studentsData}>
                     <CartesianGrid
@@ -281,7 +590,7 @@ function CoursesStatistics({ scale }: { scale: number }) {
                     <XAxis
                       dataKey="name"
                       className="text-muted-foreground"
-                      tick={{ fill: "currentColor" }}
+                      tick={{ fill: "currentColor", fontSize: 11 }}
                     />
                     <YAxis
                       className="text-muted-foreground"
@@ -296,20 +605,92 @@ function CoursesStatistics({ scale }: { scale: number }) {
                       labelStyle={{ color: "hsl(var(--foreground))" }}
                     />
                     <Legend />
-                    <Bar dataKey="total" fill="hsl(221, 83%, 53%)" />{" "}
-                    {/* blue-600 */}
-                    <Bar dataKey="online" fill="hsl(142, 71%, 45%)" />{" "}
-                    {/* green-500 */}
-                    <Bar dataKey="attended" fill="hsl(48, 96%, 53%)" />{" "}
-                    {/* yellow-400 */}
+                    <Bar
+                      dataKey="total"
+                      name="Total"
+                      fill="hsl(221, 83%, 53%)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="online"
+                      name="Online"
+                      fill="hsl(142, 71%, 45%)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="attended"
+                      name="Offline"
+                      fill="hsl(48, 96%, 53%)"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card className="p-4">
-              <CardTitle className="text-sm">Homework Scores</CardTitle>
-              <CardContent className="pt-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">
+                  Estimated Income by Lecture
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={studentsData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-border"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      className="text-muted-foreground"
+                      tick={{ fill: "currentColor", fontSize: 11 }}
+                    />
+                    <YAxis
+                      className="text-muted-foreground"
+                      tick={{ fill: "currentColor" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--background))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "0.5rem",
+                      }}
+                      labelStyle={{ color: "hsl(var(--foreground))" }}
+                      formatter={(value) => [
+                        formatCurrency(Number(value)),
+                        "",
+                      ]}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="offlineIncome"
+                      name="Offline Income"
+                      fill="hsl(48, 96%, 53%)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="onlineIncome"
+                      name="Online Income"
+                      fill="hsl(142, 71%, 45%)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="totalIncome"
+                      name="Total"
+                      fill="hsl(221, 83%, 53%)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Homework Scores</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={homeworkScoresData}>
                     <CartesianGrid
@@ -319,7 +700,7 @@ function CoursesStatistics({ scale }: { scale: number }) {
                     <XAxis
                       dataKey="name"
                       className="text-muted-foreground"
-                      tick={{ fill: "currentColor" }}
+                      tick={{ fill: "currentColor", fontSize: 11 }}
                     />
                     <YAxis
                       className="text-muted-foreground"
@@ -334,13 +715,13 @@ function CoursesStatistics({ scale }: { scale: number }) {
                       }}
                       labelStyle={{ color: "hsl(var(--foreground))" }}
                       formatter={(value) => [
-                        `${Number(value).toFixed(2)}%`,
+                        `${Number(value).toFixed(1)}%`,
                         "Score",
                       ]}
                     />
                     <Bar
                       dataKey="score"
-                      fill="hsl(221, 83%, 53%)" // blue-600
+                      fill="hsl(221, 83%, 53%)"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -348,9 +729,11 @@ function CoursesStatistics({ scale }: { scale: number }) {
               </CardContent>
             </Card>
 
-            <Card className="p-4">
-              <CardTitle className="text-sm">Quiz Scores</CardTitle>
-              <CardContent className="pt-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Quiz Scores</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={quizScoresData}>
                     <CartesianGrid
@@ -360,7 +743,7 @@ function CoursesStatistics({ scale }: { scale: number }) {
                     <XAxis
                       dataKey="name"
                       className="text-muted-foreground"
-                      tick={{ fill: "currentColor" }}
+                      tick={{ fill: "currentColor", fontSize: 11 }}
                     />
                     <YAxis
                       className="text-muted-foreground"
@@ -375,7 +758,7 @@ function CoursesStatistics({ scale }: { scale: number }) {
                       }}
                       labelStyle={{ color: "hsl(var(--foreground))" }}
                       formatter={(value) => [
-                        `${Number(value).toFixed(2)}%`,
+                        `${Number(value).toFixed(1)}%`,
                         "Score",
                       ]}
                     />
@@ -390,98 +773,7 @@ function CoursesStatistics({ scale }: { scale: number }) {
             </Card>
           </div>
         )}
-      </div>
-    </Card>
-  );
-}
-function IncomesStatistics({ scale }: { scale: number }) {
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: new Date("2020-01-01"),
-    to: new Date(),
-  });
-
-  const { data, isLoading } = useGetIncomesStatistics({
-    startDate: date?.from?.toUTCString(),
-    endDate: date?.to?.toUTCString(),
-  });
-
-  const offlineIncomes = (data?.data?.offlineIncomes ?? 0) * (scale / 100);
-
-  const items = [
-    {
-      title: "Total Students",
-      value: data?.data?.totalStudents,
-    },
-    {
-      title: "Total Incomes",
-      value: offlineIncomes + (data?.data?.onlineIncomes ?? 0),
-    },
-    {
-      title: "Online Incomes",
-      value: data?.data?.onlineIncomes,
-    },
-    {
-      title: "Offline Incomes",
-      value: offlineIncomes,
-    },
-  ];
-
-  return (
-    <Card className="p-4">
-      <CardTitle className="mb-4">Income Statistics</CardTitle>
-      <div className="flex flex-col gap-4">
-        <Popover>
-          <PopoverTrigger asChild className="self-end">
-            <Button
-              id="date"
-              variant={"outline"}
-              className={cn(
-                "w-[300px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              {date?.from ? (
-                date.to ? (
-                  <>
-                    {format(date.from, "LLL dd, y")} -{" "}
-                    {format(date.to, "LLL dd, y")}
-                  </>
-                ) : (
-                  format(date.from, "LLL dd, y")
-                )
-              ) : (
-                <span>Pick a date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={date?.from}
-              selected={date}
-              onSelect={setDate}
-              numberOfMonths={2}
-            />
-          </PopoverContent>
-        </Popover>
-
-        {isLoading ? (
-          <Loading />
-        ) : (
-          <div className="grid grid-cols-4 gap-4">
-            {items.map((item) => (
-              <Card key={item.title} className="p-4">
-                <CardTitle className="text-sm">{item.title}</CardTitle>
-                <CardContent className="p-0 pt-2">
-                  <span className="text-2xl font-bold">{item.value}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+      </CardContent>
     </Card>
   );
 }

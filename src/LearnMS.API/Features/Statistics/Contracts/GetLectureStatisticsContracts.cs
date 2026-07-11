@@ -1,5 +1,10 @@
 namespace LearnMS.API.Features.Statistics.Contracts;
 
+public sealed record GetLectureStatisticsQuery(
+    DateTimeOffset? StartDate,
+    DateTimeOffset? EndDate
+);
+
 public sealed record GetLectureStatisticsResponse(
     long EnrolledStudents,
     long AttendedStudents,

@@ -62,15 +62,16 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     [HttpGet("lecture")]
     [SwaggerOperation(OperationId = "GetLectureStatistics")]
     public async Task<ApiWrapper.Success<GetLectureStatisticsResponse>> GetLectureStatistics(
-        Guid lectureId)
+        Guid lectureId,
+        [FromQuery] GetLectureStatisticsQuery query)
     {
         decimal averageQuizzes = await GetLectureAverageQuizzesAsync(lectureId);
         decimal averageHomeworks = await GetLectureAverageHomeworksAsync(lectureId);
-        long totalAttended = await GetLectureTotalAttendedStudentsAsync(lectureId);
+        long totalAttended = await GetLectureTotalAttendedStudentsAsync(lectureId, query);
         long totalEnrolled = await GetLectureTotalEnrolledStudentsAsync(lectureId);
 
-        long totalOfflineIncome = await GetTotalLectureOfflineIncomeAsync(lectureId);
-        long totalOnlineIncome = await GetTotalLectureOnlineIncomeAsync(lectureId);
+        long totalOfflineIncome = await GetTotalLectureOfflineIncomeAsync(lectureId, query);
+        long totalOnlineIncome = await GetTotalLectureOnlineIncomeAsync(lectureId, query);
 
         return new ApiWrapper.Success<GetLectureStatisticsResponse>()
         {
@@ -129,20 +130,40 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     }
 
 
-    private async Task<long> GetTotalLectureOfflineIncomeAsync(Guid lectureId)
+    private async Task<long> GetTotalLectureOfflineIncomeAsync(Guid lectureId, GetLectureStatisticsQuery query)
     {
         var totalLectureEnrollments = context.Set<LectureAttendance>()
-            .Where(e => e.LectureId == lectureId)
+            .Where(e => e.LectureId == lectureId && e.AttendedAt != null)
             .AsQueryable();
+
+        if (query.StartDate != null)
+        {
+            totalLectureEnrollments = totalLectureEnrollments.Where(x => x.AttendedAt >= query.StartDate!);
+        }
+
+        if (query.EndDate != null)
+        {
+            totalLectureEnrollments = totalLectureEnrollments.Where(x => x.AttendedAt <= query.EndDate!);
+        }
 
         return await totalLectureEnrollments.CountAsync();
     }
 
-    private async Task<long> GetTotalLectureOnlineIncomeAsync(Guid lectureId)
+    private async Task<long> GetTotalLectureOnlineIncomeAsync(Guid lectureId, GetLectureStatisticsQuery query)
     {
         var totalLectureEnrollments = context.Set<LectureEnrollment>()
             .Where(e => e.LectureId == lectureId)
             .AsQueryable();
+
+        if (query.StartDate != null)
+        {
+            totalLectureEnrollments = totalLectureEnrollments.Where(x => x.EnrolledAt >= query.StartDate!);
+        }
+
+        if (query.EndDate != null)
+        {
+            totalLectureEnrollments = totalLectureEnrollments.Where(x => x.EnrolledAt <= query.EndDate!);
+        }
 
         return await totalLectureEnrollments.CountAsync();
     }
@@ -164,11 +185,21 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         return await lectureEnrollmentQuery.Union(courseEnrollmentQuery).Distinct().CountAsync();
     }
 
-    private async Task<long> GetLectureTotalAttendedStudentsAsync(Guid lectureId)
+    private async Task<long> GetLectureTotalAttendedStudentsAsync(Guid lectureId, GetLectureStatisticsQuery query)
     {
         var totalStudentsQuery = context.Set<LectureAttendance>()
-            .Where(e => e.LectureId == lectureId)
+            .Where(e => e.LectureId == lectureId && e.AttendedAt != null)
             .AsQueryable();
+
+        if (query.StartDate != null)
+        {
+            totalStudentsQuery = totalStudentsQuery.Where(x => x.AttendedAt >= query.StartDate!);
+        }
+
+        if (query.EndDate != null)
+        {
+            totalStudentsQuery = totalStudentsQuery.Where(x => x.AttendedAt <= query.EndDate!);
+        }
 
         return await totalStudentsQuery.CountAsync();
     }
@@ -211,7 +242,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     private Task<List<LectureStudents>> GetAttendedStudentsAsync(GetCourseStatisticsQuery query, Guid courseId)
     {
         var totalStudentsQuery = context.Set<LectureAttendance>()
-            .Where(e => e.Lecture.CourseId == courseId)
+            .Where(e => e.Lecture.CourseId == courseId && e.AttendedAt != null)
             .AsQueryable();
 
         return totalStudentsQuery
@@ -249,6 +280,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     private async Task<int> GetTotalOfflineIncomeAsync(GetIncomeStatisticsQuery query)
     {
         var totalLectureEnrollments = context.Set<LectureAttendance>()
+            .Where(x => x.AttendedAt != null)
             .AsQueryable();
 
         if (query.StartDate != null)
@@ -264,22 +296,22 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         return await totalLectureEnrollments.CountAsync();
     }
 
-    private async Task<decimal> GetTotalOnlineIncomeAsync(GetIncomeStatisticsQuery query)
+    private async Task<long> GetTotalOnlineIncomeAsync(GetIncomeStatisticsQuery query)
     {
-        var totalIncomeQuery = context.CreditCodes.AsQueryable();
+        var totalEnrollmentsQuery = context.Set<LectureEnrollment>()
+            .AsQueryable();
 
         if (query.StartDate != null)
         {
-            totalIncomeQuery = totalIncomeQuery.Where(x => x.GeneratedAt >= query.StartDate!);
+            totalEnrollmentsQuery = totalEnrollmentsQuery.Where(x => x.EnrolledAt >= query.StartDate!);
         }
 
         if (query.EndDate != null)
         {
-            totalIncomeQuery = totalIncomeQuery.Where(x => x.GeneratedAt <= query.EndDate!);
+            totalEnrollmentsQuery = totalEnrollmentsQuery.Where(x => x.EnrolledAt <= query.EndDate!);
         }
 
-        return await totalIncomeQuery.Where(x => x.Status == CreditCodeStatus.Redeemed)
-            .SumAsync(c => (decimal?)c.Value) ?? 0;
+        return await totalEnrollmentsQuery.CountAsync();
     }
 
 

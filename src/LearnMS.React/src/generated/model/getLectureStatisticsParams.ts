@@ -7,4 +7,6 @@
 
 export type GetLectureStatisticsParams = {
 lectureId?: string;
+startDate?: string;
+endDate?: string;
 };
