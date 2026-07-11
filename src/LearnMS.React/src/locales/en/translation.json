@@ -1,0 +1,466 @@
+{
+  "hero": {
+    "title": "Mr Rafik Isaac",
+    "subtitle": "Newton's Academy",
+    "description": "Welcome to Newton's Academy, where we transform learning into an exciting journey of discovery and growth Join us to explore the fascinating world of physics and mathematics",
+    "getStarted": "Get Started",
+    "browseCourses": "Browse Courses"
+  },
+  "grades": {
+    "title": "Grade Levels Overview",
+    "description": "Explore the academic journey from middle school to graduation.",
+    "items": {
+      "thirdMiddle": {
+        "title": "Third Year of Middle School",
+        "description": "Final year before entering secondary education."
+      },
+      "firstSecondary": {
+        "title": "First Secondary Grade",
+        "description": "The beginning of high school studies."
+      },
+      "secondSecondary": {
+        "title": "Second Secondary Grade",
+        "description": "Further specialization and preparation for final year."
+      },
+      "thirdSecondary": {
+        "title": "Third Secondary Grade",
+        "description": "The last year before graduation and college entry."
+      }
+    }
+  },
+  "importantLectures": {
+    "badge": "Important Lectures",
+    "title": "Important Lectures",
+    "description": "Essential lectures to master key concepts",
+    "featured": "Featured",
+    "goToCourse": "Go to course"
+  },
+  "latestLectures": {
+    "badge": "Latest Content",
+    "title": "Expand Your Knowledge with Our Latest Lectures",
+    "description": "Discover our newest educational content, carefully curated to help you grow and excel in your learning journey",
+    "selectLevel": "Select a level",
+    "selectCourse": "Select a course",
+    "levels": {
+      "all": "All",
+      "level0": "3rd Prep",
+      "level1": "1st Secondary",
+      "level2": "2nd Secondary",
+      "level3": "3rd Secondary"
+    },
+    "pagination": {
+      "showing": "Showing page",
+      "of": "of",
+      "totalResults": "total results"
+    }
+  },
+  "seniors": {
+    "badge": "Our Seniors",
+    "title": "Meet Our Seniors",
+    "description": "Discover the inspiring journeys of our senior classes, showcasing their achievements and unforgettable moments",
+    "classes": {
+      "1": {
+        "title": "Old Seniors",
+        "description": "Our pioneering class that set the foundation for excellence and achievement"
+      },
+      "2": {
+        "title": "Seniors'22",
+        "description": "A remarkable class that demonstrated exceptional dedication and success"
+      },
+      "3": {
+        "title": "Seniors'23",
+        "description": "Our latest graduating class, leaving behind a legacy of innovation and accomplishment"
+      }
+    }
+  },
+  "memories": {
+    "badge": "Memories",
+    "title": "Make Memories with us",
+    "description": "Every moment spent learning becomes a cherished memory",
+    "items": {
+      "1": {
+        "title": "Class Celebration",
+        "description": "Joyful moments of achievement and celebration with our students"
+      },
+      "2": {
+        "title": "Study Groups",
+        "description": "Collaborative learning sessions that foster growth and friendship"
+      },
+      "3": {
+        "title": "Lab Sessions",
+        "description": "Hands-on experiments that bring physics to life"
+      },
+      "4": {
+        "title": "Team Projects",
+        "description": "Innovative projects that showcase student creativity and teamwork"
+      },
+      "5": {
+        "title": "Graduation Day",
+        "description": "Proud moments celebrating our students' achievements and future"
+      },
+      "6": {
+        "title": "Special Events",
+        "description": "Unique experiences that make learning memorable and fun"
+      }
+    }
+  },
+  "about": {
+    "badge": "Meet your Instructor",
+    "title": "Who's Mr Rafik?",
+    "description": "Learn about the journey and expertise of our dedicated instructor",
+    "items": {
+      "1": {
+        "title": "Early Career",
+        "description": "Started teaching in the 2000s at the Good Shepherd School, where he honed his expertise in innovative teaching methods"
+      },
+      "2": {
+        "title": "Current Position",
+        "description": "Teaching at Saint Mary's School, delivering engaging lessons designed to inspire and empower students to excel"
+      },
+      "3": {
+        "title": "Online Teaching",
+        "description": "Over 5 years of experience in online education, leveraging cutting-edge tools to create dynamic learning experiences"
+      }
+    }
+  },
+  "navbar": {
+    "links": {
+      "home": "Home",
+      "courses": "Courses",
+      "payments": "Payments"
+    },
+    "language": "Language",
+    "languages": {
+      "english": "English",
+      "arabic": "Arabic"
+    },
+    "currency": "LE",
+    "profile": "Profile",
+    "logout": "Logout",
+    "signIn": "Sign In"
+  },
+  "footer": {
+    "brand": "Newton's Academy",
+    "copyright": "© {{year}} Newton's Academy, All rights reserved",
+    "social": {
+      "facebook": "Facebook",
+      "youtube": "YouTube",
+      "whatsapp": "WhatsApp"
+    },
+    "links": {
+      "home": "Home",
+      "courses": "Courses",
+      "payments": "Payments"
+    }
+  },
+  "courses": {
+    "heroTitle": "Content",
+    "courseImageAlt": "Course Image",
+    "coursePreview": "Course Preview",
+    "renewal": "Renewal",
+    "daysRemaining": "days remaining",
+    "expired": "Expired on",
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "available": "NotEnrolled"
+    },
+    "buttons": {
+      "enroll": "Enroll Now",
+      "continue": "Continue",
+      "renew": "Renew",
+      "viewCourse": "View Course"
+    },
+    "enrollmentPrice": "Enrollment Price",
+    "renewalPrice": "Renewal Price",
+    "enrollNow": "Enroll Now",
+    "expiresOn": "Expires on",
+    "lectures": "Lectures",
+    "lecturesAvailable": "lecture available",
+    "lecturesAvailablePlural": "lectures available",
+    "exams": "Exams",
+    "examsAvailable": "exam available",
+    "examsAvailablePlural": "exams available",
+    "description": "Description",
+    "order": "Order",
+    "startLecture": "Start Lecture",
+    "viewLesson": "View Lesson",
+    "takeExam": "Take Exam",
+    "confirmEnrollment": "Confirm Course Enrollment",
+    "confirmEnrollmentDescription": "Are you sure you want to enroll in \"{{title}}\"? This action cannot be undone.",
+    "confirmRenewal": "Confirm Course Renewal",
+    "confirmRenewalDescription": "Are you sure you want to renew \"{{title}}\"? This will extend your access to the course.",
+    "cancel": "Cancel",
+    "confirmEnrollmentButton": "Confirm Enrollment",
+    "confirmRenewalButton": "Confirm Renewal",
+    "processing": "Processing...",
+    "lessons": "Lessons",
+    "quizzes": "Quizzes",
+    "questions": "Questions",
+    "noContentAvailable": "No content available",
+    "noContentMessage": "This course doesn't have any content yet. Please check back later.",
+    "attachments": "Attachments",
+    "assets": "Attachments",
+    "noAttachmentsAvailable": "No Attachments",
+    "noAssetsAvailable": "No Attachments Available",
+    "enrollmentExpiredMessage": "Your enrollment has expired. Renew to continue accessing course content.",
+    "joinStudentsMessage": "Join thousands of students already learning with us.",
+    "insufficientBalance": "Insufficient amount",
+    "buyCredit": "buy credit",
+    "levelMismatch": "This course is not for your level",
+    "pleaseSignIn": "Please Sign In",
+    "signInToBuyCourse": "Sign in to buy the course",
+    "signInToBuyLecture": "Sign in to buy the lecture"
+  },
+  "payments": {
+    "title": "Payment History",
+    "subtitle": "View and manage your payment transactions",
+    "noPayments": "No Payments Found",
+    "noPaymentsDescription": "You haven't made any payments yet. Start exploring our courses to make your first purchase.",
+    "course": "Course",
+    "amount": "Amount",
+    "date": "Payment Date",
+    "transactionId": "Transaction ID",
+    "checkStatus": "Check Status",
+    "paymentCard": {
+      "title": "Payment"
+    },
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "failed": "Failed"
+    }
+    
+
+    
+  },
+  "common": {
+    "currency": "LE",
+    "showMore": "Show More",
+    "showLess": "Show Less",
+    "goHome": "Go Home",
+    "goBack": "Go Back"
+  },
+  "redeem": {
+    "title": "Recharge Balance",
+    "description": "Enter your credit code to add balance to your account",
+    "placeholder": "Enter credit code",
+    "submit": "Redeem Code",
+    "submitting": "Redeeming...",
+    "success": {
+      "title": "Code Redeemed Successfully",
+      "description": "{{value}} {{currency}} has been added to your account"
+    },
+    "error": {
+      "title": "Redemption Failed"
+    }
+  },
+  "topup": {
+    "title": "Request Credit Top-up",
+    "description": "Request additional credits by filling out the credit top-up form",
+    "button": "Request Credit Top-up",
+    "note": "This will open a Google Form with your information pre-filled. Submit the form to request credits."
+  },
+  
+  "profile": {
+    "account": "Account",
+    "contact": "Contact",
+    "events": "Events",
+    "sessions": "Sessions",
+    "exams": "Exams",
+    "profileAndDetails": "Profile & Details",
+    "contactAssistantToEdit": "Contact your assistant to edit your profile information.",
+    "profileUpdated": "Profile Updated",
+    "profileUpdatedDescription": "Your profile has been successfully updated.",
+    "title": "Profile",
+    "fullName": "Full Name",
+    "fullNameDescription": "Your complete name as it appears on official documents.",
+    "email": "Email",
+    "phoneNumber": "Phone Number",
+    "phoneNumberDescription": "Your personal contact phone number.",
+    "parentPhone": "Parent Phone",
+    "parentPhoneNumber": "Parent Phone Number",
+    "parentPhoneNumberDescription": "Your parent's or guardian's contact phone number.",
+    "school": "School",
+    "schoolDescription": "The name of your current school or educational institution.",
+    "level": "Level",
+    "levelDescription": "Your current grade or education level.",
+    "selectLevel": "Select your education level",
+    "level3rdPrep": "3rd Preparatory",
+    "level1stSecondary": "1st Secondary",
+    "level2ndSecondary": "2nd Secondary",
+    "level3rdSecondary": "3rd Secondary",
+    "studentId": "Student ID",
+    "studentIdDescription": "Your unique student identification code.",
+    "balance": "Balance",
+    "joinedDate": "Joined Date",
+    "notAvailable": "Not available",
+    "levelKindergarten": "Kindergarten",
+    "levelElementary": "Elementary",
+    "levelMiddleSchool": "Middle School",
+    "levelHighSchool": "High School"
+  },
+  "platformInstructions": {
+    "title": "Newton's Academy Instructions",
+    "subtitle": "Please read carefully before proceeding",
+    "instructions": [
+      "The platform is a website available on Google Chrome or Firefox browsers only.",
+      "The platform must be opened from a mobile phone, computer, or laptop. The use of school tablets is strictly prohibited as they are not qualified to use the platform, even if they are hacked.",
+      "After subscription, course refund or exchange will not be available. Please make sure of the course you want to subscribe to. 🚫",
+      "The account is for your personal use only and sharing it with friends is not allowed. If account sharing is discovered, it will be permanently closed.",
+      "You must use strong and stable internet, preferably a stable Wi-Fi network.",
+      "When registering on the platform, you must ensure the accuracy of your data to ensure proper periodic follow-up.",
+      "The name must be written in Arabic as it appears on the ID card when registering.",
+      "Don't forget to verify your phone number and password and write this information in a safe place so you don't forget it.",
+      "You can watch one video on the platform a maximum of five times during one academic year.",
+      "A view is counted when exceeding 30% of the video duration.",
+      "You must follow the platform regularly and solve assignments and tests because there are weekly reports sent to the parent about your activity on the platform.",
+      "The platform will be available to you until the first semester exams only."
+    ],
+    "acceptTerms": "I accept the terms and conditions",
+    "accept": "Accept",
+    "cancel": "Cancel"
+  },
+  "auth": {
+    "back": "back",
+    "brand": "Newton's Academy",
+    "welcomeBack": "Welcome Back!",
+    "joinCommunity": "Join Our Learning Community",
+    "loginDescription": "Access your personalized learning dashboard and continue your educational journey with us",
+    "registerDescription": "Create an account to access personalized learning materials, track your progress, and connect with teachers and peers",
+    "loginTagline": "Unlock your full learning potential today",
+    "registerTagline": "Join thousands of students already learning with us",
+    "signInTitle": "Sign In to Your Account",
+    "createAccountTitle": "Create Your Account",
+    "signInSubtitle": "Enter your credentials below",
+    "createAccountSubtitle": "Fill in your details to get started",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "createAccount": "Create one now",
+    "signIn": "Sign in",
+    "forms": {
+      "email": {
+        "label": "Email Address",
+        "placeholder": "Enter your email address"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Enter your password"
+      },
+      "confirmPassword": {
+        "label": "Confirm Password",
+        "placeholder": "Confirm your password"
+      },
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "phoneNumber": {
+        "label": "Phone Number",
+        "placeholder": "Your phone number"
+      },
+      "parentPhoneNumber": {
+        "label": "Parent's Number",
+        "placeholder": "Parent's phone number"
+      },
+      "studentCode": {
+        "label": "Student ID",
+        "placeholder": "Your student ID"
+      },
+      "mode": {
+           "label": "Type of Student" ,
+           "options": {
+          "online": "Online Student ",
+          "offline": "Center Student "
+           }
+           },
+      "school": {
+        "label": "School",
+        "placeholder": "Enter your school name"
+      },
+      "level": {
+        "label": "School Level",
+        "placeholder": "Select your level",
+        "options": {
+          "level0": "3rd Prep School",
+          "level1": "1st Secondary",
+          "level2": "2nd Secondary",
+          "level3": "3rd Secondary"
+        }
+      },
+      "forgotPassword": "Forgot Password?",
+      "signIn": "Sign In",
+      "createAccount": "Create Account",
+      "errors": {
+        "loginFailed": "Login failed",
+        "registrationFailed": "Registration failed",
+        "accountCreated": "Account Created Successfully",
+        "welcomeBack": "Welcome back!"
+      }
+    }
+  },
+  "lectures": {
+    "lectureContent": "Lecture Content",
+    "confirmPurchase": "Confirm Purchase",
+    "confirmPurchaseDescription": "Are you sure you want to buy this lecture?",
+    "buyFor": "Buy for {{price}} LE ({{days}} days)",
+    "renewFor": "Renew for {{price}} LE ({{days}} days)",
+    "lectureExpiresOn": "Lecture expires on",
+    "courseExpiresOn": "Course expires on",
+    "isLocked": "{{type}} is locked",
+    "isLockedDescription": "Please make a purchase the lecture or the course first",
+    "locked": "Locked",
+    "lesson": "Lesson",
+    "quiz": "Quiz",
+    "lessons": "Lessons",
+    "quizzes": "Quizzes",
+    "startLesson": "Start Lesson",
+    "noContentAvailable": "No content available",
+    "purchaseSuccessful": "Purchase Successful",
+    "description": "Description",
+    "clickHereToViewLink": "Click here to view the link"
+  },
+  "lesson": {
+    "startLessonTitle": "Start the lesson",
+    "startLessonConfirmation": "Are you sure you want to start the lesson? You will have {{hours}} hours to complete it, after which it will be locked for",
+    "startLessonConfirmationTitle": "Starting the lesson Confirmation",
+    "startLessonConfirmationDescription": "Are you sure you want to start the lesson?",
+    "start": "Start",
+    "lessonExpiredTitle": "Lesson expired",
+    "lessonExpiredMessage": "The lesson has expired. You can renew it for",
+    "renewLessonConfirmationTitle": "Renewing the lesson Confirmation",
+    "renewLessonConfirmationDescription": "Are you sure you want to renew the lesson for {{price}}?",
+    "renew": "Renew",
+    "expiresAt": "expires at",
+    "back": "Back"
+  },
+  "quiz": {
+    "questions": "Questions",
+    "takeQuiz": "Take Quiz",
+    "startQuiz": "Start Quiz",
+    "description": "Description"
+  },
+  "exams": {
+    "questions": "Questions",
+    "minutes": "Minutes",
+    "retake": "Retake",
+    "purchaseSuccessful": "Exam Purchase Successful",
+    "enrollNow": "You can now take the exam",
+    "buttons": {
+      "takeExam": "Take Exam"
+    },
+    "examPrice": "Exam Price",
+    "retakePrice": "Retake Price",
+    "examInfo": "Exam Information",
+    "importantNote": "Important: You have limited attempts for this exam. Make sure you are ready before starting."
+  },
+  "error": {
+    "title": "Oops! Something went wrong",
+    "message": "An unexpected error occurred",
+    "description": "We encountered an unexpected issue. Please try reloading the page or return to the homepage.",
+    "errorDetails": "Error Details",
+    "noErrorDetails": "No error details available",
+    "reloadPage": "Reload Page",
+    "goToHomepage": "Go to Homepage"
+  }
+}
