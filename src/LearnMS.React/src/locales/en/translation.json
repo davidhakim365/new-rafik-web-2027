@@ -449,7 +449,7 @@
     "lectureExpiresOn": "Lecture expires on",
     "courseExpiresOn": "Course expires on",
     "isLocked": "{{type}} is locked",
-    "isLockedDescription": "Please make a purchase the lecture or the course first",
+    "isLockedDescription": "Please purchase the lecture first",
     "locked": "Locked",
     "lesson": "Lesson",
     "quiz": "Quiz",

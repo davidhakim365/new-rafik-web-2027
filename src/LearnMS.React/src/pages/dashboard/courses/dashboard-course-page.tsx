@@ -153,10 +153,6 @@ const DashboardCoursePage = () => {
 const UpdateCourseRequest = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string(),
-  price: z.coerce.number().min(0, { message: "Price must be greater than 0" }),
-  renewalPrice: z.coerce
-    .number()
-    .min(0, { message: "Renewal Price is greater than 0" }),
   expirationDays: z.coerce
     .number()
     .min(0, { message: "Expiration days must be greater than 0" }),
@@ -171,10 +167,10 @@ function CourseDetailsForm({
   description,
   title,
   expirationDays,
-  renewalPrice,
   imageUrl,
   level,
   price,
+  renewalPrice,
 }: GetDashboardCourseResult) {
   const updateCourseMutation = useUpdateCourse();
 
@@ -185,8 +181,6 @@ function CourseDetailsForm({
       title,
       expirationDays,
       level,
-      renewalPrice,
-      price,
       imageUrl,
     },
     values: {
@@ -194,15 +188,20 @@ function CourseDetailsForm({
       description,
       title,
       expirationDays,
-      renewalPrice,
-      price,
       imageUrl,
     },
   });
 
   const onSubmit = (data: UpdateCourseRequest) => {
     updateCourseMutation.mutate(
-      { courseId: id, data },
+      {
+        courseId: id,
+        data: {
+          ...data,
+          price,
+          renewalPrice,
+        },
+      },
       {
         onSuccess: (data) => {
           toast({
@@ -284,32 +283,6 @@ function CourseDetailsForm({
                     <SelectItem value='Level3'>3rd Secondary </SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='price'
-            render={({ field }) => (
-              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
-                <FormLabel className='text-color2'>Price</FormLabel>
-                <FormControl>
-                  <Input type='number' className='text-color2' {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='renewalPrice'
-            render={({ field }) => (
-              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
-                <FormLabel className='text-color2'>RenewalPrice</FormLabel>
-                <FormControl>
-                  <Input type='number' className='text-color2' {...field} />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

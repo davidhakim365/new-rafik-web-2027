@@ -447,7 +447,7 @@
     "lectureExpiresOn": "تنتهي المحاضرة في",
     "courseExpiresOn": "تنتهي الدورة في",
     "isLocked": "{{type}} مقفل",
-    "isLockedDescription": "يرجى شراء المحاضرة أو الدورة أولاً",
+    "isLockedDescription": "يرجى شراء المحاضرة أولاً",
     "locked": "مقفل",
     "lesson": "درس",
     "quiz": "اختبار",

@@ -9,32 +9,18 @@ import {
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
-import { useBuyCourseMutation } from "@/api/courses-api";
-import { useModalStore } from "@/store/use-modal-store";
-import { isInsufficientBalanceError } from "@/lib/error-utils";
-import { useQueryClient } from "@tanstack/react-query";
 
 import CoursesBackground from "@/pages/student/courses/courses-background";
 import { Heading } from "@/components/ui/heading";
 import {
   Clock,
   Calendar,
-  ShoppingCart,
-  RotateCcw,
   BookOpen,
   FileText,
   GraduationCap,
-  Coins,
-  Loader2,
-  AlertTriangle,
 } from "lucide-react";
-import { FaUser } from "react-icons/fa";
 import { cn } from "@/lib/utils";
-import {
-  useGetStudentCourses,
-  useGetProfile,
-  getGetStudentCoursesQueryKey,
-} from "@/generated/api";
+import { useGetStudentCourses } from "@/generated/api";
 import { StudentCourseDto, StudentLevel } from "@/generated/model";
 import { CoursesGridSkeleton } from "@/components/ui/course-skeleton";
 
@@ -128,14 +114,6 @@ export const StudentCoursesPage = () => {
 function CourseCard({ course }: { course: StudentCourseDto }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const buyCourseMutation = useBuyCourseMutation();
-  const { openModal } = useModalStore();
-  const queryClient = useQueryClient();
-  const { data: profile } = useGetProfile();
-
-  const formatPrice = (price: number | undefined) => {
-    return `${price} ${t("common.currency")}`;
-  };
 
   const getLevelDisplayName = (level: string) => {
     switch (level) {
@@ -178,170 +156,11 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
     }
   };
 
-  const handleEnrollClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!course.id) return;
-
-    // Only handle enrollment for non-active courses
-    if (
-      course.enrollment === "NotEnrolled" ||
-      course.enrollment === "Expired"
-    ) {
-      // Check insufficient balance before making the purchase
-      const requiredAmount =
-        course.enrollment === "Expired" ? course.renewalPrice : course.price;
-      const userCredits =
-        profile?.data?.$type === "GetStudentProfileResult"
-          ? profile.data.credits
-          : 0;
-
-      if (userCredits < (requiredAmount || 0)) {
-        openModal("redeem-credit-modal");
-        return;
-      }
-
-      buyCourseMutation.mutate(
-        { courseId: course.id },
-        {
-          onSuccess: () => {
-            // Invalidate queries to refresh the course list
-            queryClient.invalidateQueries({
-              queryKey: getGetStudentCoursesQueryKey({
-                level: course.level || "Level0",
-              }),
-            });
-          },
-          onError: (error) => {
-            if (isInsufficientBalanceError(error)) {
-              openModal("redeem-credit-modal");
-            }
-          },
-        }
-      );
-    }
-  };
-
   const handleViewCourseClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (course.id) {
       navigate(`/courses/${course.id}`);
-    }
-  };
-
-  const getEnrollButton = () => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      return (
-        <Button
-          onClick={() => navigate("/sign-in-sign-up")}
-          variant="secondary"
-          className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 rounded-lg"
-        >
-          <FaUser className="w-4 h-4" />
-          {t("courses.signInToBuyCourse")}
-        </Button>
-      );
-    }
-
-    const userCredits = profile.data.credits || 0;
-    const userLevel = profile.data.level;
-
-    // Check if course level matches user level
-    const isLevelMismatch =
-      userLevel && course.level && userLevel !== course.level;
-
-    if (isLevelMismatch) {
-      return (
-        <Button
-          disabled
-          variant="outline"
-          className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 rounded-lg cursor-not-allowed text-amber-600 bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
-        >
-          <AlertTriangle className="w-4 h-4" />
-          {t("courses.levelMismatch")}
-        </Button>
-      );
-    }
-
-    switch (course.enrollment) {
-      case "Active": {
-        // For active courses, don't show an enroll button - only view course button is shown
-        return null;
-      }
-      case "Expired": {
-        const renewalPrice = course.renewalPrice || 0;
-        const hasInsufficientCreditsForRenewal = userCredits < renewalPrice;
-
-        if (hasInsufficientCreditsForRenewal) {
-          return (
-            <Button
-              onClick={() => openModal("redeem-credit-modal")}
-              variant="destructive"
-              className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 rounded-lg"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              {t("courses.insufficientBalance")} ({t("courses.buyCredit")})
-            </Button>
-          );
-        }
-
-        return (
-          <Button
-            onClick={handleEnrollClick}
-            disabled={buyCourseMutation.isPending}
-            className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold text-white transition-all duration-200 bg-orange-600 rounded-lg hover:bg-orange-700"
-          >
-            {buyCourseMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RotateCcw className="w-4 h-4" />
-            )}
-            {buyCourseMutation.isPending
-              ? t("courses.processing")
-              : `${t("courses.renewal")} ${formatPrice(course.renewalPrice)}`}
-          </Button>
-        );
-      }
-      case "NotEnrolled": {
-        const enrollPrice = course.price || 0;
-        const hasInsufficientCreditsForEnroll = userCredits < enrollPrice;
-
-        if (hasInsufficientCreditsForEnroll) {
-          return (
-            <Button
-              onClick={() => openModal("redeem-credit-modal")}
-              variant="destructive"
-              className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 rounded-lg"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              {t("courses.insufficientBalance")} ({t("courses.buyCredit")})
-            </Button>
-          );
-        }
-
-        return (
-          <Button
-        //  onClick={handleEnrollClick}
-        //  disabled={buyCourseMutation.isPending}
-            className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold text-white transition-all duration-200 bg-blue-000 rounded-lg hover:bg-blue-000"
-          >
-        {/*buyCourseMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <ShoppingCart className="w-4 h-4" />
-            )}
-            {buyCourseMutation.isPending
-              ? t("courses.processing")
-              : `${t("courses.buttons.enroll")} ${formatPrice(course.price)}`}
-              */}
-          </Button>
-        );
-      }
-      default:
-        return null;
     }
   };
 
@@ -397,7 +216,6 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
 
             <CardContent className="relative z-10 flex-1 px-3 pb-4 sm:px-6 sm:pb-6">
               <div className="space-y-3 sm:space-y-4">
-                {/* Level Display */}
                 {course.level && (
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="flex items-center justify-center w-6 h-6 rounded-full sm:w-8 sm:h-8 bg-primary/10">
@@ -409,31 +227,6 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
                   </div>
                 )}
 
-                {/* Price Display with Gold Crown */}
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full sm:w-8 sm:h-8 bg-amber-100 dark:bg-amber-900/20">
-                    <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1">
-                      <span className="text-lg font-bold sm:text-xl lg:text-2xl text-amber-600 dark:text-amber-500">
-                        {formatPrice(course.price)}
-                      </span>
-                    </div>
-                    {course.renewalPrice &&
-                      course.renewalPrice !== course.price && (
-                        <div className="flex items-center gap-1">
-                          <RotateCcw className="w-3 h-3 text-amber-600/70 dark:text-amber-400/70" />
-                          <span className="text-xs font-medium text-amber-600/70 dark:text-amber-400/70">
-                            {t("courses.renewal")}:{" "}
-                            {formatPrice(course.renewalPrice)}
-                          </span>
-                        </div>
-                      )}
-                  </div>
-                </div>
-
-                {/* Lectures Count */}
                 {course.lecturesCount !== undefined &&
                   course.lecturesCount > 0 && (
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -446,7 +239,6 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
                     </div>
                   )}
 
-                {/* Exams Count */}
                 {course.examsCount !== undefined && course.examsCount >= 0 && (
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="flex items-center justify-center w-6 h-6 bg-purple-100 rounded-full sm:w-8 sm:h-8 dark:bg-purple-900/20">
@@ -485,34 +277,15 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
           </div>
         </div>
 
-        {/* Buttons Section */}
-        <div className="relative z-20 px-3 pb-4 space-y-2 sm:px-6 sm:pb-6">
-          {/* For Active courses, show only View Course button */}
-          {course.enrollment === "Active" ? (
-            <Button
-              onClick={handleViewCourseClick}
-              variant="outline"
-              className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 border-2 rounded-lg hover:bg-primary/10 hover:border-primary"
-            >
-              <BookOpen className="w-4 h-4" />
-              {t("courses.buttons.viewCourse")}
-            </Button>
-          ) : (
-            <>
-              {/* View Course Button */}
-              <Button
-                onClick={handleViewCourseClick}
-                variant="outline"
-                className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 border-2 rounded-lg hover:bg-primary/10 hover:border-primary"
-              >
-                <BookOpen className="w-4 h-4" />
-                {t("courses.buttons.viewCourse")}
-              </Button>
-
-              {/* Enrollment Action Button */}
-              {getEnrollButton()}
-            </>
-          )}
+        <div className="relative z-20 px-3 pb-4 sm:px-6 sm:pb-6">
+          <Button
+            onClick={handleViewCourseClick}
+            variant="outline"
+            className="flex items-center justify-center w-full gap-2 px-4 py-2 font-semibold transition-all duration-200 border-2 rounded-lg hover:bg-primary/10 hover:border-primary"
+          >
+            <BookOpen className="w-4 h-4" />
+            {t("courses.buttons.viewCourse")}
+          </Button>
         </div>
       </Card>
     </motion.div>

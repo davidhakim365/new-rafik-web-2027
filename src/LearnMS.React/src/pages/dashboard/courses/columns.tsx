@@ -63,24 +63,6 @@ export const coursesColumns: ColumnDef<Course>[] = [
     },
   },
   {
-    accessorKey: "price",
-    header: "Price",
-    cell: ({ row }) => {
-      const price = row.getValue<number>("price");
-      return <span className="text-foreground">{price.toFixed(2)} EGP</span>;
-    },
-  },
-  {
-    accessorKey: "renewalPrice",
-    header: "Renewal Price",
-    cell: ({ row }) => {
-      const renewalPrice = row.getValue<number>("renewalPrice");
-      return (
-        <span className="text-foreground">{renewalPrice.toFixed(2)} EGP</span>
-      );
-    },
-  },
-  {
     accessorKey: "imageUrl",
     header: "Cover",
     cell: ({ row }) => {

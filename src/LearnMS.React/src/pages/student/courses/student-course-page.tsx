@@ -1,16 +1,5 @@
-import { useBuyCourseMutation } from "@/api/courses-api";
 import { useBuyLectureMutation } from "@/api/lectures-api";
 import { useBuyExamMutation } from "@/api/exams-api";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   Accordion,
   AccordionContent,
@@ -241,106 +230,30 @@ function CourseHeader({ course }: { course: StudentCourseDetailsDto }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Enrollment Price Card */}
-              <SpotlightCard spotlightColor="#6300ff30">
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <FaShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                      <span className="text-xs font-semibold sm:text-sm text-primary">
-                        {t("courses.enrollmentPrice")}
-                      </span>
+            {course.enrollment === "Active" && course.expiresAt && (
+              <SpotlightCard spotlightColor="#00ff6330">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 text-chart-2">
+                      <FaClock />
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-lg font-bold sm:gap-3 sm:text-xl md:text-2xl text-card-foreground">
-                    <Coins className="w-5 h-5 text-orange-600 sm:w-6 sm:h-6 dark:text-orange-400" />
-                    <span className="text-orange-600 dark:text-orange-400">
-                      {course.price} {t("common.currency")}
+                    <span className="text-xs font-medium sm:text-sm md:text-base text-muted-foreground">
+                      {t("courses.expiresOn")}
                     </span>
+                  </div>
+                  <div className="text-sm font-semibold sm:text-base md:text-lg lg:text-xl text-card-foreground">
+                    {new Date(course.expiresAt).toLocaleDateString(
+                      isRTL ? "ar-EG" : "en-US",
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      }
+                    )}
                   </div>
                 </div>
               </SpotlightCard>
-
-              {/* Renewal Price Card */}
-              {course.renewalPrice && (
-                <SpotlightCard spotlightColor="#ff630030">
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <FaRedo className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                        <span className="text-xs font-semibold sm:text-sm text-primary">
-                          {t("courses.renewalPrice")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-lg font-bold sm:gap-3 sm:text-xl md:text-2xl text-card-foreground">
-                      <Coins className="w-5 h-5 text-orange-600 sm:w-6 sm:h-6 dark:text-orange-400" />
-                      <span className="text-orange-600 dark:text-orange-400">
-                        {course.renewalPrice} {t("common.currency")}
-                      </span>
-                    </div>
-                  </div>
-                </SpotlightCard>
-              )}
-
-              {course.enrollment === "Active" && course.expiresAt && (
-                <SpotlightCard
-                  className="sm:col-span-2 lg:col-span-1"
-                  spotlightColor="#00ff6330"
-                >
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 text-chart-2">
-                        <FaClock />
-                      </div>
-                      <span className="text-xs font-medium sm:text-sm md:text-base text-muted-foreground">
-                        {t("courses.expiresOn")}
-                      </span>
-                    </div>
-                    <div className="text-sm font-semibold sm:text-base md:text-lg lg:text-xl text-card-foreground">
-                      {new Date(course.expiresAt).toLocaleDateString(
-                        isRTL ? "ar-EG" : "en-US",
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        }
-                      )}
-                    </div>
-                  </div>
-                </SpotlightCard>
-              )}
-            </div>
-
-            <div className="pt-3 sm:pt-4 md:pt-6">
-              {course.enrollment !== "Active" ? (
-                <div className="space-y-3 sm:space-y-4 md:space-y-6">
-                  <BuyButton course={course} />
-                  {course.enrollment === "Expired" && (
-                    <div className="relative p-4 overflow-hidden border-2 rounded-lg shadow-lg sm:p-5 md:p-6 sm:rounded-xl border-amber-200/50 bg-gradient-to-br from-amber-50/30 to-orange-50/30 dark:from-amber-900/10 dark:to-orange-900/10 dark:border-amber-800/30 group">
-                      <div className="absolute inset-0 transition-opacity duration-500 opacity-0 bg-gradient-to-r from-transparent via-amber-100/20 to-transparent group-hover:opacity-100" />
-                      <div className="relative flex items-start gap-3 sm:gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full shadow-md sm:w-10 sm:h-10 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/20 dark:to-amber-800/20">
-                          <FaClock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div className="space-y-1 sm:space-y-2">
-                          <h4 className="text-sm font-bold sm:text-base text-amber-800 dark:text-amber-200">
-                            Course Access Expired
-                          </h4>
-                          <p className="text-xs leading-relaxed sm:text-sm text-amber-700 dark:text-amber-300">
-                            {t("courses.enrollmentExpiredMessage")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // For active courses, don't show any buttons
-                <div className="pt-3">{/* Empty div for proper spacing */}</div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1287,250 +1200,6 @@ function LectureItemsAccordions({
       </div>
     </div>
   );
-}
-
-export function BuyButton({ course }: { course: StudentCourseDetailsDto }) {
-  const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === "ar";
-  const [isOpen, setIsOpen] = useState(false);
-  const { mutate, isPending } = useBuyCourseMutation();
-  const { openModal } = useModalStore();
-  const { data: profile } = useGetProfile();
-  const navigate = useNavigate();
-
-  const onClick = () => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      navigate("/sign-in-sign-up");
-      return;
-    }
-
-    // Check insufficient balance before making the purchase
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-
-    if (userCredits < (requiredAmount || 0)) {
-      openModal("redeem-credit-modal");
-      setIsOpen(false);
-      return;
-    }
-
-    mutate(
-      { courseId: course.id },
-      {
-        onSuccess: () => {
-          setIsOpen(false);
-        },
-        onError: (error) => {
-          setIsOpen(false);
-          if (isInsufficientBalanceError(error)) {
-            openModal("redeem-credit-modal");
-          }
-        },
-      }
-    );
-  };
-
-  const getButtonText = () => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      return t("courses.signInToBuyCourse");
-    }
-
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-    const hasInsufficientBalance = userCredits < (requiredAmount || 0);
-
-    if (hasInsufficientBalance) {
-      return `${t("courses.insufficientBalance")} (${t("courses.buyCredit")})`;
-    }
-
-    if (course.enrollment === "Expired") {
-      return t("courses.buttons.renew");
-    }
-    return t("courses.buttons.enroll");
-  };
-
-  const getButtonStyle = () => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      return "w-full h-10 sm:h-11 font-semibold transition-all duration-500 sm:w-auto transform hover:scale-105 hover:-translate-y-1 touch-manipulation";
-    }
-
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-    const hasInsufficientBalance = userCredits < (requiredAmount || 0);
-
-    if (hasInsufficientBalance) {
-      return "w-full h-10 sm:h-11 font-semibold transition-all duration-500 sm:w-auto transform hover:scale-105 hover:-translate-y-1 touch-manipulation";
-    }
-
-    if (course.enrollment === "Expired") {
-      return "w-full h-10 sm:h-11 font-semibold transition-all duration-500 border-2 shadow-md bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 hover:from-orange-100 hover:to-orange-200 border-orange-300 hover:border-orange-400 hover:shadow-lg dark:from-orange-900/20 dark:to-orange-800/20 dark:text-orange-300 dark:border-orange-700 dark:hover:from-orange-900/30 dark:hover:to-orange-800/30 sm:w-auto transform hover:scale-105 hover:-translate-y-1 touch-manipulation";
-    }
-    return "w-full h-10 sm:h-11 font-semibold transition-all duration-500 border-2 shadow-md bg-gradient-to-r from-primary/10 to-primary/20 text-primary hover:from-primary/20 hover:to-primary/30 border-primary/30 hover:border-primary/50 hover:shadow-lg sm:w-auto transform hover:scale-105 hover:-translate-y-1 touch-manipulation";
-  };
-
-  const handleButtonClick = (e: React.MouseEvent) => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      e.preventDefault();
-      navigate("/sign-in-sign-up");
-      return;
-    }
-
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-
-    // If insufficient balance, prevent default and open redeem modal directly
-    if (userCredits < (requiredAmount || 0)) {
-      e.preventDefault();
-      openModal("redeem-credit-modal");
-      return;
-    }
-
-    // If sufficient balance, allow the AlertDialog to open normally
-    // No need to prevent default here, let the AlertDialogTrigger handle it
-  };
-
-  // Determine if we should show the AlertDialog or handle click manually
-  const shouldShowConfirmationModal = () => {
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      return false;
-    }
-
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-
-    return userCredits >= (requiredAmount || 0);
-  };
-
-  const getButtonVariant = () => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      return "default" as const;
-    }
-
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-    const hasInsufficientBalance = userCredits < (requiredAmount || 0);
-
-    return hasInsufficientBalance
-      ? ("destructive" as const)
-      : ("default" as const);
-  };
-
-  const getButtonIcon = () => {
-    // Check authentication first
-    if (!profile?.data || profile.data.$type !== "GetStudentProfileResult") {
-      return <FaUser className="w-4 h-4" />;
-    }
-
-    const requiredAmount =
-      course.enrollment === "Expired" ? course.renewalPrice : course.price;
-    const userCredits = profile.data.credits || 0;
-    const hasInsufficientBalance = userCredits < (requiredAmount || 0);
-
-    if (hasInsufficientBalance) {
-      return <AlertTriangle className="w-4 h-4" />;
-    }
-
-    return course.enrollment === "Expired" ? (
-      <FaRedo className="w-4 h-4" />
-    ) : (
-      <FaShoppingCart className="w-4 h-4" />
-    );
-  };
-
-  const getModalTitle = () => {
-    if (course.enrollment === "Expired") {
-      return t("courses.confirmRenewal");
-    }
-    return t("courses.confirmEnrollment");
-  };
-
-  const getModalDescription = () => {
-    if (course.enrollment === "Expired") {
-      return t("courses.confirmRenewalDescription", { title: course.title });
-    }
-    return t("courses.confirmEnrollmentDescription", { title: course.title });
-  };
-
-  const getConfirmButtonText = () => {
-    if (course.enrollment === "Expired") {
-      return t("courses.confirmRenewalButton");
-    }
-    return t("courses.confirmEnrollmentButton");
-  };
-
-  // Render button with or without AlertDialog based on the condition
-  const buttonContent = (
-    <PlasticButton
-      size="default"
-      variant={getButtonVariant()}
-      className={getButtonStyle()}
-      onClick={handleButtonClick}
-    >
-      <div className="flex items-center justify-center gap-2">
-        {getButtonIcon()}
-        <span className="text-sm font-semibold tracking-wide sm:text-base">
-          {getButtonText()}
-        </span>
-      </div>
-    </PlasticButton>
-  );
-
-  // If the user has sufficient balance and is authenticated, wrap with AlertDialog
-  if (shouldShowConfirmationModal()) {
-    return (
-      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-        <AlertDialogTrigger asChild>{buttonContent}</AlertDialogTrigger>
-        <AlertDialogContent className="max-w-xs mx-3 border sm:max-w-sm md:max-w-lg sm:mx-4 bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm font-bold text-foreground sm:text-base md:text-lg lg:text-xl">
-              {getModalTitle()}
-            </AlertDialogTitle>
-            <AlertDialogDescription
-              dir={isRTL ? "rtl" : "ltr"}
-              className="text-xs leading-relaxed text-muted-foreground sm:text-sm md:text-base"
-            >
-              {getModalDescription()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-3">
-            <AlertDialogCancel className="w-full text-sm border h-9 sm:h-10 sm:text-base bg-background text-foreground hover:bg-muted sm:w-auto touch-manipulation">
-              {t("courses.cancel")}
-            </AlertDialogCancel>
-            <Button
-              onClick={onClick}
-              disabled={isPending}
-              className="w-full text-sm h-9 sm:h-10 sm:text-base bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto touch-manipulation"
-            >
-              {isPending ? (
-                <>
-                  <FaSpinner className="w-3 h-3 mr-2 animate-spin sm:w-4 sm:h-4" />
-                  <span className="text-xs sm:text-sm">
-                    {t("courses.processing")}
-                  </span>
-                </>
-              ) : (
-                getConfirmButtonText()
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
-
-  // For insufficient balance or unauthenticated users, render button without AlertDialog
-  return buttonContent;
 }
 
 function ExamAccordionHeader({ exam }: { exam: StudentExamDto }) {
