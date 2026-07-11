@@ -5,6 +5,10 @@ import AboutSection from "@/components/landing-page/about-section";
 import FeaturesSection from "@/components/landing-page/features-section";
 import Footer from "@/components/footer";
 import GradesSection from "@/components/landing-page/grades-section";
+import {
+  ImportantLecturesSection,
+  LatestLecturesSection,
+} from "@/components/landing-page/lectures-section";
 
 const StudentHomePage = () => {
   return (
@@ -13,6 +17,8 @@ const StudentHomePage = () => {
         <HeroSection />
         <FeaturesSection />
         <GradesSection />
+        <ImportantLecturesSection />
+        <LatestLecturesSection />
         <SeniorsSection />
         <MemoriesSection />
         <AboutSection />

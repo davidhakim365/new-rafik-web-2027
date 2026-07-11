@@ -155,6 +155,7 @@ module.exports = {
         aboutSection: "hsl(var(--aboutSection))",
         seniorsSection: "hsl(var(--seniorsSection))",
         memoriesSection: "hsl(var(--memoriesSection))",
+        lecturesSection: "hsl(var(--lecturesSection))",
         footer: {
           DEFAULT: "hsl(var(--footer))",
           foreground: "hsl(var(--footer-foreground))",

@@ -45,6 +45,7 @@
     --aboutSection: 220 30% 96%;
     --seniorsSection: 220 25% 97%;
     --memoriesSection: 220 30% 98%;
+    --lecturesSection: 220 25% 97%;
     --footer: 224 40% 8%;
     --color1: 224 67% 35%;
     --color2: 224 82% 55%;
@@ -90,6 +91,7 @@
     --featuresSection: 224 40% 7%;
     --seniorsSection: 224 35% 8%;
     --memoriesSection: 224 40% 6%;
+    --lecturesSection: 224 35% 8%;
     --aboutSection: 224 35% 8%;
     --footer: 224 45% 5%;
     --footer-foreground: 220 20% 70%;
