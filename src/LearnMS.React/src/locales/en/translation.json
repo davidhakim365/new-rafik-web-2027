@@ -1,6 +1,6 @@
 {
   "hero": {
-    "badge": "Physics & Mathematics Academy",
+    "badge": "Mathematics Academy",
     "title": "Mr Rafik Isaac",
     "subtitle": "Newton's Academy",
     "description": "Welcome to Newton's Academy, where we transform learning into an exciting journey of discovery and growth. Join us to explore the fascinating world of physics and mathematics.",
@@ -9,12 +9,12 @@
     "stats": {
       "courses": "Expert Courses",
       "students": "1000+ Students",
-      "subjects": "Physics & Math"
+      "subjects": " Math"
     }
   },
   "features": {
     "badge": "Why Choose Us",
-    "title": "Master Physics & Mathematics",
+    "title": "Master Mathematics",
     "description": "Everything you need to excel in your academic journey, from interactive lectures to comprehensive exams.",
     "items": {
       "1": {
