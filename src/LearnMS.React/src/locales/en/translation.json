@@ -146,6 +146,7 @@
     "badge": "Meet your Instructor",
     "title": "Who's Mr Rafik?",
     "description": "Learn about the journey and expertise of our dedicated instructor",
+    "imageAlt": "Mr. Rafik Isaac - Physics Instructor",
     "items": {
       "1": {
         "title": "Early Career",
