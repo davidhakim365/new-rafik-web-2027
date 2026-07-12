@@ -1,8 +1,12 @@
 import
   {
+    getLessonVideoUploadPolicy,
+    saveLessonVideoId,
     UpdateLessonRequest,
+    uploadVideoToVdoCipher,
     useDeleteLessonMutation,
-    useUpdateLessonMutation
+    useUpdateLessonMutation,
+    waitForVideoReady,
   } from "@/api/lessons-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
@@ -11,33 +15,44 @@ import
   {
     Form,
     FormControl,
+    FormDescription,
     FormField,
     FormItem,
     FormLabel,
     FormMessage,
   } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { useGetLesson } from "@/generated/api";
 import { GetDashboardLessonResult } from "@/generated/model";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import Uppy from "@uppy/core";
-import Dashboard from "@uppy/dashboard";
-import DropTarget from "@uppy/drop-target";
-import Tus from "@uppy/tus";
-import { ListCollapse, Settings2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ListCollapse, Settings2, Upload, Video } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
+
+type UploadPhase =
+  | "idle"
+  | "preparing"
+  | "uploading"
+  | "saving"
+  | "processing"
+  | "complete"
+  | "error";
 
 const LessonDetailsPage = () => {
   const { courseId, lectureId, lessonId } = useParams();
   const navigate = useNavigate();
 
-  
-  const {data: lesson, isLoading, isError} = useGetLesson(courseId!, lectureId!, lessonId!);
+  const { data: lesson, isLoading, isError } = useGetLesson(
+    courseId!,
+    lectureId!,
+    lessonId!
+  );
 
   const deleteLessonMutation = useDeleteLessonMutation();
 
@@ -126,7 +141,13 @@ function LessonDetailsContent({
       videoId: videoId ?? "",
       renewalPrice,
     },
-    values: { description, title, expirationHours, renewalPrice, videoId: videoId ?? "" },
+    values: {
+      description,
+      title,
+      expirationHours,
+      renewalPrice,
+      videoId: videoId ?? "",
+    },
   });
 
   const onSubmit = (data: UpdateLessonRequest) => {
@@ -227,10 +248,21 @@ function LessonDetailsContent({
             name='videoId'
             render={({ field }) => (
               <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
-                <FormLabel className='text-color2'>Video Id</FormLabel>
+                <FormLabel className='text-color2'>
+                  Video Id (optional)
+                </FormLabel>
                 <FormControl>
-                  <Input type='string' className='text-color2' {...field} />
+                  <Input
+                    type='string'
+                    className='text-color2'
+                    placeholder='Paste VdoCipher video ID here'
+                    {...field}
+                  />
                 </FormControl>
+                <FormDescription className='text-color2/70'>
+                  Leave empty and upload below, or paste an existing VdoCipher
+                  video ID.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -250,56 +282,125 @@ function LessonVideo({
   lessonId: string;
   lectureId: string;
   courseId: string;
-  lesson:  GetDashboardLessonResult;
+  lesson: GetDashboardLessonResult;
 }) {
   const qc = useQueryClient();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<UploadPhase>("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
-  const [uppy] = useState(
-    new Uppy({
-      restrictions: {
-        allowedFileTypes: ["video/*"],
-        minNumberOfFiles: 1,
-      },
-    }).use(Tus, {
-      endpoint: `/api/courses/${courseId}/lectures/${lectureId}/lessons/${lessonId}/video`,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      onShouldRetry(_) {
-        return false;
-      },
-      onAfterResponse(_, res) {
-        if (res.getStatus() === 204) {
-          toast({
-            title: "Video uploaded successfully",
-          });
-          qc.invalidateQueries({
-            queryKey: ["lesson", { id: lessonId }],
-          });
-        }
-      },
-    })
-  );
-
-  useEffect(() => {
-    uppy
-      .use(DropTarget, {
-        target: "#lesson-video-drop-zone",
-        onDrop: () => {
-          const plugin: any = uppy.getPlugin("Dashboard");
-          plugin.openModal();
-        },
-      })
-      .use(Dashboard, {
-        inline: false,
-        target: "#lesson-video-drop-zone",
-        height: 200,
-      });
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    setSelectedFile(file);
+    setUploadPhase("idle");
+    setUploadProgress(0);
+    setStatusMessage("");
   }, []);
 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "video/*": [] },
+    maxFiles: 1,
+    disabled: isUploading,
+  });
+
+  const refreshLesson = () => {
+    qc.invalidateQueries({ queryKey: ["lesson", { id: lessonId }] });
+    qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
+    qc.invalidateQueries({ queryKey: ["lecture", { id: lectureId }] });
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No file selected",
+        description: "Please choose a video file first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadPhase("preparing");
+    setUploadProgress(0);
+    setStatusMessage("Preparing upload...");
+
+    try {
+      const policy = await getLessonVideoUploadPolicy({
+        courseId,
+        lectureId,
+        lessonId,
+      });
+
+      setUploadPhase("uploading");
+      setStatusMessage("Uploading to VdoCipher...");
+
+      await uploadVideoToVdoCipher({
+        file: selectedFile,
+        policy,
+        onProgress: (percent) => {
+          setUploadProgress(percent);
+          setStatusMessage(`Uploading to VdoCipher... ${percent}%`);
+        },
+      });
+
+      setUploadPhase("saving");
+      setUploadProgress(100);
+      setStatusMessage("Saving video ID to lesson...");
+
+      await saveLessonVideoId({
+        courseId,
+        lectureId,
+        lessonId,
+        videoId: policy.videoId,
+      });
+
+      setUploadPhase("processing");
+      setStatusMessage("Video uploaded. Processing on VdoCipher...");
+
+      await waitForVideoReady({
+        courseId,
+        lectureId,
+        lessonId,
+        maxAttempts: 60,
+        intervalMs: 5000,
+      });
+
+      setUploadPhase("complete");
+      setStatusMessage("Video is ready.");
+      setSelectedFile(null);
+      refreshLesson();
+
+      toast({
+        title: "Video uploaded successfully",
+        description: `Video ID: ${policy.videoId}`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Upload failed. Please try again.";
+      setUploadPhase("error");
+      setStatusMessage(message);
+      toast({
+        title: "Upload failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const showProgress =
+    uploadPhase === "preparing" ||
+    uploadPhase === "uploading" ||
+    uploadPhase === "saving" ||
+    uploadPhase === "processing";
 
   return (
-    <div className='flex flex-col gap-4 p-4' id='lesson-video-drop-zone'>
+    <div className='flex flex-col gap-4 p-4'>
       <div className='flex items-center justify-between text-xl'>
         <div className='flex items-center gap-2'>
           <ListCollapse className='text-primary bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
@@ -307,7 +408,97 @@ function LessonVideo({
         </div>
       </div>
 
-      
+      <div className='p-4 bg-color2/10 border-2 border-color2/20 rounded-xl space-y-4'>
+        <p className='text-sm text-color2/80'>
+          Upload a video directly to VdoCipher, or paste a video ID in the
+          form on the left.
+        </p>
+
+        <div
+          {...getRootProps()}
+          className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+            isDragActive
+              ? "border-color2 bg-color2/20"
+              : "border-color2/40 hover:border-color2/70 hover:bg-color2/10"
+          } ${isUploading ? "opacity-60 cursor-not-allowed" : ""}`}>
+          <input {...getInputProps()} />
+          <Video className='w-10 h-10 text-color2/60' />
+          {selectedFile ? (
+            <div className='text-center'>
+              <p className='font-medium text-color2'>{selectedFile.name}</p>
+              <p className='text-sm text-color2/60'>
+                {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+              </p>
+            </div>
+          ) : (
+            <div className='text-center'>
+              <p className='font-medium text-color2'>
+                {isDragActive
+                  ? "Drop the video here"
+                  : "Drag & drop a video, or click to browse"}
+              </p>
+              <p className='text-sm text-color2/60'>MP4, MOV, AVI and other video formats</p>
+            </div>
+          )}
+        </div>
+
+        {showProgress && (
+          <div className='space-y-2'>
+            <div className='flex justify-between text-sm text-color2'>
+              <span>{statusMessage}</span>
+              {uploadPhase === "uploading" && <span>{uploadProgress}%</span>}
+            </div>
+            <Progress
+              value={
+                uploadPhase === "uploading"
+                  ? uploadProgress
+                  : uploadPhase === "processing"
+                    ? 100
+                    : uploadPhase === "saving"
+                      ? 100
+                      : 10
+              }
+              className='h-2'
+            />
+            {uploadPhase === "processing" && (
+              <p className='text-xs text-color2/60 animate-pulse'>
+                VdoCipher is encoding your video. This may take a few minutes...
+              </p>
+            )}
+          </div>
+        )}
+
+        {uploadPhase === "error" && (
+          <p className='text-sm text-destructive'>{statusMessage}</p>
+        )}
+
+        {uploadPhase === "complete" && (
+          <p className='text-sm text-green-600'>{statusMessage}</p>
+        )}
+
+        <div className='flex gap-2'>
+          <Button
+            onClick={handleUpload}
+            disabled={!selectedFile || isUploading}
+            className='bg-color2/80 hover:bg-color2'>
+            <Upload className='w-4 h-4 mr-2' />
+            {isUploading ? "Uploading..." : "Upload to VdoCipher"}
+          </Button>
+          {selectedFile && !isUploading && (
+            <Button
+              variant='outline'
+              type='button'
+              onClick={() => {
+                setSelectedFile(null);
+                setUploadPhase("idle");
+                setUploadProgress(0);
+                setStatusMessage("");
+              }}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
 
       {lesson.videoOTP?.playbackInfo && (
         <div className='w-full rounded-xl aspect-video overflow-clip'>

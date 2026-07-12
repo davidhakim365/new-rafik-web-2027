@@ -144,4 +144,64 @@ public sealed class LessonsController : ControllerBase
         };
 
     }
+
+    [HttpPost("{lessonId:guid}/video/policy")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "GetLessonVideoUploadPolicy")]
+    public async Task<ApiWrapper.Success<GetLessonVideoUploadPolicyResponse>> GetVideoUploadPolicy(
+        Guid courseId,
+        Guid lectureId,
+        Guid lessonId
+    )
+    {
+        var result = await _coursesService.QueryAsync(new GetLessonVideoUploadPolicyQuery
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            LessonId = lessonId,
+        });
+
+        return new()
+        {
+            Data = new GetLessonVideoUploadPolicyResponse
+            {
+                VideoId = result.VideoId,
+                Policy = result.Policy,
+                Key = result.Key,
+                XAmzSignature = result.XAmzSignature,
+                XAmzAlgorithm = result.XAmzAlgorithm,
+                XAmzDate = result.XAmzDate,
+                XAmzCredential = result.XAmzCredential,
+                UploadLink = result.UploadLink,
+            },
+            Message = "Upload policy retrieved successfully",
+        };
+    }
+
+    [HttpPost("{lessonId:guid}/video/validate")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "ValidateLessonVideoStatus")]
+    public async Task<ApiWrapper.Success<ValidateLessonVideoStatusResponse>> ValidateVideoStatus(
+        Guid courseId,
+        Guid lectureId,
+        Guid lessonId
+    )
+    {
+        var result = await _coursesService.QueryAsync(new ValidateLessonVideoStatusQuery
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            LessonId = lessonId,
+        });
+
+        return new()
+        {
+            Data = new ValidateLessonVideoStatusResponse
+            {
+                VideoId = result.VideoId,
+                Status = result.Status,
+            },
+            Message = "Video status retrieved successfully",
+        };
+    }
 }

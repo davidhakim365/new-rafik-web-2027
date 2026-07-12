@@ -1,4 +1,6 @@
-public sealed record ValidateLessonVideoStatusCommand
+namespace LearnMS.API.Features.Courses.Contracts;
+
+public sealed record ValidateLessonVideoStatusQuery
 {
     public required Guid CourseId { get; set; }
     public required Guid LectureId { get; set; }
@@ -7,8 +9,8 @@ public sealed record ValidateLessonVideoStatusCommand
 
 public record ValidateLessonVideoStatusResult
 {
-    public required string VideoId;
-    public required string Status;
+    public required string VideoId { get; init; }
+    public required string Status { get; init; }
 }
 
 public record ValidateLessonVideoStatusResponse : ValidateLessonVideoStatusResult;

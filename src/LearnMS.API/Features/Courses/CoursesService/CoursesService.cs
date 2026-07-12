@@ -1536,6 +1536,55 @@ public sealed class CoursesService : ICoursesService
         };
     }
 
+    public async Task<GetLessonVideoUploadPolicyResult> QueryAsync(GetLessonVideoUploadPolicyQuery query)
+    {
+        var lesson =
+            await _context
+                .Set<Lesson>()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == query.LessonId
+                    && x.Lecture.CourseId == query.CourseId
+                    && x.LectureId == query.LectureId
+                ) ?? throw new ApiException(LessonsErrors.NotFound);
+
+        var policy = await _vdoService.GetUploadPolicyAsync(lesson.VideoId);
+
+        return new GetLessonVideoUploadPolicyResult
+        {
+            VideoId = policy.VideoId,
+            Policy = policy.Policy,
+            Key = policy.Key,
+            XAmzSignature = policy.XAmzSignature,
+            XAmzAlgorithm = policy.XAmzAlgorithm,
+            XAmzDate = policy.XAmzDate,
+            XAmzCredential = policy.XAmzCredential,
+            UploadLink = policy.UploadLink,
+        };
+    }
+
+    public async Task<ValidateLessonVideoStatusResult> QueryAsync(ValidateLessonVideoStatusQuery query)
+    {
+        var lesson =
+            await _context
+                .Set<Lesson>()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == query.LessonId
+                    && x.Lecture.CourseId == query.CourseId
+                    && x.LectureId == query.LectureId
+                ) ?? throw new ApiException(LessonsErrors.NotFound);
+
+        if (string.IsNullOrWhiteSpace(lesson.VideoId))
+            throw new ApiException(LessonsErrors.NotFound);
+
+        var video = await _vdoService.GetVideoAsync(lesson.VideoId);
+
+        return new ValidateLessonVideoStatusResult
+        {
+            VideoId = lesson.VideoId,
+            Status = video.Status,
+        };
+    }
+
     public async Task<PageList<SingleLectureStudent>> QueryAsync(GetLectureStudentsQuery query)
     {
         var search = query.Search?.Trim().ToLower();

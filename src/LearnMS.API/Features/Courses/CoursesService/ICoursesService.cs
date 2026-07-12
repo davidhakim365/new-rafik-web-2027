@@ -50,6 +50,8 @@ public interface ICoursesService
     public Task<GetStudentLectureResult> QueryAsync(GetStudentLectureQuery query);
     public Task<GetDashboardLessonResult> QueryAsync(GetLessonQuery query);
     public Task<GetStudentLessonResult> QueryAsync(GetStudentLessonQuery query);
+    public Task<GetLessonVideoUploadPolicyResult> QueryAsync(GetLessonVideoUploadPolicyQuery query);
+    public Task<ValidateLessonVideoStatusResult> QueryAsync(ValidateLessonVideoStatusQuery query);
     public Task<PageList<SingleLectureStudent>> QueryAsync(GetLectureStudentsQuery query);
     public Task<QuizResult> QueryAsync(GetQuizQuery query);
     public Task<QuizResult> QueryAsync(GetStudentQuizQuery query);

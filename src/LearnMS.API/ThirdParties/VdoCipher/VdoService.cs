@@ -33,7 +33,7 @@ public sealed class VdoService(IHttpClientFactory httpClientFactory)
 
     public async Task<string> UploadVideoAsync(Stream fs, string? videoId = null)
     {
-        var policy = await GetUploadingPolicyAsync(videoId);
+        var policy = await GetUploadPolicyAsync(videoId);
 
         await UploadVideoAsync(policy, fs);
 
@@ -49,7 +49,7 @@ public sealed class VdoService(IHttpClientFactory httpClientFactory)
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<VdoCipherUploadingPolicy> GetUploadingPolicyAsync(string? videoId = null)
+    public async Task<VdoCipherUploadingPolicy> GetUploadPolicyAsync(string? videoId = null)
     {
         var client = httpClientFactory.CreateClient(nameof(VdoService));
 
