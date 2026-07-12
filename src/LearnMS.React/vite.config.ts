@@ -19,9 +19,14 @@ export default defineConfig({
   // },
   server: {
     port: 4000,
-     proxy: {
-       "/api": "http://localhost:5000",
-     }
+    proxy: {
+      "/api": {
+        target: process.env.VITE_API_PROXY ?? "http://localhost:5000",
+        changeOrigin: true,
+        timeout: 0,
+        proxyTimeout: 0,
+      },
+    },
   },
   resolve: {
     alias: {

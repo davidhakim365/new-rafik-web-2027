@@ -158,10 +158,35 @@ export type LessonVideoUploadPolicy = {
   uploadLink: string;
 };
 
-export type LessonVideoStatus = {
-  videoId: string;
-  status: string;
-};
+function normalizeUploadPolicy(data: unknown): LessonVideoUploadPolicy {
+  if (!data || typeof data !== "object") {
+    throw new Error("No upload policy received from server.");
+  }
+
+  const raw = data as Record<string, unknown>;
+  const policy: LessonVideoUploadPolicy = {
+    videoId: String(raw.videoId ?? raw.VideoId ?? ""),
+    policy: String(raw.policy ?? raw.Policy ?? ""),
+    key: String(raw.key ?? raw.Key ?? ""),
+    xAmzSignature: String(raw.xAmzSignature ?? raw.XAmzSignature ?? ""),
+    xAmzAlgorithm: String(raw.xAmzAlgorithm ?? raw.XAmzAlgorithm ?? ""),
+    xAmzDate: String(raw.xAmzDate ?? raw.XAmzDate ?? ""),
+    xAmzCredential: String(raw.xAmzCredential ?? raw.XAmzCredential ?? ""),
+    uploadLink: String(raw.uploadLink ?? raw.UploadLink ?? ""),
+  };
+
+  const missing = Object.entries(policy)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Upload policy is incomplete (${missing.join(", ")}). Check VdoCipher API secret.`
+    );
+  }
+
+  return policy;
+}
 
 export async function getLessonVideoUploadPolicy({
   courseId,
@@ -175,8 +200,13 @@ export async function getLessonVideoUploadPolicy({
   const response = await api.post<ApiResponse<LessonVideoUploadPolicy>>(
     `/api/courses/${courseId}/lectures/${lectureId}/lessons/${lessonId}/video/policy`
   );
-  return response.data.data;
+  return normalizeUploadPolicy(response.data.data);
 }
+
+export type LessonVideoStatus = {
+  videoId: string;
+  status: string;
+};
 
 export async function validateLessonVideoStatus({
   courseId,
@@ -267,7 +297,9 @@ export async function uploadLessonVideo({
 
     xhr.addEventListener("error", () => {
       reject(
-        new Error("Network error during upload. Check your internet connection.")
+        new Error(
+          "Could not reach the server during upload. If you use Docker, run the frontend on http://localhost:3000 or set VITE_API_PROXY=http://localhost:3000 when using npm run dev."
+        )
       );
     });
 
@@ -327,11 +359,22 @@ export async function uploadVideoToVdoCipher({
         resolve();
         return;
       }
-      reject(new Error(`Upload failed with status ${xhr.status}`));
+
+      const detail = xhr.responseText
+        ? xhr.responseText.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
+        : "No response details";
+
+      reject(
+        new Error(`VdoCipher storage rejected the upload (${xhr.status}): ${detail}`)
+      );
     });
 
     xhr.addEventListener("error", () => {
-      reject(new Error("Network error during upload. Check your internet connection."));
+      reject(
+        new Error(
+          "Could not send the video to VdoCipher storage. If this keeps happening, try a smaller file or paste the video ID manually."
+        )
+      );
     });
 
     xhr.addEventListener("abort", () => {

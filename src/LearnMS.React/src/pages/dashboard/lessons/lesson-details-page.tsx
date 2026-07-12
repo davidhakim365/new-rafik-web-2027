@@ -1,7 +1,9 @@
 import
   {
-    uploadLessonVideo,
+    getLessonVideoUploadPolicy,
+    saveLessonVideoId,
     UpdateLessonRequest,
+    uploadVideoToVdoCipher,
     useDeleteLessonMutation,
     useUpdateLessonMutation,
     waitForVideoReady,
@@ -35,7 +37,9 @@ import { useNavigate, useParams } from "react-router-dom";
 
 type UploadPhase =
   | "idle"
+  | "preparing"
   | "uploading"
+  | "saving"
   | "processing"
   | "complete"
   | "error";
@@ -325,22 +329,39 @@ function LessonVideo({
     setStatusMessage("Preparing upload...");
 
     try {
-      setUploadPhase("uploading");
-      setStatusMessage("Uploading video...");
+      setUploadPhase("preparing");
+      setStatusMessage("Getting VdoCipher upload credentials...");
 
-      const { videoId } = await uploadLessonVideo({
+      const policy = await getLessonVideoUploadPolicy({
         courseId,
         lectureId,
         lessonId,
+      });
+
+      setUploadPhase("uploading");
+      setStatusMessage("Uploading to VdoCipher...");
+
+      await uploadVideoToVdoCipher({
         file: selectedFile,
+        policy,
         onProgress: (percent) => {
           setUploadProgress(percent);
-          setStatusMessage(`Uploading video... ${percent}%`);
+          setStatusMessage(`Uploading to VdoCipher... ${percent}%`);
         },
       });
 
-      setUploadPhase("processing");
+      setUploadPhase("saving");
       setUploadProgress(100);
+      setStatusMessage("Saving video ID to lesson...");
+
+      await saveLessonVideoId({
+        courseId,
+        lectureId,
+        lessonId,
+        videoId: policy.videoId,
+      });
+
+      setUploadPhase("processing");
       setStatusMessage("Video uploaded. Processing on VdoCipher...");
 
       await waitForVideoReady({
@@ -358,7 +379,7 @@ function LessonVideo({
 
       toast({
         title: "Video uploaded successfully",
-        description: `Video ID: ${videoId}`,
+        description: `Video ID: ${policy.videoId}`,
       });
     } catch (error) {
       const message =
@@ -376,7 +397,10 @@ function LessonVideo({
   };
 
   const showProgress =
-    uploadPhase === "uploading" || uploadPhase === "processing";
+    uploadPhase === "preparing" ||
+    uploadPhase === "uploading" ||
+    uploadPhase === "saving" ||
+    uploadPhase === "processing";
 
   return (
     <div className='flex flex-col gap-4 p-4'>
@@ -431,9 +455,11 @@ function LessonVideo({
               value={
                 uploadPhase === "uploading"
                   ? uploadProgress
-                  : uploadPhase === "processing"
+                  : uploadPhase === "processing" || uploadPhase === "saving"
                     ? 100
-                    : 0
+                    : uploadPhase === "preparing"
+                      ? 5
+                      : 0
               }
               className='h-2'
             />

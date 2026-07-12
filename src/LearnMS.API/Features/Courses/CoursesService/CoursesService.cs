@@ -1547,7 +1547,7 @@ public sealed class CoursesService : ICoursesService
                     && x.LectureId == query.LectureId
                 ) ?? throw new ApiException(LessonsErrors.NotFound);
 
-        var policy = await _vdoService.GetUploadPolicyAsync(lesson.VideoId);
+        var policy = await _vdoService.GetUploadPolicyAsync(null);
 
         return new GetLessonVideoUploadPolicyResult
         {
