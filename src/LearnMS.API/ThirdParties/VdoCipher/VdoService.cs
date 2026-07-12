@@ -55,7 +55,14 @@ public sealed class VdoService(IHttpClientFactory httpClientFactory)
 
         if (!string.IsNullOrWhiteSpace(videoId))
         {
-            await DeleteVideoAsync(videoId);
+            try
+            {
+                await DeleteVideoAsync(videoId);
+            }
+            catch
+            {
+                // Ignore delete failures for stale or foreign video IDs.
+            }
         }
 
 

@@ -9,3 +9,8 @@ public record UploadLessonVideoCommand
     public required Guid LessonId { get; set; }
     public required Stream FS { get; set; }
 }
+
+public record UploadLessonVideoResponse
+{
+    public required string VideoId { get; init; }
+}

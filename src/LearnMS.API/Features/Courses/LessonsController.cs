@@ -2,6 +2,7 @@ using LearnMS.API.Common;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Security;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -143,6 +144,47 @@ public sealed class LessonsController : ControllerBase
             Message = "Renewed expiration successfully"
         };
 
+    }
+
+    [HttpPost("{lessonId:guid}/video/upload")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [RequestSizeLimit(5L * 1024 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 5L * 1024 * 1024 * 1024)]
+    [SwaggerOperation(OperationId = "UploadLessonVideo")]
+    public async Task<ApiWrapper.Success<UploadLessonVideoResponse>> UploadVideo(
+        Guid courseId,
+        Guid lectureId,
+        Guid lessonId,
+        IFormFile file
+    )
+    {
+        if (file.Length == 0)
+            throw new ApiException(LessonsErrors.NotFound);
+
+        await using var stream = file.OpenReadStream();
+        await _coursesService.ExecuteAsync(new UploadLessonVideoCommand
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            LessonId = lessonId,
+            FS = stream,
+        });
+
+        var lesson = await _coursesService.QueryAsync(new GetLessonQuery
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            LessonId = lessonId,
+        });
+
+        return new()
+        {
+            Data = new UploadLessonVideoResponse
+            {
+                VideoId = lesson.VideoId!,
+            },
+            Message = "Video uploaded successfully",
+        };
     }
 
     [HttpPost("{lessonId:guid}/video/policy")]

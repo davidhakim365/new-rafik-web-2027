@@ -211,6 +211,88 @@ export async function saveLessonVideoId({
   return response.data;
 }
 
+export async function uploadLessonVideo({
+  courseId,
+  lectureId,
+  lessonId,
+  file,
+  onProgress,
+}: {
+  courseId: string;
+  lectureId: string;
+  lessonId: string;
+  file: File;
+  onProgress: (percent: number) => void;
+}) {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+
+  const token = localStorage.getItem("token");
+
+  return new Promise<{ videoId: string }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const body = JSON.parse(xhr.responseText) as {
+            data?: { videoId?: string };
+            message?: string;
+          };
+          const videoId = body.data?.videoId;
+          if (!videoId) {
+            reject(new Error("Upload succeeded but no video ID was returned."));
+            return;
+          }
+          resolve({ videoId });
+        } catch {
+          reject(new Error("Upload succeeded but the server response was invalid."));
+        }
+        return;
+      }
+
+      try {
+        const err = JSON.parse(xhr.responseText) as { message?: string };
+        reject(new Error(err.message || `Upload failed with status ${xhr.status}`));
+      } catch {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(
+        new Error("Network error during upload. Check your internet connection.")
+      );
+    });
+
+    xhr.addEventListener("abort", () => {
+      reject(new Error("Upload was cancelled."));
+    });
+
+    xhr.open(
+      "POST",
+      `/api/courses/${courseId}/lectures/${lectureId}/lessons/${lessonId}/video/upload`
+    );
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+
+    const deviceKey = localStorage.getItem("deviceKey");
+    if (deviceKey) {
+      xhr.setRequestHeader("DeviceKey", deviceKey);
+    }
+
+    xhr.send(formData);
+  });
+}
+
 export async function uploadVideoToVdoCipher({
   file,
   policy,

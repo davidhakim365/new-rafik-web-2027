@@ -1,9 +1,7 @@
 import
   {
-    getLessonVideoUploadPolicy,
-    saveLessonVideoId,
+    uploadLessonVideo,
     UpdateLessonRequest,
-    uploadVideoToVdoCipher,
     useDeleteLessonMutation,
     useUpdateLessonMutation,
     waitForVideoReady,
@@ -37,9 +35,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 type UploadPhase =
   | "idle"
-  | "preparing"
   | "uploading"
-  | "saving"
   | "processing"
   | "complete"
   | "error";
@@ -329,36 +325,22 @@ function LessonVideo({
     setStatusMessage("Preparing upload...");
 
     try {
-      const policy = await getLessonVideoUploadPolicy({
+      setUploadPhase("uploading");
+      setStatusMessage("Uploading video...");
+
+      const { videoId } = await uploadLessonVideo({
         courseId,
         lectureId,
         lessonId,
-      });
-
-      setUploadPhase("uploading");
-      setStatusMessage("Uploading to VdoCipher...");
-
-      await uploadVideoToVdoCipher({
         file: selectedFile,
-        policy,
         onProgress: (percent) => {
           setUploadProgress(percent);
-          setStatusMessage(`Uploading to VdoCipher... ${percent}%`);
+          setStatusMessage(`Uploading video... ${percent}%`);
         },
       });
 
-      setUploadPhase("saving");
-      setUploadProgress(100);
-      setStatusMessage("Saving video ID to lesson...");
-
-      await saveLessonVideoId({
-        courseId,
-        lectureId,
-        lessonId,
-        videoId: policy.videoId,
-      });
-
       setUploadPhase("processing");
+      setUploadProgress(100);
       setStatusMessage("Video uploaded. Processing on VdoCipher...");
 
       await waitForVideoReady({
@@ -376,7 +358,7 @@ function LessonVideo({
 
       toast({
         title: "Video uploaded successfully",
-        description: `Video ID: ${policy.videoId}`,
+        description: `Video ID: ${videoId}`,
       });
     } catch (error) {
       const message =
@@ -394,10 +376,7 @@ function LessonVideo({
   };
 
   const showProgress =
-    uploadPhase === "preparing" ||
-    uploadPhase === "uploading" ||
-    uploadPhase === "saving" ||
-    uploadPhase === "processing";
+    uploadPhase === "uploading" || uploadPhase === "processing";
 
   return (
     <div className='flex flex-col gap-4 p-4'>
@@ -454,9 +433,7 @@ function LessonVideo({
                   ? uploadProgress
                   : uploadPhase === "processing"
                     ? 100
-                    : uploadPhase === "saving"
-                      ? 100
-                      : 10
+                    : 0
               }
               className='h-2'
             />
