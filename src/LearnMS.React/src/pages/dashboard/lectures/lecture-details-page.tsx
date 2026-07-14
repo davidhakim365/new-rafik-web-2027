@@ -231,65 +231,75 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
   };
 
   return (
-    <div className='relative w-full h-full p-4'>
-      <div className='flex flex-col gap-3 p-4 sm:absolute sm:left-4 sm:top-6 sm:flex-row sm:items-center sm:gap-6'>
+    <div className="flex w-full flex-col gap-4 p-3 sm:p-4">
+      <div className="flex flex-col gap-3">
         <Input
-          className='w-full sm:w-[300px]'
-          placeholder='Search'
+          className="w-full"
+          placeholder="Search students..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}></Input>
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         {lectureStatistics?.data && (
-          <div className='flex items-center gap-2'>
-            <div className='gap-2 p-2 '>
-              Attended: {lectureStatistics?.data?.attendedStudents}
-            </div>
-            <div className='gap-2 p-2'>
-              Enrolled: {lectureStatistics?.data?.enrolledStudents}
-            </div>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <span className="rounded-lg border border-color2/10 bg-color2/5 px-3 py-1.5">
+              Attended: {lectureStatistics.data.attendedStudents}
+            </span>
+            <span className="rounded-lg border border-color2/10 bg-color2/5 px-3 py-1.5">
+              Enrolled: {lectureStatistics.data.enrolledStudents}
+            </span>
           </div>
         )}
 
-        <AttendInput lectureId={lecture.id} courseId={lecture.courseId} />
-      </div>
-      {isLoading ? (
-        <div className='flex items-center justify-center w-full h-full'>
-          <Loading />
-        </div>
-      ) : (
-        <div className=''>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <AttendInput lectureId={lecture.id} courseId={lecture.courseId} />
           <Button
             disabled={updateLectureGrades.isPending}
-            variant='outline'
-            className='absolute text-red-500 w-fit h-fit top-8 right-48'
-            onClick={onImport}>
-            {(!updateLectureGrades.isPending && <FaFileImport />) || (
-              <Loader2 className='w-4 h-4 animate-spin' />
+            variant="outline"
+            className="w-full border-red-200 text-red-500 sm:w-auto"
+            onClick={onImport}
+          >
+            {updateLectureGrades.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FaFileImport className="h-4 w-4" />
             )}
+            <span className="ml-2">Import CSV</span>
           </Button>
           <Button
             disabled={isDownloading}
-            variant='outline'
-            className='absolute w-fit h-fit top-8 right-28 text-primary'
-            onClick={onExport}>
-            {(!isDownloading && <FaFileExport />) || (
-              <Loader2 className='w-4 h-4 animate-spin' />
+            variant="outline"
+            className="w-full text-primary sm:w-auto"
+            onClick={onExport}
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FaFileExport className="h-4 w-4" />
             )}
+            <span className="ml-2">Export</span>
           </Button>
-          <DataTable
-            data={data?.data!.items!}
-            pagination={{
-              hasNextPage: data!.data!.hasNextPage,
-              hasPreviousPage: data!.data!.hasPreviousPage,
-              pageIndex,
-              pageSize,
-              pageCount: data!.data!.totalCount,
-            }}
-            rowCount={data?.data!.totalCount!}
-            columns={lectureStudentsColumns}
-            setPagination={setPagination}
-          />
         </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex h-48 items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
+        <DataTable
+          data={data?.data!.items!}
+          pagination={{
+            hasNextPage: data!.data!.hasNextPage,
+            hasPreviousPage: data!.data!.hasPreviousPage,
+            pageIndex,
+            pageSize,
+            pageCount: data!.data!.totalCount,
+          }}
+          rowCount={data?.data!.totalCount!}
+          columns={lectureStudentsColumns}
+          setPagination={setPagination}
+        />
       )}
     </div>
   );
@@ -942,7 +952,8 @@ function AttendInput({
   lectureId: string;
   courseId: string;
 }) {
-  const [show, setShow] = useState(false);
+  const navigate = useNavigate();
+  const [showManual, setShowManual] = useState(false);
   const [code, setCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -953,12 +964,13 @@ function AttendInput({
   });
 
   useEffect(() => {
+    if (!showManual) return;
     const timer = setTimeout(() => {
       if (code.length > 0) handleSubmit();
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [code]);
+  }, [code, showManual]);
 
   const handleSubmit = async () => {
     if (!code) return;
@@ -990,24 +1002,44 @@ function AttendInput({
   };
 
   return (
-    <div className='flex items-center gap-2'>
-      <Button size='icon' onClick={() => setShow((state) => !state)}>
-        <FaBarcode />
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+      <Button
+        className="w-full gap-2 bg-gradient-to-r from-color1 to-color2 sm:w-auto"
+        onClick={() =>
+          navigate(
+            `/dashboard/courses/${courseId}/lectures/${lectureId}/scan`
+          )
+        }
+      >
+        <FaBarcode className="h-4 w-4" />
+        Scan Barcode
       </Button>
-      {show && (
-        <>
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setShowManual((state) => !state)}
+      >
+        {showManual ? "Hide Manual" : "Manual Entry"}
+      </Button>
+      {showManual && (
+        <div className="flex w-full gap-2 sm:w-auto">
           <Input
             ref={inputRef}
-            type='text'
-            className='text-primary w-[200px]'
-            placeholder='code...'
+            type="text"
+            className="w-full text-primary sm:w-[200px]"
+            placeholder="Student code..."
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
-          <Button size='icon' onClick={handleSubmit} disabled={isPending}>
-            <FaCheck />
+          <Button
+            size="icon"
+            onClick={handleSubmit}
+            disabled={isPending}
+            className="shrink-0"
+          >
+            <FaCheck className="h-4 w-4" />
           </Button>
-        </>
+        </div>
       )}
     </div>
   );

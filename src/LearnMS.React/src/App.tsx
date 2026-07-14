@@ -16,6 +16,7 @@ import FilesPage from "@/pages/dashboard/files/files-page";
 import GrantedAccessPage from "@/pages/dashboard/granted-access/granted-access-page";
 import ImportantLecturesPage from "@/pages/dashboard/important-lectures/important-lectures-page";
 import LectureDetailsPage from "@/pages/dashboard/lectures/lecture-details-page";
+import LectureBarcodeScannerPage from "@/pages/dashboard/lectures/lecture-barcode-scanner-page";
 import LessonDetailsPage from "@/pages/dashboard/lessons/lesson-details-page";
 import QuestionsPage from "@/pages/dashboard/questions/questions-page";
 import QuizPage from "@/pages/dashboard/quizzes/quiz-page";
@@ -167,6 +168,17 @@ function App() {
                     permissions={["ManageCourses"]}
                   >
                     <LectureDetailsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="courses/:courseId/lectures/:lectureId/scan"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageCourses"]}
+                  >
+                    <LectureBarcodeScannerPage />
                   </RequireAuth>
                 }
               />

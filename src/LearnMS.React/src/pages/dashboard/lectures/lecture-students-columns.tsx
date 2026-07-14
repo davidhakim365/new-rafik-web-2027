@@ -32,79 +32,82 @@ import { toast } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
-import { CheckCircle, Circle, MoreHorizontal, Save } from "lucide-react";
+import { CheckCircle, Circle, Gift, MoreHorizontal, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useParams, useSearchParams } from "react-router-dom";
 
+function EnrollAction({ student }: { student: SingleLectureStudent }) {
+  const { lectureId, courseId } = useParams();
+  const [searchParams] = useSearchParams();
+  const qc = useQueryClient();
+
+  const { mutate: enroll, isPending } = useEnrollStudentInLecture({
+    mutation: {
+      onSuccess() {
+        toast({
+          title: "Enrolled",
+          description: "Successfully enrolled the student",
+        });
+        qc.invalidateQueries({
+          queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!, {
+            page: Number(searchParams.get("page")),
+            pageSize: Number(searchParams.get("pageSize")),
+            search: searchParams.get("search") ?? "",
+          }),
+        });
+      },
+    },
+  });
+
+  return (
+    <Confirmation
+      title="Enroll Student"
+      description="Are you sure you want to enroll this student for free?"
+      onConfirm={() =>
+        enroll({
+          courseId: courseId!,
+          lectureId: lectureId!,
+          studentId: student.id,
+        })
+      }
+      button={
+        <Button
+          disabled={isPending}
+          variant="outline"
+          size="sm"
+          className="w-full gap-2 lg:w-auto"
+        >
+          <Gift className="h-4 w-4" />
+          Enroll For Free
+        </Button>
+      }
+    />
+  );
+}
+
 export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
   {
-    id: "actions",
-    size: 6,
-    header: "Actions",
+    accessorKey: "fullName",
+    header: "Full Name",
     cell: ({ row }) => {
-      const student = row.original;
-      const { lectureId, courseId } = useParams();
-      const [searchParams] = useSearchParams();
-      const qc = useQueryClient();
-
-      const { mutate: enroll, isPending } = useEnrollStudentInLecture({
-        mutation: {
-          onSuccess() {
-            toast({
-              title: "Enrolled",
-              description: "Successfully enrolled the student",
-            });
-            qc.invalidateQueries({
-              queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!, {
-                page: Number(searchParams.get("page")),
-                pageSize: Number(searchParams.get("pageSize")),
-                search: searchParams.get("search") ?? "",
-              }),
-            });
-          },
-        },
-      });
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <MoreHorizontal />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side="left"
-            className="shadow-md shadow-primary w-[200px]"
-          >
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <Confirmation
-              title="Enroll Student"
-              description="Are you sure you want to enroll this student?"
-              onConfirm={() =>
-                enroll({
-                  courseId: courseId!,
-                  lectureId: lectureId!,
-                  studentId: student.id,
-                })
-              }
-              button={
-                <Button
-                  disabled={isPending}
-                  className="w-full hover:bg-primary hover:text-primary-foreground"
-                  variant="ghost"
-                >
-                  Enroll For Free
-                </Button>
-              }
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
+      const nameParts = row.original.fullName.split(" ");
+      const shortenedName = nameParts.slice(0, 2).join(" ");
+      return <div className="font-medium">{shortenedName}</div>;
+    },
+  },
+  {
+    accessorKey: "studentCode",
+    header: "Student ID",
+    cell: ({ row }) => {
+      const studentCode = row.original.studentCode;
+      const displayCode =
+        studentCode.length > 12 ? studentCode.split("@")[0] : studentCode;
+      return <div className="font-mono text-sm">{displayCode}</div>;
     },
   },
   {
     accessorKey: "attended",
     header: "Attended",
-    size: 6,
     cell: ({ row }) => {
       const student = row.original;
       const { lectureId, courseId } = useParams();
@@ -125,7 +128,7 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
           <Toggle
             disabled={isPending}
             pressed={student.attended}
-            className="data-[state=on]:text-primary data-[state=off]:text-zinc-400"
+            className="h-10 w-10 data-[state=on]:text-primary data-[state=off]:text-zinc-400"
             onPressedChange={() =>
               toggleAttendance({
                 lectureId: lectureId!,
@@ -135,9 +138,9 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
             }
           >
             {student.attended ? (
-              <CheckCircle className="w-6 h-6" />
+              <CheckCircle className="h-6 w-6" />
             ) : (
-              <Circle className="w-6 h-6" />
+              <Circle className="h-6 w-6" />
             )}
           </Toggle>
         </div>
@@ -147,39 +150,49 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
   {
     accessorKey: "enrolled",
     header: "Enrolled",
-    size: 6,
     cell: ({ row }) => {
       const student = row.original;
       return (
         <div className="flex items-center justify-center">
           {student.enrolled ? (
-            <CheckCircle className="w-6 h-6" />
+            <CheckCircle className="h-6 w-6 text-primary" />
           ) : (
-            <Circle className="w-6 h-6" />
+            <Circle className="h-6 w-6 text-zinc-400" />
           )}
         </div>
       );
     },
   },
   {
-    accessorKey: "studentCode",
-    header: "Student ID",
+    id: "actions",
+    header: "Actions",
     cell: ({ row }) => {
-      const studentCode = row.original.studentCode;
-      const displayCode =
-        studentCode.length > 12
-          ? studentCode.split("@")[0] // Take text until the '@' sign
-          : studentCode; // Show full code if it's 12 characters or less
-      return <div className="truncate">{displayCode}</div>;
-    },
-  },
-  {
-    accessorKey: "fullName",
-    header: "Full Name",
-    cell: ({ row }) => {
-      const nameParts = row.original.fullName.split(" ");
-      const shortenedName = nameParts.slice(0, 2).join(" "); // Take first two words
-      return <div className="truncate">{shortenedName}</div>;
+      const student = row.original;
+
+      return (
+        <div className="flex w-full flex-col gap-2 lg:items-center">
+          <div className="lg:hidden">
+            <EnrollAction student={student} />
+          </div>
+          <div className="hidden lg:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="left"
+                className="w-[200px] shadow-md shadow-primary"
+              >
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <EnrollAction student={student} />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      );
     },
   },
   {
@@ -227,12 +240,15 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
             })}
             className="w-full"
           >
-            <fieldset disabled={isPending} className="flex items-center gap-2">
+            <fieldset
+              disabled={isPending}
+              className="flex flex-col gap-2 sm:flex-row sm:items-center"
+            >
               <FormField
                 control={form.control}
                 name="score"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex-1">
                     <FormControl>
                       <Input type="number" className="w-full" {...field} />
                     </FormControl>
@@ -241,8 +257,8 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
                 )}
               />
               {form.formState.isDirty && (
-                <Button className="ml-2">
-                  <Save className="w-6 h-6" />
+                <Button type="submit" size="sm" className="w-full sm:w-auto">
+                  <Save className="h-4 w-4" />
                 </Button>
               )}
             </fieldset>
@@ -268,7 +284,7 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
         },
       });
       const qc = useQueryClient();
-      const { mutate: changeHomework, isPending } = useChangeLectureQuizScore({
+      const { mutate: changeQuiz, isPending } = useChangeLectureQuizScore({
         mutation: {
           onSuccess: (data) => {
             qc.invalidateQueries({
@@ -286,7 +302,7 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => {
-              changeHomework({
+              changeQuiz({
                 courseId: courseId!,
                 data,
                 lectureId: lectureId!,
@@ -295,12 +311,15 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
             })}
             className="w-full"
           >
-            <fieldset disabled={isPending} className="flex items-center gap-2">
+            <fieldset
+              disabled={isPending}
+              className="flex flex-col gap-2 sm:flex-row sm:items-center"
+            >
               <FormField
                 control={form.control}
                 name="score"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex-1">
                     <FormControl>
                       <Input type="number" className="w-full" {...field} />
                     </FormControl>
@@ -309,8 +328,8 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
                 )}
               />
               {form.formState.isDirty && (
-                <Button className="ml-2">
-                  <Save className="w-6 h-6" />
+                <Button type="submit" size="sm" className="w-full sm:w-auto">
+                  <Save className="h-4 w-4" />
                 </Button>
               )}
             </fieldset>
@@ -323,7 +342,7 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
     accessorKey: "studentQuizzesScore",
     header: "Online Quizzes Score",
     cell: ({ row }) => (
-      <div className="truncate">{row.original.totalQuizzesScore}</div>
+      <div>{row.original.totalQuizzesScore ?? "—"}</div>
     ),
   },
 ];
