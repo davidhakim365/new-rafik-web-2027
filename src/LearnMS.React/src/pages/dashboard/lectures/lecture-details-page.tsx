@@ -49,9 +49,11 @@ import {
   getGetCourseQueryKey,
   getGetLectureQueryKey,
   getGetLectureStudentsQueryKey,
+  getGetLectureStatisticsQueryKey,
   useAttendLecture,
   useCreateLesson,
   useDeleteLecture,
+  useGetCourse,
   useGetLecture,
   useGetLectureStatistics,
   useGetLectureStudents,
@@ -64,6 +66,7 @@ import {
 import { GetLectureDashboardResult, StudentGradeItem } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { lectureStudentsColumns } from "@/pages/dashboard/lectures/lecture-students-columns";
+import { LectureStudentStats } from "@/pages/dashboard/lectures/lecture-student-stats";
 import { useAssetsStore } from "@/store/use-assets-store";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -133,6 +136,9 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
         qc.invalidateQueries({
           queryKey: getGetLectureStudentsQueryKey(courseId, lecture.id),
         });
+        qc.invalidateQueries({
+          queryKey: getGetLectureStatisticsQueryKey({ lectureId: lecture.id }),
+        });
       },
       onError(error: Error) {
         toast({
@@ -145,6 +151,20 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
 
   const { data: lectureStatistics, isLoading: lectureStatisticsLoading } =
     useGetLectureStatistics({ lectureId: lecture.id });
+
+  const { data: gradeTotalData } = useGetLectureStudents(
+    lecture.courseId,
+    lecture.id,
+    { page: 1, pageSize: 1 }
+  );
+
+  const { data: courseData } = useGetCourse(courseId);
+  const gradeLevel =
+    courseData?.data?.$type === "GetDashboardCourseResult"
+      ? courseData.data.level
+      : undefined;
+
+  const totalInGrade = gradeTotalData?.data?.totalCount ?? 0;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
@@ -232,6 +252,15 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
 
   return (
     <div className="flex w-full flex-col gap-4 p-3 sm:p-4">
+      <LectureStudentStats
+        stats={lectureStatistics?.data}
+        isLoading={lectureStatisticsLoading}
+        totalInGrade={totalInGrade}
+        gradeLevel={gradeLevel}
+        filteredCount={data?.data?.totalCount}
+        isSearching={!!search.trim()}
+      />
+
       <div className="flex flex-col gap-3">
         <Input
           className="w-full"
@@ -239,17 +268,6 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
-        {lectureStatistics?.data && (
-          <div className="flex flex-wrap gap-2 text-sm">
-            <span className="rounded-lg border border-color2/10 bg-color2/5 px-3 py-1.5">
-              Attended: {lectureStatistics.data.attendedStudents}
-            </span>
-            <span className="rounded-lg border border-color2/10 bg-color2/5 px-3 py-1.5">
-              Enrolled: {lectureStatistics.data.enrolledStudents}
-            </span>
-          </div>
-        )}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <AttendInput lectureId={lecture.id} courseId={lecture.courseId} />
@@ -989,6 +1007,9 @@ function AttendInput({
           });
           qc.invalidateQueries({
             queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
+          });
+          qc.invalidateQueries({
+            queryKey: getGetLectureStatisticsQueryKey({ lectureId }),
           });
           setCode("");
           inputRef.current?.focus();

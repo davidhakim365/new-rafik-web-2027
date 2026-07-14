@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   getGetLectureStudentsQueryKey,
+  getGetLectureStatisticsQueryKey,
   useAttendLecture,
 } from "@/generated/api";
 import { toast } from "@/lib/utils";
@@ -69,6 +70,9 @@ const LectureBarcodeScannerPage = () => {
             toast({ title: "Attended", description: message });
             qc.invalidateQueries({
               queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
+            });
+            qc.invalidateQueries({
+              queryKey: getGetLectureStatisticsQueryKey({ lectureId }),
             });
             resumeScanning(1200);
           },

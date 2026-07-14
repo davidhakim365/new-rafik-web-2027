@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
 import {
   getGetLectureStudentsQueryKey,
+  getGetLectureStatisticsQueryKey,
   useChangeLectureHomeworkScore,
   useChangeLectureQuizScore,
   useEnrollStudentInLecture,
@@ -118,6 +119,11 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
             onSuccess() {
               qc.invalidateQueries({
                 queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
+              });
+              qc.invalidateQueries({
+                queryKey: getGetLectureStatisticsQueryKey({
+                  lectureId: lectureId!,
+                }),
               });
             },
           },
