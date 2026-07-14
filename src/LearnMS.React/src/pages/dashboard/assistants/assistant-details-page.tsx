@@ -55,11 +55,11 @@ const AssistantDetailsPage = () => {
         defaultValue="details"
         className="p-0 border-2 shadow-md rounded-xl shadow-primary border-secondary"
       >
-        <TabsList className="m-0 shadow-sm shadow-primary">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="incomes">Incomes</TabsTrigger>
+        <TabsList className="m-0 h-auto w-full justify-start overflow-x-auto shadow-sm shadow-primary">
+          <TabsTrigger value="details" className="shrink-0">Details</TabsTrigger>
+          <TabsTrigger value="incomes" className="shrink-0">Incomes</TabsTrigger>
         </TabsList>
-        <TabsContent value="details" className="py-6 px-[20%]">
+        <TabsContent value="details" className="px-4 py-6 sm:px-[10%] lg:px-[20%]">
           <AssistantDetails assistant={assistant!.data} />
         </TabsContent>
         <TabsContent value="incomes" className="p-6">
@@ -238,7 +238,7 @@ function AssistantIncomes({ assistant }: { assistant: Assistant }) {
 
   return (
     <div className="flex flex-col">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card className="text-primary">
           <CardTitle className="flex items-center justify-between p-2 text-4xl">
             Total Income <FaMoneyCheckAlt />

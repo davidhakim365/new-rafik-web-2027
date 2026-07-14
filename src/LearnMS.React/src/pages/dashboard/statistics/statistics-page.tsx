@@ -28,6 +28,7 @@ import {
 } from "@/generated/api";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Building2,
   CalendarIcon,
@@ -86,6 +87,8 @@ function DateRangePicker({
   onSelect: (range: DateRange | undefined) => void;
   className?: string;
 }) {
+  const isMobile = useIsMobile();
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -119,7 +122,7 @@ function DateRangePicker({
           defaultMonth={date?.from}
           selected={date}
           onSelect={onSelect}
-          numberOfMonths={2}
+          numberOfMonths={isMobile ? 1 : 2}
         />
       </PopoverContent>
     </Popover>
@@ -181,7 +184,7 @@ function PriceInput({
         step={1}
         value={price || ""}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className="w-[180px]"
+        className="w-full sm:w-[180px]"
         placeholder="Enter price"
       />
     </div>
@@ -289,7 +292,7 @@ function IncomesStatistics({
 
   return (
     <DashboardCard>
-      <div className="mb-4 flex flex-row items-center justify-between space-y-0 pb-2">
+      <div className="mb-4 flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h3 className="text-lg font-semibold">Income Overview</h3>
           <p className="text-sm text-muted-foreground">
@@ -430,9 +433,9 @@ function LecturesStatistics({
         </p>
       </div>
       <div className="space-y-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
           <Select value={level} onValueChange={setLevel}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Select Level" />
             </SelectTrigger>
             <SelectContent>
@@ -445,7 +448,7 @@ function LecturesStatistics({
           </Select>
 
           <Select value={courseId} onValueChange={setCourseId} disabled={!level}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="Select Course" />
             </SelectTrigger>
             <SelectContent>
@@ -464,7 +467,7 @@ function LecturesStatistics({
             onValueChange={setLectureId}
             disabled={!courseId}
           >
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="Select Lecture" />
             </SelectTrigger>
             <SelectContent>
@@ -556,7 +559,7 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
       </div>
       <div className="space-y-4">
         <Select value={courseId} onValueChange={setCourseId}>
-          <SelectTrigger className="w-[260px]">
+          <SelectTrigger className="w-full sm:w-[260px]">
             <SelectValue placeholder="Select Course" />
           </SelectTrigger>
           <SelectContent>

@@ -76,7 +76,7 @@ const ExpirationTimePage = () => {
               Lectures for {levelMap[selectedStudent.level]}
             </h3>
             <Input
-              className="max-w-xs"
+              className="w-full max-w-xs"
               placeholder="Search lectures..."
               value={lectureSearch}
               onChange={(e) => {

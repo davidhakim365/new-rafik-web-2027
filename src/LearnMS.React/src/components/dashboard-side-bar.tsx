@@ -104,16 +104,18 @@ const userItems: NavItem[] = [
 function NavLinkItem({
   item,
   collapsed,
+  onNavigate,
 }: {
   item: NavItem;
   collapsed: boolean;
+  onNavigate?: () => void;
 }) {
   const { pathname } = useLocation();
   const active = item.match(pathname);
   const Icon = item.icon;
 
   return (
-    <Link to={item.to} title={collapsed ? item.label : undefined}>
+    <Link to={item.to} title={collapsed ? item.label : undefined} onClick={onNavigate}>
       <div
         className={cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
@@ -137,20 +139,33 @@ function NavLinkItem({
   );
 }
 
-const DashboardSideBar = () => {
+type DashboardSideBarProps = {
+  variant?: "desktop" | "mobile";
+  onNavigate?: () => void;
+};
+
+const DashboardSideBar = ({
+  variant = "desktop",
+  onNavigate,
+}: DashboardSideBarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const logoutMutation = useLogoutMutation();
   const { hasPermission } = useDashboardPermissions();
+  const isMobile = variant === "mobile";
+  const isCollapsed = isMobile ? false : collapsed;
 
   const visibleUserItems = userItems.filter(
     (item) => !item.permission || hasPermission(item.permission)
   );
 
+  const Wrapper = isMobile ? "div" : "aside";
+
   return (
-    <aside
+    <Wrapper
       className={cn(
-        "relative flex h-full shrink-0 flex-col border-r border-color2/10 bg-card/70 backdrop-blur-xl transition-all duration-300",
-        collapsed ? "w-[4.5rem]" : "w-64"
+        "relative flex h-full flex-col border-color2/10 bg-card/70 backdrop-blur-xl transition-all duration-300",
+        !isMobile && "shrink-0 border-r",
+        !isMobile && (isCollapsed ? "w-[4.5rem]" : "w-64")
       )}
     >
       <PhysicsGrid className="opacity-40" />
@@ -159,14 +174,14 @@ const DashboardSideBar = () => {
         color="from-color2/20 to-color1/10"
       />
 
-      <div className="relative z-10 flex flex-col h-full p-3 gap-4">
+      <div className="relative z-10 flex h-full flex-col gap-4 p-3">
         <div
           className={cn(
             "flex items-center",
-            collapsed ? "justify-center" : "justify-between"
+            isCollapsed ? "justify-center" : "justify-between"
           )}
         >
-          {!collapsed && (
+          {!isCollapsed && (
             <div className="px-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-color2">
                 Rafik
@@ -175,42 +190,54 @@ const DashboardSideBar = () => {
             </div>
           )}
           <div className="flex items-center gap-1">
-            {!collapsed && <ThemeToggle />}
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setCollapsed((prev) => !prev)}
-            >
-              {collapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </Button>
+            {!isCollapsed && !isMobile && <ThemeToggle />}
+            {!isMobile && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setCollapsed((prev) => !prev)}
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 space-y-6 overflow-y-auto">
+        <nav className="flex-1 space-y-6 overflow-y-auto overscroll-contain">
           <div className="space-y-1">
-            {!collapsed && (
+            {!isCollapsed && (
               <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Materials
               </p>
             )}
             {materialItems.map((item) => (
-              <NavLinkItem key={item.to} item={item} collapsed={collapsed} />
+              <NavLinkItem
+                key={item.to}
+                item={item}
+                collapsed={isCollapsed}
+                onNavigate={onNavigate}
+              />
             ))}
           </div>
 
           <div className="space-y-1">
-            {!collapsed && (
+            {!isCollapsed && (
               <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Users
               </p>
             )}
             {visibleUserItems.map((item) => (
-              <NavLinkItem key={item.to} item={item} collapsed={collapsed} />
+              <NavLinkItem
+                key={item.to}
+                item={item}
+                collapsed={isCollapsed}
+                onNavigate={onNavigate}
+              />
             ))}
           </div>
         </nav>
@@ -219,15 +246,15 @@ const DashboardSideBar = () => {
           variant="outline"
           className={cn(
             "w-full border-destructive/30 text-destructive hover:bg-destructive/10",
-            collapsed && "px-0"
+            isCollapsed && "px-0"
           )}
           onClick={() => logoutMutation.mutate()}
         >
           <LogOut className="h-4 w-4" />
-          {!collapsed && <span className="ml-2">Log out</span>}
+          {!isCollapsed && <span className="ml-2">Log out</span>}
         </Button>
       </div>
-    </aside>
+    </Wrapper>
   );
 };
 

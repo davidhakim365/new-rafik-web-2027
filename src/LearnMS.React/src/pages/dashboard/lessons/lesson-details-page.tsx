@@ -103,7 +103,7 @@ const LessonDetailsPage = () => {
         </div>
       </div>
 
-      <div className='grid w-full grid-cols-2 mt-10'>
+      <div className='grid w-full grid-cols-1 gap-6 mt-10 lg:grid-cols-2'>
         <LessonDetailsContent
           {...lesson?.data!}
           courseId={courseId!}

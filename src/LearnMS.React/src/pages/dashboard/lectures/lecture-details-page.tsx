@@ -102,9 +102,9 @@ const LectureDetailsPage = () => {
         setSearchParams({ view: value });
       }}
       value={searchParams.get("view") ?? "details"}>
-      <TabsList>
-        <TabsTrigger value='details'>Details</TabsTrigger>
-        <TabsTrigger value='students'>Students</TabsTrigger>
+      <TabsList className="h-auto w-full justify-start overflow-x-auto">
+        <TabsTrigger value='details' className="shrink-0">Details</TabsTrigger>
+        <TabsTrigger value='students' className="shrink-0">Students</TabsTrigger>
       </TabsList>
       <TabsContent value='details'>
         <LectureDetailsTab lecture={lecture} courseId={courseId!} />
@@ -232,9 +232,9 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
 
   return (
     <div className='relative w-full h-full p-4'>
-      <div className='absolute flex items-center gap-6 top-6 left-4 w-fit'>
+      <div className='flex flex-col gap-3 p-4 sm:absolute sm:left-4 sm:top-6 sm:flex-row sm:items-center sm:gap-6'>
         <Input
-          className='w-[300px]'
+          className='w-full sm:w-[300px]'
           placeholder='Search'
           value={search}
           onChange={(e) => setSearch(e.target.value)}></Input>
@@ -401,10 +401,10 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture }) => {
         </div>
       </div>
 
-      <div className='grid w-full grid-cols-2 mt-10'>
+      <div className='grid w-full grid-cols-1 gap-6 mt-6 sm:mt-24 lg:mt-10 lg:grid-cols-2'>
         <LectureDetailsForm {...lecture} />
         <LectureContentForm {...lecture} />
-        <div className='col-span-2 p-4'>
+        <div className='col-span-1 p-4 lg:col-span-2'>
           <LectureAssetsFrom {...lecture} />
         </div>
       </div>

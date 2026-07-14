@@ -63,11 +63,11 @@ const StudentDetailsPage = () => {
     >
       <DashboardCard padding="sm">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="mb-4 bg-color2/5">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="lectures">Sessions</TabsTrigger>
-            <TabsTrigger value="exams">Exams</TabsTrigger>
+          <TabsList className="mb-4 h-auto w-full justify-start overflow-x-auto bg-color2/5">
+            <TabsTrigger value="profile" className="shrink-0">Profile</TabsTrigger>
+            <TabsTrigger value="events" className="shrink-0">Events</TabsTrigger>
+            <TabsTrigger value="lectures" className="shrink-0">Sessions</TabsTrigger>
+            <TabsTrigger value="exams" className="shrink-0">Exams</TabsTrigger>
           </TabsList>
           <TabsContent value="profile">
             <StudentProfile studentId={studentId!} />

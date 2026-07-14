@@ -90,12 +90,12 @@ function ExpirationEditor({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       <Input
         type="datetime-local"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="w-[220px]"
+        className="w-full sm:w-[220px]"
       />
       <Button
         size="sm"

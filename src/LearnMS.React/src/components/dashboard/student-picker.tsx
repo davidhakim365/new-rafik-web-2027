@@ -78,7 +78,7 @@ export function StudentPicker({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="relative max-w-md">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
@@ -90,8 +90,8 @@ export function StudentPicker({
           {studentsLoading ? (
             <Loading />
           ) : (
-            <Select onValueChange={handleSelectStudent}>
-              <SelectTrigger className="max-w-md">
+              <Select onValueChange={handleSelectStudent}>
+                <SelectTrigger className="w-full max-w-md">
                 <SelectValue placeholder="Choose a student from results" />
               </SelectTrigger>
               <SelectContent>

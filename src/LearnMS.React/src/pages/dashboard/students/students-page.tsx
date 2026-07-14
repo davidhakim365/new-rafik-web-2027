@@ -94,7 +94,7 @@ const StudentsPage = () => {
               <span className="ml-2">Export</span>
             </Button>
             <Select onValueChange={setLevel} value={level}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
@@ -111,8 +111,7 @@ const StudentsPage = () => {
         {isLoading ? (
           <Loading />
         ) : (
-          <div className="overflow-x-auto">
-            <DataTable
+          <DataTable
               pagination={{
                 hasNextPage: students?.data!.hasNextPage!,
                 hasPreviousPage: students?.data!.hasPreviousPage!,
@@ -125,7 +124,6 @@ const StudentsPage = () => {
               data={students?.data!.items!}
               columns={studentsColumns}
             />
-          </div>
         )}
       </DashboardCard>
     </DashboardPageShell>

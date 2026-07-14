@@ -41,7 +41,7 @@ export function DashboardPageShell({
 
       <div
         className={cn(
-          "relative z-10 mx-auto flex w-full flex-col gap-6 p-4 md:p-6",
+          "relative z-10 mx-auto flex w-full flex-col gap-4 p-3 sm:gap-6 sm:p-4 md:p-6",
           !fullWidth && "max-w-7xl"
         )}
       >
@@ -54,7 +54,7 @@ export function DashboardPageShell({
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl md:text-3xl">
                   {title}
                 </h1>
                 {description && (

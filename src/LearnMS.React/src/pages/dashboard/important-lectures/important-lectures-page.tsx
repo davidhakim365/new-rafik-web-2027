@@ -39,12 +39,12 @@ const ImportantLecturesPage = () => {
       icon={Star}
     >
       <DashboardCard>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-center">
           <Select
             value={level}
             onValueChange={(value) => setLevel(value as StudentLevel)}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Select level" />
             </SelectTrigger>
             <SelectContent>
@@ -59,7 +59,7 @@ const ImportantLecturesPage = () => {
           </Select>
           {level && (
             <Select value={courseId} onValueChange={setCourseId}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Select course" />
               </SelectTrigger>
               <SelectContent>

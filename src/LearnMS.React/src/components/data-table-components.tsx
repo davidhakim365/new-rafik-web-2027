@@ -210,7 +210,7 @@ export function DataTableViewOptions<TData>({
         <Button
           variant="outline"
           size="sm"
-          className="hidden h-8 ml-auto lg:flex"
+          className="ml-auto hidden h-8 md:flex"
         >
           <MixerHorizontalIcon className="w-4 h-4 mr-2" />
           View
