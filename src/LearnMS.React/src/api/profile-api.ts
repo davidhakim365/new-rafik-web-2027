@@ -6,9 +6,14 @@ import { z } from "zod";
 export type Permission =
   | "ManageCourses"
   | "ManageStudents"
+  | "ManageLecture"
+  | "ManageCreditCodes"
+  | "GenerateCreditCodes"
   | "ManageAssistants"
   | "ManageFiles"
-  | "ViewStatistics";
+  | "ViewStatistics"
+  | "ManageGrantedAccess"
+  | "ManageExpirationTime";
 
 export type Profile = {
   id: string;

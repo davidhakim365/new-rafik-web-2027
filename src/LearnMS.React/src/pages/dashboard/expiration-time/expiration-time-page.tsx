@@ -9,12 +9,12 @@ import Loading from "@/components/loading/loading";
 import { Input } from "@/components/ui/input";
 import { useGetStudentLectures } from "@/generated/api";
 import { SingleStudent } from "@/generated/model";
-import { createGrantedAccessColumns } from "@/pages/dashboard/granted-access/columns";
+import { createExpirationTimeColumns } from "@/pages/dashboard/expiration-time/columns";
 import { PaginationState } from "@tanstack/react-table";
-import { Gift } from "lucide-react";
+import { Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 
-const GrantedAccessPage = () => {
+const ExpirationTimePage = () => {
   const [selectedStudent, setSelectedStudent] = useState<SingleStudent | null>(
     null
   );
@@ -34,7 +34,7 @@ const GrantedAccessPage = () => {
   const columns = useMemo(
     () =>
       selectedStudent
-        ? createGrantedAccessColumns(
+        ? createExpirationTimeColumns(
             selectedStudent.id,
             lectureSearch,
             pageIndex,
@@ -58,9 +58,9 @@ const GrantedAccessPage = () => {
 
   return (
     <DashboardPageShell
-      title="Granted Access"
-      description="Select a student and grant free lecture access matching their grade level."
-      icon={Gift}
+      title="Expiration Time"
+      description="Select a student and set custom expiration dates for their grade-level lectures."
+      icon={Clock}
       fullWidth
     >
       <StudentPicker
@@ -107,4 +107,4 @@ const GrantedAccessPage = () => {
   );
 };
 
-export default GrantedAccessPage;
+export default ExpirationTimePage;

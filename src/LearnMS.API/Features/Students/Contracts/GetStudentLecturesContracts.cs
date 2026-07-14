@@ -27,5 +27,6 @@ public sealed record SingleStudentLecture
     public decimal? TotalQuizzesScore { get; init; }
     public decimal? HomeworkScore { get; init; }
     public decimal? QuizScore { get; init; }
-    public  string? EnrollmentStatus { get; init; } // New field for Enrollment status
+    public string? EnrollmentStatus { get; init; }
+    public DateTime? ExpiresAt { get; init; }
 }

@@ -11,6 +11,7 @@ import DashboardCoursePage from "@/pages/dashboard/courses/dashboard-course-page
 import CreditCodesPage from "@/pages/dashboard/credit-codes/credit-code-page";
 import ExamPage from "@/pages/dashboard/exams/exam-page";
 import ExamStudentsPage from "@/pages/dashboard/exams/exam-students-page";
+import ExpirationTimePage from "@/pages/dashboard/expiration-time/expiration-time-page";
 import FilesPage from "@/pages/dashboard/files/files-page";
 import GrantedAccessPage from "@/pages/dashboard/granted-access/granted-access-page";
 import ImportantLecturesPage from "@/pages/dashboard/important-lectures/important-lectures-page";
@@ -308,9 +309,20 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageGrantedAccess"]}
                   >
                     <GrantedAccessPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="expiration-time"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageExpirationTime"]}
+                  >
+                    <ExpirationTimePage />
                   </RequireAuth>
                 }
               />

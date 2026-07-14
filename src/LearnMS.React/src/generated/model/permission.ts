@@ -18,4 +18,6 @@ export const Permission = {
   ManageAssistants: 'ManageAssistants',
   ManageFiles: 'ManageFiles',
   ViewStatistics: 'ViewStatistics',
+  ManageGrantedAccess: 'ManageGrantedAccess',
+  ManageExpirationTime: 'ManageExpirationTime',
 } as const;

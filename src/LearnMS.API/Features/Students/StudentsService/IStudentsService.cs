@@ -10,6 +10,7 @@ public interface IStudentsService
     public Task ExecuteAsync(DeleteStudentCommand command);
     public Task ExecuteAsync(UpdateStudentCommand command);
     public Task ExecuteAsync(UnlinkStudentDeviceCommand command);
+    public Task ExecuteAsync(UpdateLectureEnrollmentExpirationCommand command);
 
     public Task<PageList<SingleStudent>> QueryAsync(GetStudentsQuery query);
     public Task<PageList<SingleStudentLecture>> QueryAsync(GetStudentLecturesQuery query);

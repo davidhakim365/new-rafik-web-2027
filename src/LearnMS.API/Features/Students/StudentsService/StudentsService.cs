@@ -296,7 +296,11 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
         EnrollmentStatus = l.LectureEnrollments
             .Where(e => e.StudentId == query.StudentId)
             .Select(e => e.ExpiresAt >= DateTime.UtcNow ? "Active" : "Expired")
-            .FirstOrDefault() ?? "NotEnrolled" // Enrollment status
+            .FirstOrDefault() ?? "NotEnrolled",
+        ExpiresAt = l.LectureEnrollments
+            .Where(e => e.StudentId == query.StudentId)
+            .Select(e => (DateTime?)e.ExpiresAt)
+            .FirstOrDefault()
     }).OrderBy(c=>c.CourseId).ThenByDescending(l=>l.Title);
 
 if (!string.IsNullOrWhiteSpace(query.Search))
@@ -362,5 +366,42 @@ return new PageList<SingleStudentLecture>(
             result.PageSize,
             result.TotalCount
         );
+    }
+
+    public async Task ExecuteAsync(UpdateLectureEnrollmentExpirationCommand command)
+    {
+        var student = await QueryAsync(new GetStudentQuery { Id = command.StudentId });
+
+        var lecture = await db.Set<Lecture>()
+            .Include(l => l.Course)
+            .FirstOrDefaultAsync(l =>
+                l.Id == command.LectureId &&
+                l.Course.IsPublished &&
+                l.Course.Level == student.Level
+            ) ?? throw new ApiException(StudentsErrors.LectureNotFound);
+
+        var enrollment = await db.Set<LectureEnrollment>()
+            .FirstOrDefaultAsync(e =>
+                e.StudentId == command.StudentId && e.LectureId == command.LectureId
+            );
+
+        if (enrollment is null)
+        {
+            enrollment = new LectureEnrollment
+            {
+                StudentId = command.StudentId,
+                LectureId = command.LectureId,
+                ExpiresAt = command.ExpiresAt,
+                EnrolledAt = DateTime.UtcNow
+            };
+            db.Add(enrollment);
+        }
+        else
+        {
+            enrollment.ExpiresAt = command.ExpiresAt;
+            db.Update(enrollment);
+        }
+
+        await db.SaveChangesAsync();
     }
 }

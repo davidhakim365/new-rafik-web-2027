@@ -10,6 +10,7 @@ export interface SingleStudentLecture {
   courseId: string;
   courseTitle: string;
   enrollmentStatus?: string | null;
+  expiresAt?: string | null;
   homeworkScore?: number | null;
   id: string;
   quizScore?: number | null;

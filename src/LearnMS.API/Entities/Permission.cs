@@ -13,5 +13,7 @@ public enum Permission
     GenerateCreditCodes,
     ManageAssistants,
     ManageFiles,
-    ViewStatistics
+    ViewStatistics,
+    ManageGrantedAccess,
+    ManageExpirationTime
 }

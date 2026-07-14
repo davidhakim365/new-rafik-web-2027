@@ -17,7 +17,7 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents, Permission.ManageGrantedAccess, Permission.ManageExpirationTime])]
     [SwaggerOperation(OperationId = "GetAllStudents")]
     public async Task<ApiWrapper.Success<PageList<SingleStudent>>> Get(string search, int? page, int? pageSize,
         StudentLevel? level)
@@ -180,6 +180,28 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         return new ApiWrapper.Success<PageList<SingleStudentLecture>>
         {
             Data = result
+        };
+    }
+
+    [HttpPatch("{studentId:guid}/lectures/{lectureId:guid}/enrollment")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageExpirationTime])]
+    [SwaggerOperation(OperationId = "UpdateLectureEnrollmentExpiration")]
+    public async Task<ApiWrapper.Success<object?>> UpdateLectureEnrollmentExpiration(
+        Guid studentId,
+        Guid lectureId,
+        [FromBody] UpdateLectureEnrollmentExpirationRequest request
+    )
+    {
+        await studentsService.ExecuteAsync(new UpdateLectureEnrollmentExpirationCommand
+        {
+            StudentId = studentId,
+            LectureId = lectureId,
+            ExpiresAt = request.ExpiresAt
+        });
+
+        return new ApiWrapper.Success<object?>
+        {
+            Message = "Enrollment expiration updated successfully"
         };
     }
 

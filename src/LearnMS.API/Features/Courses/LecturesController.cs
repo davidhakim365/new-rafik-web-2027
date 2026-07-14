@@ -349,7 +349,7 @@ public sealed class LecturesController : ControllerBase
 
 
     [HttpPost("{lectureId:guid}/students/{studentId:guid}/enroll")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageGrantedAccess])]
     [SwaggerOperation(OperationId = "EnrollStudentInLecture")]
     public async Task<ApiWrapper.Success<object?>> EnrollStudent(
         Guid lectureId,

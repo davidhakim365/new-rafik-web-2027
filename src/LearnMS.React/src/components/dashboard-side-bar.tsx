@@ -1,11 +1,14 @@
 import { useLogoutMutation } from "@/api/auth-api";
 import { Button } from "@/components/ui/button";
 import { GlowOrb, PhysicsGrid } from "@/components/ui/physics-graphics";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
+import { Permission } from "@/generated/model";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Clock,
   FileText,
   Gift,
   HelpCircle,
@@ -25,6 +28,7 @@ type NavItem = {
   label: string;
   icon: React.ElementType;
   match: (pathname: string) => boolean;
+  permission?: Permission;
 };
 
 const materialItems: NavItem[] = [
@@ -72,18 +76,28 @@ const userItems: NavItem[] = [
     label: "Students",
     icon: Users,
     match: (pathname) => pathname.startsWith("/dashboard/students"),
+    permission: Permission.ManageStudents,
   },
   {
     to: "/dashboard/granted-access",
     label: "Granted Access",
     icon: Gift,
     match: (pathname) => pathname.startsWith("/dashboard/granted-access"),
+    permission: Permission.ManageGrantedAccess,
+  },
+  {
+    to: "/dashboard/expiration-time",
+    label: "Expiration Time",
+    icon: Clock,
+    match: (pathname) => pathname.startsWith("/dashboard/expiration-time"),
+    permission: Permission.ManageExpirationTime,
   },
   {
     to: "/dashboard/assistants",
     label: "Assistants",
     icon: Shield,
     match: (pathname) => pathname.startsWith("/dashboard/assistants"),
+    permission: Permission.ManageAssistants,
   },
 ];
 
@@ -126,6 +140,11 @@ function NavLinkItem({
 const DashboardSideBar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const logoutMutation = useLogoutMutation();
+  const { hasPermission } = useDashboardPermissions();
+
+  const visibleUserItems = userItems.filter(
+    (item) => !item.permission || hasPermission(item.permission)
+  );
 
   return (
     <aside
@@ -190,7 +209,7 @@ const DashboardSideBar = () => {
                 Users
               </p>
             )}
-            {userItems.map((item) => (
+            {visibleUserItems.map((item) => (
               <NavLinkItem key={item.to} item={item} collapsed={collapsed} />
             ))}
           </div>
