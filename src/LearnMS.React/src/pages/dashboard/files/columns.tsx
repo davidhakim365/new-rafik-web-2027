@@ -4,6 +4,8 @@ import { Asset } from "@/types/assets";
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { FaFile, FaFileImage, FaFilePdf } from "react-icons/fa";
 
+const assetHref = (asset: Asset) => asset.url || `/api/assets/${asset.id}`;
+
 // Define the columns
 export const assetsColumns: ColumnDef<Asset>[] = [
   {
@@ -26,7 +28,12 @@ export const assetsColumns: ColumnDef<Asset>[] = [
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: "Title",
+  },
+  {
+    accessorKey: "lectureName",
+    header: "Lecture",
+    cell: ({ row }: { row: Row<Asset> }) => row.original.lectureName || "—",
   },
   {
     accessorKey: "type",
@@ -35,8 +42,8 @@ export const assetsColumns: ColumnDef<Asset>[] = [
       const type = row.original.type;
 
       return (
-        <Button size="icon">
-          <a href={`/api/assets/${row.original.id}`}>
+        <Button size="icon" asChild>
+          <a href={assetHref(row.original)} target="_blank" rel="noreferrer">
             {type === "Pdf" && <FaFilePdf className="w-8 h-8" />}
             {type === "Image" && <FaFileImage className="w-8 h-8" />}
             {type === "Unknown" && <FaFile className="w-8 h-8" />}
@@ -55,7 +62,7 @@ const AssetsTable = ({ data }: AssetsTableProps) => {
   return (
     <div
       style={{
-        maxHeight: "400px", // Adjust the height as needed
+        maxHeight: "400px",
         overflowY: "auto",
         overflowX: "hidden",
       }}

@@ -905,14 +905,19 @@ function LectureAssetsFrom({
   };
 
   const isDirty = useMemo(
-    () => !_.isEqual(_.sortBy(oldAssets), _.sortBy(assets)),
+    () => !_.isEqual(_.sortBy(oldAssets, "id"), _.sortBy(assets, "id")),
     [oldAssets, assets]
   );
 
+  const oldAssetIds = (oldAssets ?? []).map((a) => a.id).sort().join(",");
+
   useEffect(() => {
     clearAssets();
-    addAssets(oldAssets);
-  }, []);
+    addAssets(oldAssets ?? []);
+  }, [oldAssetIds]);
+
+  const assetHref = (asset: (typeof assets)[number]) =>
+    asset.url || `/api/assets/${asset.id}`;
 
   return (
     <div className='w-full h-full'>
@@ -925,7 +930,20 @@ function LectureAssetsFrom({
         </div>
         <div className='flex gap-2'>
           {isDirty && <Button onClick={onUpdate}>Update</Button>}
-          <Button onClick={() => openModal("select-assets-modal")}>
+          <Button
+            variant='outline'
+            onClick={() => openModal("select-assets-modal")}
+          >
+            From Files
+          </Button>
+          <Button
+            onClick={() =>
+              openModal("add-pdf-links-modal", {
+                courseId,
+                lectureId: id,
+              })
+            }
+          >
             Add PDF
           </Button>
         </div>
@@ -946,21 +964,26 @@ function LectureAssetsFrom({
               <Delete />
             </Button>
             {asset.type === "Image" && (
-              <a href={`/api/assets/${asset.id}`}>
+              <a href={assetHref(asset)} target='_blank' rel='noreferrer'>
                 <FaImage className='w-full h-full text-primary/40' />
               </a>
             )}
             {asset.type === "Pdf" && (
-              <a href={`/api/assets/${asset.id}`}>
+              <a href={assetHref(asset)} target='_blank' rel='noreferrer'>
                 <FaFilePdf className='w-full h-full text-primary/40' />
               </a>
             )}
             {asset.type === "Unknown" && (
-              <a href={`/api/assets/${asset.id}`}>
+              <a href={assetHref(asset)} target='_blank' rel='noreferrer'>
                 <FaFile className='w-full h-full text-primary/40' />
               </a>
             )}
-            <p className=''>{asset.name}</p>
+            <p className='mt-2 font-medium break-words'>{asset.name}</p>
+            {asset.lectureName && (
+              <p className='text-xs text-muted-foreground break-words'>
+                {asset.lectureName}
+              </p>
+            )}
           </div>
         ))}
       </div>

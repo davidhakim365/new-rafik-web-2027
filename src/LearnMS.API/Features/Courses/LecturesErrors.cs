@@ -8,4 +8,5 @@ public static class LecturesErrors
     public static readonly ApiError NotPublishable = new ApiError("lecture/not-publishable", "Lecture is not publishable, please complete lecture creation", StatusCodes.Status403Forbidden);
     public static readonly ApiError AlreadyPurchased = new ApiError("lecture/already-purchased", "Lecture already purchased", StatusCodes.Status403Forbidden);
     public static readonly ApiError NotAccessible = new ApiError("lecture/not-accessible", "Lecture is not accessible, please pass all previous exams", StatusCodes.Status403Forbidden);
+    public static readonly ApiError InvalidPdfLink = new ApiError("lecture/invalid-pdf-link", "Each PDF requires a title and a valid Google Drive link", StatusCodes.Status400BadRequest);
 }

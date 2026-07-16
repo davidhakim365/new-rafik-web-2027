@@ -1,27 +1,22 @@
-import Uppy from "@uppy/core";
-import Tus from "@uppy/tus";
-import Dashboard from "@uppy/dashboard";
-import DropTarget from "@uppy/drop-target";
-
 import { useEffect, useMemo, useState } from "react";
 import { useAssetsQuery, useDeleteAssetsMutation } from "@/api/assets-api";
 import { DataTable } from "@/components/data-table";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import Loading from "@/components/loading/loading";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/utils";
 import { assetsColumns } from "@/pages/dashboard/files/columns";
 import { useAssetsStore } from "@/store/use-assets-store";
-import { useQueryClient } from "@tanstack/react-query";
 import { PaginationState, RowSelectionState } from "@tanstack/react-table";
-import { Trash2, Upload } from "lucide-react";
-import "@uppy/core/dist/style.min.css";
-import "@uppy/dashboard/dist/style.min.css";
-import "@uppy/drop-target/dist/style.css";
+import { Trash2 } from "lucide-react";
 
-const AssetsList = () => {
+type AssetsListProps = {
+  enableSelect?: boolean;
+};
+
+const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
   const { addAssets } = useAssetsStore();
-  const queryClient = useQueryClient();
 
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -62,74 +57,23 @@ const AssetsList = () => {
     });
   };
 
-  // Initialize Uppy within the component
-  const uppy = new Uppy({
-    restrictions: {
-      allowedFileTypes: ["image/*", "application/pdf"],
-      maxTotalFileSize: 50 * 1024 * 1024,
-    },
-  }).use(Tus, {
-    endpoint: "/api/assets",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    onShouldRetry() {
-      return false;
-    },
-    onAfterResponse(_, res) {
-      if (res.getStatus() === 204) {
-        toast({
-          title: "File uploaded successfully",
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["assets"],
-        });
-      }
-    },
-  });
-
   useEffect(() => {
-    uppy
-      .use(DropTarget, {
-        target: "#files-drop-zone",
-        onDrop: () => {
-          const plugin = uppy.getPlugin("Dashboard");
-          if (plugin) {
-            plugin.openModal();
-          }
-        },
-      })
-      .use(Dashboard, {
-        inline: false,
-        target: "#files-drop-zone",
-        height: 200,
-      });
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [search]);
 
-    return () => {
-      uppy.close();
-    };
-  }, [uppy]);
-
-  const openUppyDashboard = () => {
-    const plugin = uppy.getPlugin("Dashboard");
-    if (plugin) {
-      plugin.openModal();
-    }
-  };
   return (
-    <div className="w-full text-foreground" id="files-drop-zone">
+    <div className="w-full text-foreground">
       {isLoading ? (
         <Loading />
       ) : (
         <DashboardCard>
-          <div className="mb-4 flex flex-wrap gap-2">
-            <Button
-              onClick={openUppyDashboard}
-              className="bg-gradient-to-r from-color1 to-color2 hover:opacity-90"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Files
-            </Button>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Input
+              className="max-w-sm"
+              placeholder="Search by title or lecture..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <Button
               onClick={onDelete}
               variant="destructive"
@@ -144,31 +88,31 @@ const AssetsList = () => {
           </div>
           <div className="relative">
             <DataTable
-            columns={assetsColumns}
-            data={data?.data.items ?? []}
-            pagination={{
-              pageIndex,
-              pageSize,
-              pageCount: data?.data.pageSize ?? 0,
-              hasNextPage: data?.data.hasNextPage ?? false,
-              hasPreviousPage: data?.data.hasPreviousPage ?? false,
-            }}
-            setPagination={setPagination}
-            rowSelection={rowSelection}
-            setRowSelection={setRowSelection}
-            getRowId={(row) => row.id}
-          />
-          {Object.keys(rowSelection).length > 0 && (
-            <div className="absolute flex gap-2 mt-12 top-4 left-6">
-              <Button
-                onClick={onSelectAssets}
-                disabled={deleteAssetsMutation.isPending}
-                className="mr-2"
-              >
-                Add Assets
-              </Button>
-            </div>
-          )}
+              columns={assetsColumns}
+              data={data?.data.items ?? []}
+              pagination={{
+                pageIndex,
+                pageSize,
+                pageCount: data?.data.pageSize ?? 0,
+                hasNextPage: data?.data.hasNextPage ?? false,
+                hasPreviousPage: data?.data.hasPreviousPage ?? false,
+              }}
+              setPagination={setPagination}
+              rowSelection={rowSelection}
+              setRowSelection={setRowSelection}
+              getRowId={(row) => row.id}
+            />
+            {enableSelect && Object.keys(rowSelection).length > 0 && (
+              <div className="absolute flex gap-2 mt-12 top-4 left-6">
+                <Button
+                  onClick={onSelectAssets}
+                  disabled={deleteAssetsMutation.isPending}
+                  className="mr-2"
+                >
+                  Add to Lecture
+                </Button>
+              </div>
+            )}
           </div>
         </DashboardCard>
       )}

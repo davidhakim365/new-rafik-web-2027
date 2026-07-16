@@ -3,6 +3,7 @@ import RedeemCreditModal from "@/components/modals/redeem-credit-modal";
 import ForgotPasswordModal from "@/pages/auth/forgot-password-modal";
 import AddAssistantModal from "@/pages/dashboard/assistants/add-assistant-modal";
 import SelectAssetsModal from "@/pages/dashboard/files/select-assets-modal";
+import AddPdfLinksModal from "@/pages/dashboard/lectures/add-pdf-links-modal";
 import AddMultipleQuestionModal from "@/pages/dashboard/questions/add-multiple-question-modal";
 import AddValueQuestionModal from "@/pages/dashboard/questions/add-value-question-modal";
 import AddEssayQuestionModal from "@/pages/dashboard/questions/add-essay-question-modal";
@@ -26,6 +27,7 @@ const modals: Record<string, React.FC<any>> = {
   "add-essay-question-modal": AddEssayQuestionModal,
   "select-questions-modal": SelectQuestionsModal,
   "select-assets-modal": SelectAssetsModal,
+  "add-pdf-links-modal": AddPdfLinksModal,
   "lecture-assets-modal": LectureAssetsModal,
   "error-modal": ErrorModal,
   "redeem-credit-modal": RedeemCreditModal,

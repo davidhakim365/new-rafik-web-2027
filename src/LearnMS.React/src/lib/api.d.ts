@@ -1393,6 +1393,10 @@ export interface components {
       id: string;
       name: string;
       type: components["schemas"]["AssetType"];
+      /** Format: date-time */
+      createdAt?: string;
+      url?: string | null;
+      lectureName?: string | null;
     };
     AssetPageList: {
       items: readonly components["schemas"]["Asset"][];

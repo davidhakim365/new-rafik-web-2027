@@ -1,5 +1,5 @@
 import { ApiResponse, api } from "@/api";
-import { getGetProfileQueryKey } from "@/generated/api";
+import { getGetLectureQueryKey, getGetProfileQueryKey } from "@/generated/api";
 import { LectureDetails, SingleLectureStudent } from "@/types/lectures";
 import { PageList } from "@/types/page-list";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -266,6 +266,41 @@ export const useUpdateLectureAssetsMutation = () => {
       qc.invalidateQueries({
         queryKey: ["lecture", { id: lectureId, courseId }],
       });
+    },
+  });
+};
+
+export const AddLecturePdfLinkItem = z.object({
+  title: z.string().min(1, { message: "Title is required" }),
+  url: z
+    .string()
+    .url({ message: "Enter a valid Google Drive link" })
+    .min(1, { message: "Google Drive link is required" }),
+});
+
+export type AddLecturePdfLinkItem = z.infer<typeof AddLecturePdfLinkItem>;
+
+export const useAddLecturePdfLinksMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<{}>,
+    {},
+    {
+      lectureId: string;
+      courseId: string;
+      data: AddLecturePdfLinkItem[];
+    }
+  >({
+    mutationFn: ({ lectureId, courseId, data }) =>
+      api
+        .post(`/api/courses/${courseId}/lectures/${lectureId}/pdf-links`, data)
+        .then((res) => res.data),
+    onSuccess: (_, { lectureId, courseId }) => {
+      qc.invalidateQueries({
+        queryKey: ["lecture", { id: lectureId, courseId }],
+      });
+      qc.invalidateQueries({ queryKey: ["assets"] });
+      qc.invalidateQueries({ queryKey: getGetLectureQueryKey(courseId, lectureId) });
     },
   });
 };

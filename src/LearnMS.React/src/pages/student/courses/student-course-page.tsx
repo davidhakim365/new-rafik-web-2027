@@ -927,9 +927,8 @@ function AttachmentsSection({
   };
 
   const handleAssetClick = (asset: StudentAssetDto) => {
-    // For now, we'll just log the asset. In a real app, you'd download or open the asset
-    console.log("Asset clicked:", asset);
-    // TODO: Implement asset download/viewing logic
+    const href = asset.url || `/api/assets/${asset.id}`;
+    window.open(href, "_blank", "noopener,noreferrer");
   };
 
   return (

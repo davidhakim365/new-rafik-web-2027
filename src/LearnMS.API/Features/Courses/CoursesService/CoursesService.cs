@@ -787,6 +787,53 @@ public sealed class CoursesService : ICoursesService
         await _context.SaveChangesAsync();
     }
 
+    public async Task<AddLecturePdfLinksResult> ExecuteAsync(AddLecturePdfLinksCommand command)
+    {
+        if (command.Items is null || command.Items.Count == 0)
+            throw new ApiException(LecturesErrors.InvalidPdfLink);
+
+        var lecture =
+            await _context
+                .Set<Lecture>()
+                .Include(x => x.Assets)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.LectureId && x.CourseId == command.CourseId
+                ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        var created = new List<Asset>();
+
+        foreach (var item in command.Items)
+        {
+            var title = item.Title?.Trim();
+            var url = item.Url?.Trim();
+
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url))
+                throw new ApiException(LecturesErrors.InvalidPdfLink);
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                throw new ApiException(LecturesErrors.InvalidPdfLink);
+
+            var asset = new Asset
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = title,
+                Type = AssetType.Pdf,
+                Url = url,
+                LectureName = lecture.Title
+            };
+
+            await _context.AddAsync(asset);
+            lecture.Assets.Add(asset);
+            created.Add(asset);
+        }
+
+        _context.Update(lecture);
+        await _context.SaveChangesAsync();
+
+        return new AddLecturePdfLinksResult { Assets = created };
+    }
+
     public async Task<UpdateExamResult> ExecuteAsync(UpdateExamCommand command)
     {
         var course =

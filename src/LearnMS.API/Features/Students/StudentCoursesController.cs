@@ -114,7 +114,8 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             {
                                 Id = a.Id,
                                 Name = a.Name,
-                                Type = a.Type
+                                Type = a.Type,
+                                Url = a.Url
                             }).ToList(),
                             Lessons = l.Lessons
                                 .Select(ls => new StudentLessonDto()

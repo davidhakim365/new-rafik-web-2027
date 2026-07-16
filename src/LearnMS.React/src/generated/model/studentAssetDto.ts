@@ -10,4 +10,5 @@ export interface StudentAssetDto {
   id: string;
   name: string;
   type: AssetType;
+  url?: string | null;
 }

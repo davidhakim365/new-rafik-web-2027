@@ -6,7 +6,7 @@ const FilesPage = () => {
   return (
     <DashboardPageShell
       title="Files"
-      description="Upload and manage media assets for your courses."
+      description="Reuse Google Drive PDF links across lectures. Add new links from a lecture page."
       icon={FileText}
       fullWidth
     >

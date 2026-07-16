@@ -77,6 +77,7 @@ public sealed record StudentAssetDto
     [Required] public required string Id { get; init; }
     [Required] public required string Name { get; init; }
     [Required] public required AssetType Type { get; init; }
+    public string? Url { get; init; }
 }
 
 [JsonDerivedType(typeof(StudentQuizDto), nameof(StudentQuizDto))]

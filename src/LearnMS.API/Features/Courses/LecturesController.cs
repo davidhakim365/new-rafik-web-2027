@@ -294,6 +294,31 @@ public sealed class LecturesController : ControllerBase
         return new ApiWrapper.Success<object?> { Message = "PDFs updated successfully" };
     }
 
+    [HttpPost("{lectureId:guid}/pdf-links")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "AddLecturePdfLinks")]
+    public async Task<ApiWrapper.Success<AddLecturePdfLinksResult>> AddPdfLinks(
+        [FromBody] List<AddLecturePdfLinkItem> items,
+        Guid lectureId,
+        Guid courseId
+    )
+    {
+        var result = await _coursesService.ExecuteAsync(
+            new AddLecturePdfLinksCommand
+            {
+                CourseId = courseId,
+                LectureId = lectureId,
+                Items = items
+            }
+        );
+
+        return new ApiWrapper.Success<AddLecturePdfLinksResult>
+        {
+            Data = result,
+            Message = "PDF links added successfully"
+        };
+    }
+
     [HttpPost("{lectureId:guid}/students/{code}/attend")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
     [SwaggerOperation(OperationId = "AttendLecture")]

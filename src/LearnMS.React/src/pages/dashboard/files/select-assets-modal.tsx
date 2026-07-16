@@ -16,9 +16,9 @@ const SelectAssetsModal: React.FC<SelectAssetsModalProps> = ({ onClose }) => {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className='min-w-[90%]'>
         <DialogHeader>
-          <DialogTitle>Select PDFs</DialogTitle>
+          <DialogTitle>Select PDFs from Files</DialogTitle>
         </DialogHeader>
-        <AssetsList />
+        <AssetsList enableSelect />
       </DialogContent>
     </Dialog>
   );

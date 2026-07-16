@@ -31,6 +31,7 @@ public interface ICoursesService
     public Task ExecuteAsync(SubmitQuizCommand command);
     public Task ExecuteAsync(BuyExamCommand command);
     public Task ExecuteAsync(UpdateLectureAssetsCommand command);
+    public Task<AddLecturePdfLinksResult> ExecuteAsync(AddLecturePdfLinksCommand command);
     public Task<UpdateExamResult> ExecuteAsync(UpdateExamCommand command);
     public Task ExecuteAsync(DeleteExamCommand command);
     public Task ExecuteAsync(SubmitExamCommand command);

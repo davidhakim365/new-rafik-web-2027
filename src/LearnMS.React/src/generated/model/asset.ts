@@ -11,4 +11,6 @@ export interface Asset {
   id: string;
   name: string;
   type: AssetType;
+  url?: string | null;
+  lectureName?: string | null;
 }

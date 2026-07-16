@@ -1,14 +1,11 @@
 using System.Text;
 using LearnMS.API.Common;
+using LearnMS.API.Common.StorageService;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
-using LearnMS.API.Features.Assets;
 using Microsoft.EntityFrameworkCore;
-using tusdotnet.Stores;
-using LearnMS.API.Common.StorageService;
 using Microsoft.Extensions.Options;
-
-
+using tusdotnet.Stores;
 
 namespace LearnMS.API.Features.Assets;
 
@@ -51,30 +48,41 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
 
     public async Task ExecuteAsync(DeleteAssetCommand command, CancellationToken ct = default)
     {
+        var assets = await db.Set<Asset>()
+            .Where(x => command.FilesIds.Contains(x.Id))
+            .ToListAsync(ct);
 
-        List<string> deletedFiles = [];
-
-
-        foreach (var fileId in command.FilesIds)
+        foreach (var asset in assets)
         {
-            try
+            if (string.IsNullOrEmpty(asset.Url))
             {
-                await store.DeleteFileAsync(fileId, ct);
-                deletedFiles.Add(fileId);
-            }
-            catch
-            {
-
+                try
+                {
+                    await store.DeleteFileAsync(asset.Id, ct);
+                }
+                catch
+                {
+                    // Disk file may already be missing
+                }
             }
         }
 
-        db.RemoveRange(db.Set<Asset>().Where(x => deletedFiles.Contains(x.Id)));
-
-        await db.SaveChangesAsync();
+        db.RemoveRange(assets);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task QueryAsync(GetAssetQuery query, CancellationToken ct = default)
     {
+        var asset = await db.Set<Asset>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == query.FileId, ct);
+
+        if (asset is not null && !string.IsNullOrEmpty(asset.Url))
+        {
+            query.Response.Redirect(asset.Url);
+            return;
+        }
+
         var file = await store.GetFileAsync(query.FileId, ct) ??
         throw new ApiException(AssetsErrors.NotFound);
 
@@ -99,12 +107,16 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
 
     public async Task<PageList<Asset>> QueryAsync(GetAssetsQuery query)
     {
-        var assets = db.Set<Asset>().AsNoTracking().OrderByDescending(x=>x.CreatedAt);
+        var assets = db.Set<Asset>().AsNoTracking().OrderByDescending(x => x.CreatedAt);
 
 
         if (string.IsNullOrEmpty(query.Search) is false)
         {
-            assets = assets.Where(x => x.Name.Contains(query.Search)).OrderByDescending(x=>x.CreatedAt);
+            assets = assets
+                .Where(x =>
+                    x.Name.Contains(query.Search) ||
+                    (x.LectureName != null && x.LectureName.Contains(query.Search)))
+                .OrderByDescending(x => x.CreatedAt);
         }
 
         return await PageList<Asset>.CreateAsync(assets, query.Page, query.PageSize);
