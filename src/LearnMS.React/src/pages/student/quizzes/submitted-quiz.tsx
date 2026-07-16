@@ -26,7 +26,7 @@ const SubmittedQuiz: React.FC<{
   const questions = [];
   
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const pdfUrls = quiz.description ? quiz.description.match(urlRegex) : [];
+  const pdfUrls = quiz.description?.match(urlRegex) ?? [];
   
   const { courseId, lectureId } = useParams();
   const qc = useQueryClient();
@@ -40,7 +40,7 @@ const SubmittedQuiz: React.FC<{
     },
   });
 
-  for (const q of quiz.multipleChoiceQuestions) {
+  for (const q of quiz.multipleChoiceQuestions ?? []) {
 
     questions.push(
       <div
@@ -101,7 +101,7 @@ const SubmittedQuiz: React.FC<{
     );
   }
 
-  for (const q of quiz.valueToleranceQuestions) {
+  for (const q of quiz.valueToleranceQuestions ?? []) {
     questions.push(
       <div
         key={q.id}

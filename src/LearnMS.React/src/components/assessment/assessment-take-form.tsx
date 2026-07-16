@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -37,7 +37,11 @@ type Props = {
   description?: string;
   questions: TakeQuestion[];
   expiresAt?: string | Date | null;
+  expiryMinutes?: number;
+  /** When true and timed, show confirm screen before questions. */
+  requireStartConfirm?: boolean;
   isSubmitting?: boolean;
+  onConfirmStart?: () => Promise<string | Date | null | void> | string | Date | null | void;
   onSubmit: (answers: { questionId: string; answer: string }[]) => void;
 };
 
@@ -102,16 +106,42 @@ export function buildTakeQuestions(input: {
   return [...mc, ...vt, ...essay];
 }
 
+function formatTime(ms: number) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  const mm = String(m % 60).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
 export function AssessmentTakeForm({
   title,
   description,
   questions,
-  expiresAt,
+  expiresAt: expiresAtProp,
+  expiryMinutes = 0,
+  requireStartConfirm = false,
   isSubmitting,
+  onConfirmStart,
   onSubmit,
 }: Props) {
+  const isTimed = expiryMinutes > 0 || !!expiresAtProp;
+  const [started, setStarted] = useState(
+    () => !requireStartConfirm || !isTimed || !!expiresAtProp
+  );
+  const [starting, setStarting] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string | Date | null | undefined>(
+    expiresAtProp
+  );
   const [index, setIndex] = useState(0);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const autoSubmitted = useRef(false);
+
+  useEffect(() => {
+    setExpiresAt(expiresAtProp);
+    if (expiresAtProp) setStarted(true);
+  }, [expiresAtProp]);
 
   const schema = useMemo(() => {
     const shape: Record<string, z.ZodTypeAny> = {};
@@ -136,7 +166,7 @@ export function AssessmentTakeForm({
   });
 
   useEffect(() => {
-    if (!expiresAt) {
+    if (!started || !expiresAt) {
       setRemainingMs(null);
       return;
     }
@@ -144,12 +174,13 @@ export function AssessmentTakeForm({
     const tick = () => {
       const left = end - Date.now();
       setRemainingMs(Math.max(0, left));
-      if (left <= 0) {
+      if (left <= 0 && !autoSubmitted.current) {
+        autoSubmitted.current = true;
         form.handleSubmit((data) => {
           onSubmit(
             Object.entries(data).map(([questionId, answer]) => ({
               questionId,
-              answer: String(answer),
+              answer: String(answer ?? ""),
             }))
           );
         })();
@@ -158,20 +189,15 @@ export function AssessmentTakeForm({
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [expiresAt]);
+  }, [started, expiresAt]);
 
   const current = questions[index];
   const total = questions.length;
   const progress = total ? ((index + 1) / total) * 100 : 0;
-
-  const formatTime = (ms: number) => {
-    const s = Math.floor(ms / 1000);
-    const m = Math.floor(s / 60);
-    const h = Math.floor(m / 60);
-    const mm = String(m % 60).padStart(2, "0");
-    const ss = String(s % 60).padStart(2, "0");
-    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-  };
+  const urgent =
+    remainingMs != null &&
+    (remainingMs <= 60_000 ||
+      (expiryMinutes > 0 && remainingMs <= expiryMinutes * 60_000 * 0.2));
 
   const submitAll = form.handleSubmit((data) => {
     onSubmit(
@@ -181,6 +207,54 @@ export function AssessmentTakeForm({
       }))
     );
   });
+
+  const handleStart = async () => {
+    setStarting(true);
+    try {
+      const result = await onConfirmStart?.();
+      if (result) setExpiresAt(result);
+      else if (expiryMinutes > 0 && !expiresAt) {
+        setExpiresAt(new Date(Date.now() + expiryMinutes * 60_000).toISOString());
+      }
+      setStarted(true);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  if (!started && isTimed) {
+    return (
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-white px-4 py-8">
+        <div className="w-full rounded-2xl border border-amber-200 bg-white p-6 shadow-lg space-y-4 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+            <AlertTriangle className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
+          <p className="text-slate-600">
+            This assessment has a <strong>limited time</strong>
+            {expiryMinutes > 0 ? (
+              <>
+                {" "}
+                of <strong>{expiryMinutes} minutes</strong>
+              </>
+            ) : null}
+            . The timer starts when you tap Start and will auto-submit when time
+            runs out.
+          </p>
+          <p className="text-sm text-slate-500">
+            Make sure you are ready. You cannot pause once started.
+          </p>
+          <Button
+            className="h-12 w-full text-base"
+            disabled={starting}
+            onClick={handleStart}
+          >
+            {starting ? "Starting..." : "I understand — Start"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!current) {
     return (
@@ -204,20 +278,24 @@ export function AssessmentTakeForm({
               </p>
             )}
           </div>
-          {remainingMs != null && (
-            <div
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium",
-                remainingMs < 60_000
-                  ? "bg-red-100 text-red-700"
-                  : "bg-slate-100 text-slate-700"
-              )}
-            >
-              <Clock className="h-4 w-4" />
-              {formatTime(remainingMs)}
-            </div>
-          )}
         </div>
+
+        {remainingMs != null && (
+          <div
+            className={cn(
+              "sticky top-2 z-20 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-lg font-bold shadow-md transition-colors",
+              urgent
+                ? "animate-pulse bg-red-600 text-white"
+                : "bg-slate-800 text-white"
+            )}
+            role="timer"
+            aria-live="polite"
+          >
+            <Clock className="h-5 w-5" />
+            <span>Time left: {formatTime(remainingMs)}</span>
+          </div>
+        )}
+
         <div className="h-2 overflow-hidden rounded-full bg-slate-200">
           <div
             className="h-full rounded-full bg-emerald-500 transition-all duration-300"

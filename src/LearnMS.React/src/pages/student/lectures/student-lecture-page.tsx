@@ -74,18 +74,26 @@ const StudentLecturePage = () => {
             {t("lectures.lectureContent")}
           </h2>
           <div className="space-y-4">
-            {lecture.items.map((item) => (
+            {lecture.items.map((item) => {
+              const enrollmentLocked =
+                course.enrollment !== "Active" &&
+                lecture.enrollment !== "Active";
+              const quizLocked = !!(item as any).isLockedByQuiz;
+              return (
               <LectureItem
                 key={item.id}
-                isLocked={
-                  course.enrollment !== "Active" &&
-                  lecture.enrollment !== "Active"
+                isLocked={enrollmentLocked || quizLocked}
+                lockReason={
+                  quizLocked
+                    ? "Pass the previous quiz first"
+                    : undefined
                 }
                 item={item}
                 courseId={courseId!}
                 lectureId={lectureId!}
               />
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -255,11 +263,13 @@ function LectureItem({
   courseId,
   lectureId,
   isLocked,
+  lockReason,
 }: {
   item: SingleLectureItem;
   courseId: string;
   lectureId: string;
   isLocked: boolean;
+  lockReason?: string;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -274,14 +284,21 @@ function LectureItem({
       return;
     }
     toast({
-      title: t("lectures.isLocked", {
-        type:
-          item.type === "Lesson" ? t("lectures.lesson") : t("lectures.quiz"),
-      }),
-      description: t("lectures.isLockedDescription"),
+      title: lockReason
+        ? "Locked"
+        : t("lectures.isLocked", {
+            type:
+              item.type === "Lesson" ? t("lectures.lesson") : t("lectures.quiz"),
+          }),
+      description:
+        lockReason || t("lectures.isLockedDescription"),
       variant: "destructive",
     });
   };
+
+  const showGrade =
+    item.type === "Quiz" &&
+    (item.isSubmitted || item.numOfCorrect != null);
 
   return (
     <Card
@@ -319,6 +336,20 @@ function LectureItem({
             <CardTitle className="text-base font-semibold sm:text-lg text-foreground line-clamp-2">
               {item.title}
             </CardTitle>
+            {showGrade && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Score: {item.numOfCorrect ?? 0}/{item.numOfQuestions ?? "?"}
+                {item.isPassed === true && (
+                  <span className="ml-2 font-medium text-emerald-600">Passed</span>
+                )}
+                {item.isPassed === false && (
+                  <span className="ml-2 font-medium text-red-600">Failed</span>
+                )}
+              </p>
+            )}
+            {isLocked && lockReason && (
+              <p className="mt-1 text-xs text-amber-700">{lockReason}</p>
+            )}
           </div>
 
           <div className="flex items-center flex-shrink-0 gap-2">
@@ -335,6 +366,16 @@ function LectureItem({
                 ? t("lectures.lesson")
                 : t("lectures.quiz")}
             </Badge>
+            {showGrade && item.isPassed === true && (
+              <Badge className="text-xs bg-emerald-100 text-emerald-800 border-emerald-200" variant="outline">
+                {item.numOfCorrect}/{item.numOfQuestions}
+              </Badge>
+            )}
+            {showGrade && item.isPassed === false && (
+              <Badge className="text-xs bg-red-100 text-red-800 border-red-200" variant="outline">
+                {item.numOfCorrect}/{item.numOfQuestions}
+              </Badge>
+            )}
             {isLocked && (
               <Badge variant="secondary" className="text-xs">
                 <FaLock className="w-2 h-2 mr-1 sm:w-3 sm:h-3" />

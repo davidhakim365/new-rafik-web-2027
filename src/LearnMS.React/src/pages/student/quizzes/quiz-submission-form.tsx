@@ -2,7 +2,12 @@ import {
   AssessmentTakeForm,
   buildTakeQuestions,
 } from "@/components/assessment/assessment-take-form";
-import { getGetQuizQueryKey, useSubmitQuiz } from "@/generated/api";
+import { api } from "@/api";
+import {
+  getGetLectureQueryKey,
+  getGetQuizQueryKey,
+  useSubmitQuiz,
+} from "@/generated/api";
 import { QuizNotAnswered } from "@/generated/model";
 import { toast } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +39,9 @@ export function QuizSubmissionForm({
         qc.invalidateQueries({
           queryKey: getGetQuizQueryKey(courseId, lectureId, quiz.id),
         });
+        qc.invalidateQueries({
+          queryKey: getGetLectureQueryKey(courseId, lectureId),
+        });
       },
     },
   });
@@ -48,13 +56,23 @@ export function QuizSubmissionForm({
     [quiz]
   );
 
+  const expiryMinutes = quiz.expiryMinutes ?? 0;
+
   return (
     <AssessmentTakeForm
       title={quiz.title}
       description={quiz.description}
       questions={questions}
       expiresAt={quiz.expiresAt}
+      expiryMinutes={expiryMinutes}
+      requireStartConfirm={expiryMinutes > 0}
       isSubmitting={isPending}
+      onConfirmStart={async () => {
+        const res = await api.post(
+          `/api/courses/${courseId}/lectures/${lectureId}/quizzes/${quiz.id}/start`
+        );
+        return res.data?.data?.expiresAt ?? null;
+      }}
       onSubmit={(questionAnswers) => {
         submitQuiz(
           {

@@ -398,6 +398,9 @@ public sealed class CoursesService : ICoursesService
                 .ThenInclude(x => x.AttendedStudents.Where(x => x.Id == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
                 .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
+                .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
+                .ThenInclude(x => x.Quizzes)
+                .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == command.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == command.CourseId && x.IsPublished)
             ?? throw new ApiException(CoursesErrors.NotFound);
 
@@ -418,6 +421,13 @@ public sealed class CoursesService : ICoursesService
                 is false
         )
             throw new ApiException(LessonsErrors.NotAccessible);
+
+        foreach (var quiz in lecture.Quizzes.Where(x => x.Order < lesson.Order))
+        {
+            var submission = quiz.QuizSubmissions.FirstOrDefault(x => x.StudentId == command.StudentId);
+            if (submission is null || submission.NumOfCorrect < quiz.PassCount)
+                throw new ApiException(LessonsErrors.Blocked);
+        }
 
         if (
             lesson.LessonAttendances.FirstOrDefault(x => x.StudentId == command.StudentId)
@@ -684,9 +694,20 @@ public sealed class CoursesService : ICoursesService
             throw new ApiException(QuizzesErrors.AlreadySubmitted);
 
         var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == command.StudentId);
-        if (attempt?.ExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
+        if (quiz.ExpiryMinutes > 0)
+        {
+            if (attempt is null)
+                throw new ApiException(new ApiError("quizzes/not-started", "Start the quiz before submitting",
+                    StatusCodes.Status400BadRequest));
+            if (attempt.ExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
+                throw new ApiException(new ApiError("quizzes/expired", "Quiz time has expired",
+                    StatusCodes.Status400BadRequest));
+        }
+        else if (attempt?.ExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
+        {
             throw new ApiException(new ApiError("quizzes/expired", "Quiz time has expired",
                 StatusCodes.Status400BadRequest));
+        }
 
         var questionsIds = quiz
             .Questions.Select(x => x.Id)
@@ -1013,6 +1034,63 @@ public sealed class CoursesService : ICoursesService
 
         _context.Update(quiz);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<StartQuizResult> ExecuteAsync(StartQuizCommand command)
+    {
+        var course =
+            await _context
+                .Set<Course>()
+                .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
+                .ThenInclude(x => x.Quizzes.Where(x => x.Id == command.QuizId))
+                .ThenInclude(x => x.QuizAttempts.Where(x => x.StudentId == command.StudentId))
+                .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
+                .ThenInclude(x => x.Quizzes.Where(x => x.Id == command.QuizId))
+                .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == command.StudentId))
+                .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == command.StudentId))
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == command.StudentId))
+                .FirstOrDefaultAsync(x => x.Id == command.CourseId && x.IsPublished)
+            ?? throw new ApiException(CoursesErrors.NotFound);
+
+        if (course.Lectures.FirstOrDefault(x => x.Id == command.LectureId) is not { } lecture)
+            throw new ApiException(LecturesErrors.NotFound);
+
+        if (lecture.Quizzes.FirstOrDefault(x => x.Id == command.QuizId) is not { } quiz)
+            throw new ApiException(QuizzesErrors.NotFound);
+
+        if (
+            course.CourseEnrollments.Any(x => x.StudentId == command.StudentId && x.ExpiresAt > DateTime.UtcNow)
+                is false
+            && lecture.LectureEnrollments.Any(x => x.StudentId == command.StudentId && x.ExpiresAt > DateTime.UtcNow)
+                is false
+        )
+            throw new ApiException(QuizzesErrors.NotAccessible);
+
+        if (quiz.QuizSubmissions.Any(x => x.StudentId == command.StudentId))
+            throw new ApiException(QuizzesErrors.AlreadySubmitted);
+
+        var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == command.StudentId);
+        if (attempt is null)
+        {
+            attempt = new QuizAttempt
+            {
+                QuizId = quiz.Id,
+                StudentId = command.StudentId,
+                StartedAt = DateTime.UtcNow,
+                ExpiresAt = quiz.ExpiryMinutes > 0
+                    ? DateTime.UtcNow.AddMinutes(quiz.ExpiryMinutes)
+                    : null
+            };
+            await _context.Set<QuizAttempt>().AddAsync(attempt);
+            await _context.SaveChangesAsync();
+        }
+
+        return new StartQuizResult
+        {
+            ExpiresAt = attempt.ExpiresAt,
+            ExpiryMinutes = quiz.ExpiryMinutes
+        };
     }
 
     public async Task ExecuteAsync(GradeQuizEssayCommand command)
@@ -1417,6 +1495,7 @@ public sealed class CoursesService : ICoursesService
                 .ThenInclude(x => x.Assets)
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes)
+                .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Lessons.Where(x => x.VideoId != null))
                 .Include(x => x.Exams)
@@ -1441,45 +1520,66 @@ public sealed class CoursesService : ICoursesService
         )
             throw new ApiException(LecturesErrors.NotAccessible);
 
-        var lessons = lecture.Lessons.Select(l => new SingleLectureItem
+        var quizSubmissionsByQuizId = lecture.Quizzes
+            .SelectMany(q => q.QuizSubmissions.Select(s => (q.Id, s)))
+            .ToDictionary(x => x.Id, x => x.s);
+
+        bool IsQuizPassed(Quiz quiz)
         {
-            Id = l.Id,
-            Title = l.Title,
-            Order = l.Order,
-            Type = LectureItemType.Lesson,
-            Description = l.Description
+            if (!quizSubmissionsByQuizId.TryGetValue(quiz.Id, out var sub))
+                return false;
+            return sub.NumOfCorrect >= quiz.PassCount;
+        }
+
+        var lessons = lecture.Lessons.Select(l =>
+        {
+            var blocked = lecture.Quizzes
+                .Where(q => q.Order < l.Order)
+                .Any(q => !IsQuizPassed(q));
+            return new SingleLectureItem
+            {
+                Id = l.Id,
+                Title = l.Title,
+                Order = l.Order,
+                Type = LectureItemType.Lesson,
+                Description = l.Description,
+                IsLockedByQuiz = blocked
+            };
         });
 
-        var quizzes = lecture.Quizzes.Select(q => new SingleLectureItem
+        var quizzes = lecture.Quizzes.Select(q =>
         {
-            Id = q.Id,
-            Title = q.Title,
-            Order = q.Order,
-            Type = LectureItemType.Quiz,
-            Description = q.Description
+            quizSubmissionsByQuizId.TryGetValue(q.Id, out var sub);
+            return new SingleLectureItem
+            {
+                Id = q.Id,
+                Title = q.Title,
+                Order = q.Order,
+                Type = LectureItemType.Quiz,
+                Description = q.Description,
+                IsSubmitted = sub is not null,
+                NumOfCorrect = sub?.NumOfCorrect,
+                NumOfQuestions = sub?.NumOfQuestions,
+                PassCount = q.PassCount,
+                IsPassed = sub is not null ? sub.NumOfCorrect >= q.PassCount : null,
+                IsLockedByQuiz = false
+            };
         });
 
         var expiresAt = lecture
             .LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
             ?.ExpiresAt;
 
-
-        // Check if there are quizzes for the lecture
-        var hasQuizzes = _context.Lectures.Any(l => l.Quizzes.Any(q => q.LectureId == query.LectureId));
-
-        // Check if the student has completed all required quizzes
-        var hasCompletedQuizzes = _context.Students
-            .Any(s => s.QuizSubmissions.Any(lq =>
-                lq.StudentId == query.StudentId &&
-                lq.NumOfCorrect >= lq.PassCount)); // This ensures all quizzes for this lecture are completed
+        // Assets: show only after all quizzes in this lecture are passed (or no quizzes / attended)
+        var hasQuizzes = lecture.Quizzes.Any();
+        var hasCompletedQuizzes = !hasQuizzes || lecture.Quizzes.All(IsQuizPassed);
 
         var hasAttendedLecture = lecture.LectureAttendances
             .Any(la => la.StudentId == query.StudentId && la.AttendedAt != null);
-        // Determine if assets should be shown
         var assets =
-            (hasQuizzes && hasCompletedQuizzes) || hasAttendedLecture || (!hasQuizzes && expiresAt != null)
+            hasCompletedQuizzes || hasAttendedLecture || (!hasQuizzes && expiresAt != null)
                 ? lecture.Assets
-                : []; // Hide the assets otherwise
+                : [];
 
 
         return new GetStudentLectureResult
@@ -1514,7 +1614,7 @@ public sealed class CoursesService : ICoursesService
                 .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes)
-                .ThenInclude(x => x.SubmittedStudents.Where(x => x.Id == query.StudentId))
+                .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == query.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == query.CourseId && x.IsPublished)
             ?? throw new ApiException(CoursesErrors.NotFound);
 
@@ -1788,20 +1888,6 @@ public sealed class CoursesService : ICoursesService
         if (submission is null)
         {
             var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == query.StudentId);
-            if (attempt is null)
-            {
-                attempt = new QuizAttempt
-                {
-                    QuizId = quiz.Id,
-                    StudentId = query.StudentId,
-                    StartedAt = DateTime.UtcNow,
-                    ExpiresAt = quiz.ExpiryMinutes > 0
-                        ? DateTime.UtcNow.AddMinutes(quiz.ExpiryMinutes)
-                        : null
-                };
-                await _context.Set<QuizAttempt>().AddAsync(attempt);
-                await _context.SaveChangesAsync();
-            }
 
             return new QuizNotAnswered
             {
@@ -1813,7 +1899,8 @@ public sealed class CoursesService : ICoursesService
                 EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(quiz.Questions),
                 PassCount = quiz.PassCount,
                 ExpiryMinutes = quiz.ExpiryMinutes,
-                ExpiresAt = attempt.ExpiresAt
+                // Timer starts only after student confirms via StartQuiz
+                ExpiresAt = attempt?.ExpiresAt
             };
         }
 

@@ -42,8 +42,8 @@ const SubmittedExam: React.FC<{
 
   const questions = [];
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const pdfUrls = exam.description ? exam.description.match(urlRegex) : [];
-  for (const q of exam.multipleChoiceQuestions) {
+  const pdfUrls = exam.description?.match(urlRegex) ?? [];
+  for (const q of exam.multipleChoiceQuestions ?? []) {
     questions.push(
       <div
         key={q.id}
@@ -112,7 +112,7 @@ const SubmittedExam: React.FC<{
     );
   }
 
-  for (const q of exam.valueToleranceQuestions) {
+  for (const q of exam.valueToleranceQuestions ?? []) {
     questions.push(
       <div
         key={q.id}

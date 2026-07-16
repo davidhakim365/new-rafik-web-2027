@@ -51,13 +51,22 @@ export function ExamSubmissionForm({
     [exam]
   );
 
+  const remainingMs = exam.expiresAt
+    ? new Date(exam.expiresAt).getTime() - Date.now()
+    : 0;
+  const expiryMinutes =
+    remainingMs > 0 ? Math.max(1, Math.ceil(remainingMs / 60_000)) : 0;
+
   return (
     <AssessmentTakeForm
       title={exam.title}
       description={exam.description}
       questions={questions}
       expiresAt={exam.expiresAt}
+      expiryMinutes={expiryMinutes}
+      requireStartConfirm={!!exam.expiresAt}
       isSubmitting={submitExam.isPending}
+      onConfirmStart={async () => exam.expiresAt}
       onSubmit={(questionAnswers) => {
         submitExam.mutate({
           courseId,

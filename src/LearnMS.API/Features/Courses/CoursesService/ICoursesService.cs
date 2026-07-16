@@ -41,6 +41,7 @@ public interface ICoursesService
     public Task ExecuteAsync(UpdateLectureGradesCommand command);
     public Task ExecuteAsync(GradeQuizEssayCommand command);
     public Task ExecuteAsync(GradeExamEssayCommand command);
+    public Task<StartQuizResult> ExecuteAsync(StartQuizCommand command);
 
     // queries
 

@@ -12,4 +12,11 @@ export interface SingleLectureItem {
   order: number;
   title: string;
   type: LectureItemType;
+  /** Quiz score fields (optional for lessons) */
+  numOfCorrect?: number | null;
+  numOfQuestions?: number | null;
+  passCount?: number | null;
+  isPassed?: boolean | null;
+  isSubmitted?: boolean;
+  isLockedByQuiz?: boolean;
 }

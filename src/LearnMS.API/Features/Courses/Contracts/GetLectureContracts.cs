@@ -69,6 +69,16 @@ public record SingleLectureItem
     public required string? Description { get; set; }
     [Required]
     public required int Order { get; set; }
+
+    /// <summary>Quiz only: score after submit.</summary>
+    public int? NumOfCorrect { get; set; }
+    public int? NumOfQuestions { get; set; }
+    public int? PassCount { get; set; }
+    public bool? IsPassed { get; set; }
+    public bool IsSubmitted { get; set; }
+
+    /// <summary>True when prior quizzes must be passed before opening this item.</summary>
+    public bool IsLockedByQuiz { get; set; }
 }
 
 

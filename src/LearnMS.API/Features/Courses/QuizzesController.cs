@@ -143,6 +143,27 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
         };
     }
 
+    [HttpPost("{quizId:guid}/start")]
+    [ApiAuthorize(Role = UserRole.Student)]
+    [SwaggerOperation(OperationId = "StartQuiz")]
+    public async Task<ApiWrapper.Success<StartQuizResult>> Start(Guid courseId, Guid lectureId, Guid quizId)
+    {
+        var user = await currentUserService.GetUserAsync();
+        var result = await coursesService.ExecuteAsync(new StartQuizCommand
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            QuizId = quizId,
+            StudentId = user!.Id
+        });
+
+        return new ApiWrapper.Success<StartQuizResult>
+        {
+            Data = result,
+            Message = "Quiz started"
+        };
+    }
+
     [HttpPost("{quizId:guid}/grade-essay")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
     [SwaggerOperation(OperationId = "GradeQuizEssay")]
