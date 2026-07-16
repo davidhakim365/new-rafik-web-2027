@@ -6,6 +6,7 @@ import { api } from "@/api";
 import {
   getGetLectureQueryKey,
   getGetQuizQueryKey,
+  getGetStudentCourseDetailsQueryKey,
   useSubmitQuiz,
 } from "@/generated/api";
 import { QuizNotAnswered } from "@/generated/model";
@@ -41,6 +42,9 @@ export function QuizSubmissionForm({
         });
         qc.invalidateQueries({
           queryKey: getGetLectureQueryKey(courseId, lectureId),
+        });
+        qc.invalidateQueries({
+          queryKey: getGetStudentCourseDetailsQueryKey(courseId),
         });
       },
     },

@@ -96,6 +96,11 @@ public sealed record StudentLessonDto : StudentLectureItemDto
 public sealed record StudentQuizDto : StudentLectureItemDto
 {
     [Required] public required int QuestionsCount { get; init; }
+    public bool IsSubmitted { get; init; }
+    public int? NumOfCorrect { get; init; }
+    public int? NumOfQuestions { get; init; }
+    public int? PassCount { get; init; }
+    public bool? IsPassed { get; init; }
 }
 
 public sealed record StudentExamDto : StudentCourseItemDto

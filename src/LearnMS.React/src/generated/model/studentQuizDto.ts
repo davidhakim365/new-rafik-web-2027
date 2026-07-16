@@ -10,4 +10,9 @@ import type { StudentQuizDtoType } from './studentQuizDtoType';
 export type StudentQuizDto = StudentLectureItemDto & {
   $type: StudentQuizDtoType;
   questionsCount: number;
+  isSubmitted?: boolean;
+  numOfCorrect?: number | null;
+  numOfQuestions?: number | null;
+  passCount?: number | null;
+  isPassed?: boolean | null;
 };

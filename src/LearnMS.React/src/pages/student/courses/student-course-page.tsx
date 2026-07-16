@@ -22,6 +22,7 @@ import {
   StudentExamDto,
   StudentLectureDtoItemsItem,
   StudentAssetDto,
+  StudentQuizDto,
 } from "@/generated/model";
 import {
   CourseAccordionSkeleton,
@@ -61,6 +62,7 @@ import {
 } from "@/components/ui/grid-feature-cards";
 import { MarkdownWrapper } from "@/components/ui/markdown-wrapper";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { cn } from "@/lib/utils";
 import { BookOpen, Coins, AlertTriangle, ArrowLeft } from "lucide-react";
 
 export const StudentCoursePage = () => {
@@ -1069,9 +1071,16 @@ function QuizAccordionItem({
 
   if (quiz.$type !== "StudentQuizDto") return null;
 
+  const q = quiz as StudentQuizDto;
+
   const handleQuizClick = () => {
     navigate(`/courses/${courseId}/lectures/${lectureId}/quizzes/${quiz.id}`);
   };
+
+  const submitted = !!q.isSubmitted || q.numOfCorrect != null;
+  const numOfCorrect = q.numOfCorrect;
+  const numOfQuestions = q.numOfQuestions;
+  const isPassed = q.isPassed;
 
   return (
     <AccordionItem
@@ -1087,17 +1096,63 @@ function QuizAccordionItem({
             <div className="text-left">
               <p className="font-medium text-foreground">{quiz.title}</p>
               <p className="text-sm text-muted-foreground">
-                {t("lectures.quiz")} • {quiz.questionsCount}{" "}
-                {t("quiz.questions")}
+                {submitted ? (
+                  <>
+                    Score: {numOfCorrect ?? 0}/{numOfQuestions ?? q.questionsCount}
+                    {isPassed === true && (
+                      <span className="ml-2 font-medium text-emerald-600">
+                        Passed
+                      </span>
+                    )}
+                    {isPassed === false && (
+                      <span className="ml-2 font-medium text-red-600">
+                        Failed
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {t("lectures.quiz")} • {q.questionsCount}{" "}
+                    {t("quiz.questions")}
+                  </>
+                )}
               </p>
             </div>
           </div>
+          {submitted && (
+            <span
+              className={cn(
+                "text-xs font-semibold px-2 py-1 rounded-full",
+                isPassed
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-red-100 text-red-800"
+              )}
+            >
+              {numOfCorrect ?? 0}/{numOfQuestions ?? q.questionsCount}
+            </span>
+          )}
         </div>
       </AccordionTrigger>
       <AccordionContent className="bg-gradient-to-br from-muted/30 via-background/50 to-muted/20 backdrop-blur-sm border-t border-border/30 overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
         <div className="px-6 pt-2 pb-4 space-y-3">
-          {quiz.description && (
-            <DescriptionSection description={quiz.description} />
+          {!submitted && q.description && (
+            <DescriptionSection description={q.description} />
+          )}
+          {submitted && (
+            <div className="rounded-lg border bg-background/80 p-4">
+              <p className="text-sm text-muted-foreground">Your result</p>
+              <p className="text-xl font-semibold text-foreground">
+                {numOfCorrect ?? 0} / {numOfQuestions ?? q.questionsCount}
+              </p>
+              <p
+                className={cn(
+                  "mt-1 font-medium",
+                  isPassed ? "text-emerald-600" : "text-red-600"
+                )}
+              >
+                {isPassed ? "Passed" : "Failed"}
+              </p>
+            </div>
           )}
           {lectureEnrollment === "Active" && (
             <div className="flex justify-end">
@@ -1107,7 +1162,7 @@ function QuizAccordionItem({
                 variant="destructive"
                 className="w-full font-medium transition-all duration-300 transform border-0 shadow-md sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 hover:shadow-lg hover:scale-105"
               >
-                {t("quiz.takeQuiz")}
+                {submitted ? "View result" : t("quiz.takeQuiz")}
               </PlasticButton>
             </div>
           )}

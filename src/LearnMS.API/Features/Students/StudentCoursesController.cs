@@ -133,6 +133,26 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                                     Description = q.Description,
                                     Order = q.Order,
                                     QuestionsCount = q.Questions.Count,
+                                    IsSubmitted = user != null && q.QuizSubmissions.Any(s => s.StudentId == user.Id),
+                                    NumOfCorrect = user == null
+                                        ? null
+                                        : q.QuizSubmissions
+                                            .Where(s => s.StudentId == user.Id)
+                                            .Select(s => (int?)s.NumOfCorrect)
+                                            .FirstOrDefault(),
+                                    NumOfQuestions = user == null
+                                        ? null
+                                        : q.QuizSubmissions
+                                            .Where(s => s.StudentId == user.Id)
+                                            .Select(s => (int?)s.NumOfQuestions)
+                                            .FirstOrDefault(),
+                                    PassCount = q.PassCount,
+                                    IsPassed = user == null
+                                        ? null
+                                        : q.QuizSubmissions
+                                            .Where(s => s.StudentId == user.Id)
+                                            .Select(s => (bool?)(s.NumOfCorrect >= q.PassCount))
+                                            .FirstOrDefault(),
                                 })
                                 .ToList(),
                         }),
