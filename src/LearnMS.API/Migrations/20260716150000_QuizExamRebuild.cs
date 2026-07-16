@@ -1,11 +1,14 @@
+using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace LearnMS.API.Migrations;
 
-/// <inheritdoc />
-public class QuizExamRebuild : Migration
+[DbContext(typeof(Data.AppDbContext))]
+[Migration("20260716150000_QuizExamRebuild")]
+public partial class QuizExamRebuild : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)

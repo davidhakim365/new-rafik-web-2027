@@ -1,6 +1,8 @@
 using LearnMS.API.Common;
+using LearnMS.API.Data;
 using LearnMS.API.Features.Administration;
 using LearnMS.API.Features.Administration.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace LearnMS.API.Features;
@@ -11,9 +13,20 @@ public static class ApplicationInitialization
     {
         var scope = app.Services.CreateAsyncScope();
 
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Database.MigrateAsync();
+            Console.WriteLine("Database migrations applied");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database migration failed: {ex.Message}");
+            throw;
+        }
+
         var administrationService = scope.ServiceProvider.GetRequiredService<IAdministrationService>();
         var administrationConfig = scope.ServiceProvider.GetRequiredService<IOptions<AdministrationConfig>>();
-
 
         foreach (var teacher in administrationConfig.Value.Teachers ?? [])
         {
