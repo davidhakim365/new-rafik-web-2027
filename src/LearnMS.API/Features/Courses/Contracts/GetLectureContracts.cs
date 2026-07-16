@@ -41,6 +41,8 @@ public record GetLectureDashboardResult : GetLectureResult
     [Required]
     public string? ImageUrl { get; set; }
     public string? HomeworkVideoUrl { get; set; }
+    public decimal? HomeworkFullMark { get; set; }
+    public decimal? QuizFullMark { get; set; }
     [Required]
     public decimal? Price { get; set; }
     [Required]

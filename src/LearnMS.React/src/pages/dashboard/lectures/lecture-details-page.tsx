@@ -148,6 +148,27 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
   );
 
   const qc = useQueryClient();
+  const updateLecture = useUpdateLecture({
+    mutation: {
+      onSuccess() {
+        qc.invalidateQueries({
+          queryKey: getGetLectureQueryKey(courseId, lecture.id),
+        });
+        toast({
+          title: "Full marks saved",
+          description: "You can now enter student scores.",
+        });
+      },
+      onError(error: Error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
   const updateLectureGrades = useUpdateLectureGrades({
     mutation: {
       onSuccess() {
@@ -173,8 +194,12 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     );
 
   const studentColumns = useMemo(
-    () => createLectureStudentsColumns(selectedCenterId),
-    [selectedCenterId]
+    () =>
+      createLectureStudentsColumns(selectedCenterId, {
+        homeworkFullMark: lecture.homeworkFullMark,
+        quizFullMark: lecture.quizFullMark,
+      }),
+    [selectedCenterId, lecture.homeworkFullMark, lecture.quizFullMark]
   );
 
   const { data: gradeTotalData } = useGetLectureStudents(
@@ -293,6 +318,18 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
         className="rounded-xl border border-color2/15 bg-muted/20 p-3"
       />
 
+      <LectureFullMarksForm
+        lecture={lecture}
+        isSaving={updateLecture.isPending}
+        onSave={(data) =>
+          updateLecture.mutate({
+            courseId,
+            lectureId: lecture.id,
+            data,
+          })
+        }
+      />
+
       {!selectedCenterId && (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           Select an attendance center before scanning barcodes or marking students
@@ -365,6 +402,106 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     </div>
   );
 };
+
+function LectureFullMarksForm({
+  lecture,
+  isSaving,
+  onSave,
+}: {
+  lecture: GetLectureDashboardResult;
+  isSaving: boolean;
+  onSave: (data: {
+    homeworkFullMark?: number;
+    quizFullMark?: number;
+  }) => void;
+}) {
+  const [homeworkFullMark, setHomeworkFullMark] = useState(
+    lecture.homeworkFullMark?.toString() ?? ""
+  );
+  const [quizFullMark, setQuizFullMark] = useState(
+    lecture.quizFullMark?.toString() ?? ""
+  );
+
+  useEffect(() => {
+    setHomeworkFullMark(lecture.homeworkFullMark?.toString() ?? "");
+    setQuizFullMark(lecture.quizFullMark?.toString() ?? "");
+  }, [lecture.homeworkFullMark, lecture.quizFullMark]);
+
+  const hw = Number(homeworkFullMark);
+  const qz = Number(quizFullMark);
+  const hwValid = Number.isFinite(hw) && hw > 0;
+  const qzValid = Number.isFinite(qz) && qz > 0;
+  const canSave = hwValid || qzValid;
+
+  return (
+    <div className="rounded-xl border border-color2/20 bg-color2/5 p-3 sm:p-4">
+      <div className="mb-2">
+        <h3 className="text-sm font-semibold text-foreground">
+          Offline score full marks
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Set full marks first, then enter each student score (out of these
+          totals).
+        </p>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Homework full mark
+          </label>
+          <Input
+            type="number"
+            min={0.01}
+            step="any"
+            placeholder="e.g. 20"
+            value={homeworkFullMark}
+            onChange={(e) => setHomeworkFullMark(e.target.value)}
+            className="w-full sm:w-40"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Quiz full mark
+          </label>
+          <Input
+            type="number"
+            min={0.01}
+            step="any"
+            placeholder="e.g. 10"
+            value={quizFullMark}
+            onChange={(e) => setQuizFullMark(e.target.value)}
+            className="w-full sm:w-40"
+          />
+        </div>
+        <Button
+          type="button"
+          disabled={!canSave || isSaving}
+          onClick={() => {
+            const data: {
+              homeworkFullMark?: number;
+              quizFullMark?: number;
+            } = {};
+            if (hwValid) data.homeworkFullMark = hw;
+            if (qzValid) data.quizFullMark = qz;
+            onSave(data);
+          }}
+          className="w-full sm:w-auto"
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            "Save full marks"
+          )}
+        </Button>
+      </div>
+      {(!lecture.homeworkFullMark || !lecture.quizFullMark) && (
+        <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+          Score fields unlock after their full mark is saved.
+        </p>
+      )}
+    </div>
+  );
+}
 
 const LectureDetailsTab: React.FC<TabProps> = ({ lecture }) => {
   const navigate = useNavigate();

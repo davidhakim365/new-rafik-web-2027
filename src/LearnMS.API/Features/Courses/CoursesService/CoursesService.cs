@@ -70,6 +70,12 @@ public sealed class CoursesService : ICoursesService
                 ? null
                 : command.HomeworkVideoUrl.Trim();
 
+        if (command.HomeworkFullMark is not null)
+            lecture.HomeworkFullMark = command.HomeworkFullMark;
+
+        if (command.QuizFullMark is not null)
+            lecture.QuizFullMark = command.QuizFullMark;
+
         if (command.Price is not null)
             lecture.Price = command.Price.Value;
 
@@ -484,8 +490,13 @@ public sealed class CoursesService : ICoursesService
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId
                     && x.CourseId == command.CourseId
-                    && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        if (lecture.HomeworkFullMark is null or <= 0)
+            throw new ApiException(LecturesErrors.HomeworkFullMarkRequired);
+
+        if (command.Score < 0 || command.Score > lecture.HomeworkFullMark.Value)
+            throw new ApiException(LecturesErrors.InvalidHomeworkScore);
 
         var student =
             await _context.Students.FirstOrDefaultAsync(x => x.Id == command.StudentId)
@@ -524,8 +535,13 @@ public sealed class CoursesService : ICoursesService
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId
                     && x.CourseId == command.CourseId
-                    && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        if (lecture.QuizFullMark is null or <= 0)
+            throw new ApiException(LecturesErrors.QuizFullMarkRequired);
+
+        if (command.Score < 0 || command.Score > lecture.QuizFullMark.Value)
+            throw new ApiException(LecturesErrors.InvalidQuizScore);
 
         var student =
             await _context.Students.FirstOrDefaultAsync(x => x.Id == command.StudentId)
@@ -1537,6 +1553,8 @@ public sealed class CoursesService : ICoursesService
             Description = lecture.Description,
             ImageUrl = lecture.ImageUrl,
             HomeworkVideoUrl = lecture.HomeworkVideoUrl,
+            HomeworkFullMark = lecture.HomeworkFullMark,
+            QuizFullMark = lecture.QuizFullMark,
             IsPublished = lecture.IsPublished,
             Price = lecture.Price,
             RenewalPrice = lecture.RenewalPrice,

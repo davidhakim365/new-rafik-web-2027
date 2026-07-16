@@ -37,8 +37,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import { CheckCircle, Circle, Gift, MoreHorizontal, Save } from "lucide-react";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 
 function EnrollAction({ student }: { student: SingleLectureStudent }) {
   const { lectureId, courseId } = useParams();
@@ -89,296 +91,342 @@ function EnrollAction({ student }: { student: SingleLectureStudent }) {
   );
 }
 
-export function createLectureStudentsColumns(
-  centerId?: string | null
-): ColumnDef<SingleLectureStudent & SingleLectureStudentWithCenter>[] {
-  return [
-  {
-    accessorKey: "fullName",
-    header: "Full Name",
-    cell: ({ row }) => {
-      const nameParts = row.original.fullName.split(" ");
-      const shortenedName = nameParts.slice(0, 2).join(" ");
-      return <div className="font-medium">{shortenedName}</div>;
-    },
-  },
-  {
-    accessorKey: "studentCode",
-    header: "Student ID",
-    cell: ({ row }) => {
-      const studentCode = row.original.studentCode;
-      const displayCode =
-        studentCode.length > 12 ? studentCode.split("@")[0] : studentCode;
-      return <div className="font-mono text-sm">{displayCode}</div>;
-    },
-  },
-  {
-    accessorKey: "attended",
-    header: "Attended",
-    cell: ({ row }) => {
-      const student = row.original;
-      const { lectureId, courseId } = useParams();
-      const qc = useQueryClient();
-      const { mutate: toggleAttendance, isPending } =
-        useToggleLectureAttendanceAtCenter({
-          mutation: {
-            onSuccess() {
-              qc.invalidateQueries({
-                queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
-              });
-              qc.invalidateQueries({
-                queryKey: getGetLectureStatisticsQueryKey({
-                  lectureId: lectureId!,
-                  ...(centerId ? { centerId } : {}),
-                }),
-              });
-            },
-          },
-        });
+function ScoreCell({
+  kind,
+  score,
+  fullMark,
+  studentId,
+}: {
+  kind: "homework" | "quiz";
+  score?: number | null;
+  fullMark?: number | null;
+  studentId: string;
+}) {
+  const { courseId, lectureId } = useParams();
+  const qc = useQueryClient();
+  const canScore = fullMark != null && fullMark > 0;
 
-      return (
-        <div className="flex items-center justify-center">
-          <Toggle
-            disabled={isPending}
-            pressed={student.attended}
-            className="h-10 w-10 data-[state=on]:text-primary data-[state=off]:text-zinc-400"
-            onPressedChange={() => {
-              if (!student.attended && !centerId) {
-                toast({
-                  title: "Select a center",
-                  description:
-                    "Choose an attendance center before marking students as attended.",
-                  variant: "destructive",
-                });
-                return;
-              }
+  const schema = useMemo(
+    () =>
+      z.object({
+        score: z.coerce
+          .number()
+          .min(0, { message: "Min 0" })
+          .max(fullMark ?? 0, {
+            message: `Max ${fullMark ?? 0}`,
+          }),
+      }),
+    [fullMark]
+  );
 
-              toggleAttendance({
-                lectureId: lectureId!,
-                courseId: courseId!,
-                studentId: student.id,
-                centerId: !student.attended ? centerId ?? undefined : undefined,
-              });
-            }}
-          >
-            {student.attended ? (
-              <CheckCircle className="h-6 w-6" />
-            ) : (
-              <Circle className="h-6 w-6" />
-            )}
-          </Toggle>
-        </div>
-      );
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      score: score ?? ("" as any),
     },
-  },
-  {
-    accessorKey: "centerName",
-    header: "Center",
-    cell: ({ row }) => (
-      <div className="text-sm text-muted-foreground">
-        {row.original.centerName ?? "—"}
+    values: {
+      score: score ?? ("" as any),
+    },
+  });
+
+  const { mutate: changeHomework, isPending: hwPending } =
+    useChangeLectureHomeworkScore({
+      mutation: {
+        onSuccess: (data) => {
+          qc.invalidateQueries({
+            queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
+          });
+          toast({
+            title: "Score updated",
+            description: data.message,
+          });
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      },
+    });
+
+  const { mutate: changeQuiz, isPending: quizPending } =
+    useChangeLectureQuizScore({
+      mutation: {
+        onSuccess: (data) => {
+          qc.invalidateQueries({
+            queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
+          });
+          toast({
+            title: "Score updated",
+            description: data.message,
+          });
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      },
+    });
+
+  const isPending = hwPending || quizPending;
+
+  if (!canScore) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        Set full mark first
       </div>
-    ),
-  },
-  {
-    accessorKey: "enrolled",
-    header: "Enrolled",
-    cell: ({ row }) => {
-      const student = row.original;
-      return (
-        <div className="flex items-center justify-center">
-          {student.enrolled ? (
-            <CheckCircle className="h-6 w-6 text-primary" />
-          ) : (
-            <Circle className="h-6 w-6 text-zinc-400" />
+    );
+  }
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit((data) => {
+          const payload = { score: data.score };
+          if (kind === "homework") {
+            changeHomework({
+              courseId: courseId!,
+              data: payload as ChangeHomeworkScoreRequest,
+              lectureId: lectureId!,
+              studentId,
+            });
+          } else {
+            changeQuiz({
+              courseId: courseId!,
+              data: payload as ChangeQuizScoreRequest,
+              lectureId: lectureId!,
+              studentId,
+            });
+          }
+        })}
+        className="w-full"
+      >
+        <fieldset
+          disabled={isPending}
+          className="flex flex-col gap-1 sm:flex-row sm:items-center"
+        >
+          <FormField
+            control={form.control}
+            name="score"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={fullMark!}
+                      step="any"
+                      className="w-full min-w-[4.5rem]"
+                      {...field}
+                    />
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      / {fullMark}
+                    </span>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {form.formState.isDirty && (
+            <Button type="submit" size="sm" className="w-full sm:w-auto">
+              <Save className="h-4 w-4" />
+            </Button>
           )}
-        </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const student = row.original;
+        </fieldset>
+      </form>
+    </Form>
+  );
+}
 
-      return (
-        <div className="flex w-full flex-col gap-2 lg:items-center">
-          <div className="lg:hidden">
-            <EnrollAction student={student} />
-          </div>
-          <div className="hidden lg:block">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="left"
-                className="w-[200px] shadow-md shadow-primary"
-              >
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <EnrollAction student={student} />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "homeworkScore",
-    header: "Homework Score",
-    cell: ({ row }) => {
-      const { courseId, lectureId } = useParams();
-      const student = row.original;
+export function createLectureStudentsColumns(
+  centerId?: string | null,
+  options?: {
+    homeworkFullMark?: number | null;
+    quizFullMark?: number | null;
+  }
+): ColumnDef<SingleLectureStudent & SingleLectureStudentWithCenter>[] {
+  const homeworkFullMark = options?.homeworkFullMark;
+  const quizFullMark = options?.quizFullMark;
 
-      const form = useForm<ChangeHomeworkScoreRequest>({
-        resolver: zodResolver(ChangeHomeworkScoreRequest),
-        defaultValues: {
-          score: student.homeworkScore ?? ("" as any),
-        },
-        values: {
-          score: student.homeworkScore ?? ("" as any),
-        },
-      });
-      const qc = useQueryClient();
-      const { mutate: changeHomework, isPending } =
-        useChangeLectureHomeworkScore({
-          mutation: {
-            onSuccess: (data) => {
-              qc.invalidateQueries({
-                queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
-              });
-              toast({
-                title: "Score updated",
-                description: data.message,
-              });
+  return [
+    {
+      accessorKey: "fullName",
+      header: "Full Name",
+      cell: ({ row }) => {
+        const nameParts = row.original.fullName.split(" ");
+        const shortenedName = nameParts.slice(0, 2).join(" ");
+        return <div className="font-medium">{shortenedName}</div>;
+      },
+    },
+    {
+      accessorKey: "studentCode",
+      header: "Student ID",
+      cell: ({ row }) => {
+        const studentCode = row.original.studentCode;
+        const displayCode =
+          studentCode.length > 12 ? studentCode.split("@")[0] : studentCode;
+        return <div className="font-mono text-sm">{displayCode}</div>;
+      },
+    },
+    {
+      accessorKey: "attended",
+      header: "Attended",
+      cell: ({ row }) => {
+        const student = row.original;
+        const { lectureId, courseId } = useParams();
+        const qc = useQueryClient();
+        const { mutate: toggleAttendance, isPending } =
+          useToggleLectureAttendanceAtCenter({
+            mutation: {
+              onSuccess() {
+                qc.invalidateQueries({
+                  queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
+                });
+                qc.invalidateQueries({
+                  queryKey: getGetLectureStatisticsQueryKey({
+                    lectureId: lectureId!,
+                    ...(centerId ? { centerId } : {}),
+                  }),
+                });
+              },
             },
-          },
-        });
+          });
 
-      return (
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((data) => {
-              changeHomework({
-                courseId: courseId!,
-                data,
-                lectureId: lectureId!,
-                studentId: student.id,
-              });
-            })}
-            className="w-full"
-          >
-            <fieldset
+        return (
+          <div className="flex items-center justify-center">
+            <Toggle
               disabled={isPending}
-              className="flex flex-col gap-2 sm:flex-row sm:items-center"
-            >
-              <FormField
-                control={form.control}
-                name="score"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input type="number" className="w-full" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {form.formState.isDirty && (
-                <Button type="submit" size="sm" className="w-full sm:w-auto">
-                  <Save className="h-4 w-4" />
-                </Button>
-              )}
-            </fieldset>
-          </form>
-        </Form>
-      );
-    },
-  },
-  {
-    accessorKey: "quizScore",
-    header: "Quiz Score",
-    cell: ({ row }) => {
-      const { courseId, lectureId } = useParams();
-      const student = row.original;
+              pressed={student.attended}
+              className="h-10 w-10 data-[state=on]:text-primary data-[state=off]:text-zinc-400"
+              onPressedChange={() => {
+                if (!student.attended && !centerId) {
+                  toast({
+                    title: "Select a center",
+                    description:
+                      "Choose an attendance center before marking students as attended.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
 
-      const form = useForm<ChangeQuizScoreRequest>({
-        resolver: zodResolver(ChangeQuizScoreRequest),
-        defaultValues: {
-          score: student.quizScore ?? ("" as any),
-        },
-        values: {
-          score: student.quizScore ?? ("" as any),
-        },
-      });
-      const qc = useQueryClient();
-      const { mutate: changeQuiz, isPending } = useChangeLectureQuizScore({
-        mutation: {
-          onSuccess: (data) => {
-            qc.invalidateQueries({
-              queryKey: getGetLectureStudentsQueryKey(courseId!, lectureId!),
-            });
-            toast({
-              title: "Score updated",
-              description: data.message,
-            });
-          },
-        },
-      });
-
-      return (
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((data) => {
-              changeQuiz({
-                courseId: courseId!,
-                data,
-                lectureId: lectureId!,
-                studentId: student.id,
-              });
-            })}
-            className="w-full"
-          >
-            <fieldset
-              disabled={isPending}
-              className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                toggleAttendance({
+                  lectureId: lectureId!,
+                  courseId: courseId!,
+                  studentId: student.id,
+                  centerId: !student.attended
+                    ? centerId ?? undefined
+                    : undefined,
+                });
+              }}
             >
-              <FormField
-                control={form.control}
-                name="score"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input type="number" className="w-full" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {form.formState.isDirty && (
-                <Button type="submit" size="sm" className="w-full sm:w-auto">
-                  <Save className="h-4 w-4" />
-                </Button>
+              {student.attended ? (
+                <CheckCircle className="h-6 w-6" />
+              ) : (
+                <Circle className="h-6 w-6" />
               )}
-            </fieldset>
-          </form>
-        </Form>
-      );
+            </Toggle>
+          </div>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "studentQuizzesScore",
-    header: "Online Quizzes Score",
-    cell: ({ row }) => (
-      <div>{row.original.totalQuizzesScore ?? "—"}</div>
-    ),
-  },
-];
+    {
+      accessorKey: "centerName",
+      header: "Center",
+      cell: ({ row }) => (
+        <div className="text-sm text-muted-foreground">
+          {row.original.centerName ?? "—"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "enrolled",
+      header: "Enrolled",
+      cell: ({ row }) => {
+        const student = row.original;
+        return (
+          <div className="flex items-center justify-center">
+            {student.enrolled ? (
+              <CheckCircle className="h-6 w-6 text-primary" />
+            ) : (
+              <Circle className="h-6 w-6 text-zinc-400" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const student = row.original;
+
+        return (
+          <div className="flex w-full flex-col gap-2 lg:items-center">
+            <div className="lg:hidden">
+              <EnrollAction student={student} />
+            </div>
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="left"
+                  className="w-[200px] shadow-md shadow-primary"
+                >
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <EnrollAction student={student} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "homeworkScore",
+      header: homeworkFullMark
+        ? `Homework ( / ${homeworkFullMark})`
+        : "Homework Score",
+      cell: ({ row }) => (
+        <ScoreCell
+          kind="homework"
+          score={row.original.homeworkScore}
+          fullMark={homeworkFullMark}
+          studentId={row.original.id}
+        />
+      ),
+    },
+    {
+      accessorKey: "quizScore",
+      header: quizFullMark ? `Quiz ( / ${quizFullMark})` : "Quiz Score",
+      cell: ({ row }) => (
+        <ScoreCell
+          kind="quiz"
+          score={row.original.quizScore}
+          fullMark={quizFullMark}
+          studentId={row.original.id}
+        />
+      ),
+    },
+    {
+      accessorKey: "studentQuizzesScore",
+      header: "Online Quizzes Score",
+      cell: ({ row }) => (
+        <div>{row.original.totalQuizzesScore ?? "—"}</div>
+      ),
+    },
+  ];
 }
 
 export default createLectureStudentsColumns;

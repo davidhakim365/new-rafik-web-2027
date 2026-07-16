@@ -39,6 +39,12 @@ Homework Video :
     /// <summary>YouTube URL for lecture homework video (embedded for students).</summary>
     public string? HomeworkVideoUrl { get; set; }
 
+    /// <summary>Full mark for offline homework scores. Must be set before scoring.</summary>
+    public decimal? HomeworkFullMark { get; set; }
+
+    /// <summary>Full mark for offline quiz scores. Must be set before scoring.</summary>
+    public decimal? QuizFullMark { get; set; }
+
     public decimal? Price { get; set; } = 90;
     public decimal? RenewalPrice { get; set; } = 90;
     public int? ExpirationDays { get; set; } = 7;

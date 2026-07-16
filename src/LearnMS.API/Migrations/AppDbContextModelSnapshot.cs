@@ -317,6 +317,12 @@ namespace LearnMS.API.Migrations
                     b.Property<string>("HomeworkVideoUrl")
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("HomeworkFullMark")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("QuizFullMark")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 

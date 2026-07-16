@@ -2218,6 +2218,12 @@ if(updateLectureBody.imageUrl !== undefined) {
 if(updateLectureBody.homeworkVideoUrl !== undefined) {
  formData.append('homeworkVideoUrl', updateLectureBody.homeworkVideoUrl ?? '')
  }
+if(updateLectureBody.homeworkFullMark !== undefined && updateLectureBody.homeworkFullMark !== null) {
+ formData.append('homeworkFullMark', updateLectureBody.homeworkFullMark.toString())
+ }
+if(updateLectureBody.quizFullMark !== undefined && updateLectureBody.quizFullMark !== null) {
+ formData.append('quizFullMark', updateLectureBody.quizFullMark.toString())
+ }
 if(updateLectureBody.renewalPrice !== undefined) {
  formData.append('renewalPrice', updateLectureBody.renewalPrice.toString())
  }

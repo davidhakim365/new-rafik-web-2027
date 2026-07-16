@@ -12,6 +12,8 @@ export type GetLectureDashboardResult = GetLectureResult & {
   description: string;
   expirationDays: number;
   homeworkVideoUrl?: string | null;
+  homeworkFullMark?: number | null;
+  quizFullMark?: number | null;
   imageUrl: string;
   isPublished: boolean;
   price: number;

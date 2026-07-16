@@ -13,6 +13,8 @@ public sealed record UpdateLectureCommand
     public decimal? Price { get; init; }
     public decimal? RenewalPrice { get; init; }
     public int? ExpirationDays { get; init; }
+    public decimal? HomeworkFullMark { get; init; }
+    public decimal? QuizFullMark { get; init; }
 }
 
 public sealed record UpdateLectureRequest
@@ -35,4 +37,10 @@ public sealed record UpdateLectureRequest
 
     [Range(0, 1000)]
     public int? ExpirationDays { get; init; }
+
+    [Range(0.01, 10000)]
+    public decimal? HomeworkFullMark { get; init; }
+
+    [Range(0.01, 10000)]
+    public decimal? QuizFullMark { get; init; }
 }
