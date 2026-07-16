@@ -485,6 +485,12 @@ namespace LearnMS.API.Migrations
                     b.Property<string>("Image")
                         .HasColumnType("text");
 
+                    b.Property<int?>("SourceIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceTitle")
+                        .HasColumnType("text");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("text");
@@ -503,6 +509,11 @@ namespace LearnMS.API.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("ExpiryMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<Guid>("LectureId")
                         .HasColumnType("uuid");
@@ -524,6 +535,25 @@ namespace LearnMS.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Quiz");
+                });
+
+            modelBuilder.Entity("LearnMS.API.Entities.QuizAttempt", b =>
+                {
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("QuizId", "StudentId");
+
+                    b.ToTable("QuizAttempt");
                 });
 
             modelBuilder.Entity("LearnMS.API.Entities.QuizQuestion", b =>
@@ -959,6 +989,25 @@ namespace LearnMS.API.Migrations
                     b.Navigation("Lecture");
                 });
 
+            modelBuilder.Entity("LearnMS.API.Entities.QuizAttempt", b =>
+                {
+                    b.HasOne("LearnMS.API.Entities.Quiz", "Quiz")
+                        .WithMany("QuizAttempts")
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LearnMS.API.Entities.Student", "Student")
+                        .WithMany("QuizAttempts")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("LearnMS.API.Entities.QuizQuestion", b =>
                 {
                     b.HasOne("LearnMS.API.Entities.Question", "Question")
@@ -1078,6 +1127,8 @@ namespace LearnMS.API.Migrations
 
             modelBuilder.Entity("LearnMS.API.Entities.Quiz", b =>
                 {
+                    b.Navigation("QuizAttempts");
+
                     b.Navigation("QuizQuestions");
 
                     b.Navigation("QuizSubmissions");
@@ -1105,6 +1156,8 @@ namespace LearnMS.API.Migrations
                     b.Navigation("LectureQuizzes");
 
                     b.Navigation("LessonAttendances");
+
+                    b.Navigation("QuizAttempts");
 
                     b.Navigation("QuizSubmissions");
                 });

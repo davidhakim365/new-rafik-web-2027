@@ -5,6 +5,7 @@ import AddAssistantModal from "@/pages/dashboard/assistants/add-assistant-modal"
 import SelectAssetsModal from "@/pages/dashboard/files/select-assets-modal";
 import AddMultipleQuestionModal from "@/pages/dashboard/questions/add-multiple-question-modal";
 import AddValueQuestionModal from "@/pages/dashboard/questions/add-value-question-modal";
+import AddEssayQuestionModal from "@/pages/dashboard/questions/add-essay-question-modal";
 import SelectQuestionsModal from "@/pages/dashboard/questions/select-questions-modal";
 import AddCreditModal from "@/pages/dashboard/students/add-credit-modal";
 import AddStudentModal from "@/pages/dashboard/students/add-student-modal";
@@ -22,6 +23,7 @@ const modals: Record<string, React.FC<any>> = {
   "forgot-password-modal": ForgotPasswordModal,
   "add-multiple-question-modal": AddMultipleQuestionModal,
   "add-value-question-modal": AddValueQuestionModal,
+  "add-essay-question-modal": AddEssayQuestionModal,
   "select-questions-modal": SelectQuestionsModal,
   "select-assets-modal": SelectAssetsModal,
   "lecture-assets-modal": LectureAssetsModal,

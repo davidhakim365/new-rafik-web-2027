@@ -3,6 +3,7 @@ import {
   useGetQuizQuery,
   useUpdateQuizMutation,
 } from "@/api/quizzes-api";
+import { InlineQuestionEditor } from "@/components/assessment/inline-question-editor";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +35,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn, toast } from "@/lib/utils";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQuestionsStore } from "@/store/use-questions-store";
+import { createEmptyDraft, draftToPayload } from "@/types/assessment";
 import { Question } from "@/types/question";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Delete, Plus, Trash } from "lucide-react";
+import { Delete, Library, Plus, Trash } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -45,8 +47,16 @@ import { z } from "zod";
 const QuizPage = () => {
   const { courseId, lectureId, quizId } = useParams();
   const { openModal } = useModalStore();
-  const { addQuestions, clearQuestions, questions, removeQuestion } =
-    useQuestionsStore();
+  const {
+    addQuestions,
+    resetAll,
+    questions,
+    removeQuestion,
+    drafts,
+    addDraft,
+    updateDraft,
+    removeDraft,
+  } = useQuestionsStore();
   const navigate = useNavigate();
 
   const { data: quiz, isLoading } = useGetQuizQuery({
@@ -65,16 +75,16 @@ const QuizPage = () => {
       title: z.string().min(1),
       description: z.string().min(1),
       resultType: z.enum(["Hidden", "ResultOnly", "ResultWithAnswer"]),
-      passCount: z.coerce.number(),
-      questions: z
-        .array(z.string().uuid(), { required_error: "Questions are required" })
-        .min(1, { message: "Questions must  be at least 1" })
-        .default(questions.map((q) => q.id)),
+      passCount: z.coerce.number().min(0),
+      expiryMinutes: z.coerce.number().min(0),
     })
     .refine(
-      (data) => data.questions.length >= data.passCount && data.passCount >= 0,
+      (data) => {
+        const total = questions.length + drafts.length;
+        return total >= 1 && total >= data.passCount;
+      },
       {
-        message: "Pass count must be less than or equal to questions count",
+        message: "Need at least one question; pass count cannot exceed questions",
         path: ["passCount"],
       }
     );
@@ -85,34 +95,34 @@ const QuizPage = () => {
       id: undefined,
       title: "",
       description: "",
-      resultType: "Hidden",
+      resultType: "ResultWithAnswer",
+      passCount: 1,
+      expiryMinutes: 0,
     },
   });
 
   useEffect(() => {
-    clearQuestions();
+    resetAll();
   }, []);
 
   useEffect(() => {
     if (quiz?.status && quiz?.data) {
-      addQuestions(quiz.data.questions);
+      addQuestions(quiz.data.questions as Question[]);
       form.setValue("id", quiz.data.id);
       form.setValue("title", quiz.data.title);
       form.setValue("description", quiz.data.description);
       form.setValue("passCount", quiz.data.passCount);
       form.setValue("resultType", quiz.data.resultType);
+      form.setValue(
+        "expiryMinutes",
+        (quiz.data as { expiryMinutes?: number }).expiryMinutes ?? 0
+      );
     }
   }, [quiz, addQuestions]);
 
-  useEffect(() => {
-    questions.forEach((q, i) => {
-      form.setValue(`questions.${i}`, q.id);
-    });
-  }, [questions]);
-
   if (isLoading) {
     return (
-      <div className='w-full h-full'>
+      <div className="w-full h-full">
         <Loading />
       </div>
     );
@@ -122,18 +132,22 @@ const QuizPage = () => {
     updateQuizMutation.mutate(
       {
         courseId: courseId as string,
-        data,
         lectureId: lectureId as string,
+        data: {
+          ...data,
+          questions: questions.map((q) => q.id),
+          newQuestions: drafts.map(draftToPayload),
+        },
       },
       {
-        onSuccess: (data) => {
+        onSuccess: (res) => {
           toast({
-            description: data.message,
+            description: res.message,
             title: "Success",
           });
           if (!quizId)
             navigate(
-              `/dashboard/courses/${courseId}/lectures/${lectureId}/quizzes/${data.data.id}`,
+              `/dashboard/courses/${courseId}/lectures/${lectureId}/quizzes/${res.data.id}`,
               { replace: true }
             );
         },
@@ -142,24 +156,25 @@ const QuizPage = () => {
   };
 
   return (
-    <ScrollArea className='w-full h-full p-4 m-auto rounded shadow-md shadow-primary bg-primary/20 text-primary'>
+    <ScrollArea className="w-full h-full p-4 m-auto rounded shadow-md shadow-primary bg-primary/20 text-primary">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='px-4'>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="px-4">
           <fieldset
             disabled={
               updateQuizMutation.isPending || deleteQuizMutation.isPending
             }
-            className='flex flex-col items-start gap-4 '>
-            <div className='flex items-center justify-between w-full'>
-              {(!quizId && (
-                <h1 className='text-3xl text-primary'>Creating A Quiz</h1>
-              )) || <h1 className='text-3xl text-primary'>Editing A Quiz</h1>}
-              <div className='flex items-center gap-2'>
-                <Button type='submit'>Save</Button>
+            className="flex flex-col items-start gap-4 "
+          >
+            <div className="flex items-center justify-between w-full">
+              <h1 className="text-3xl text-primary">
+                {!quizId ? "Creating A Quiz" : "Editing A Quiz"}
+              </h1>
+              <div className="flex items-center gap-2">
+                <Button type="submit">Save</Button>
                 {quizId && (
                   <Confirmation
-                    description='Are you sure you want to delete this quiz?'
-                    title='Delete Quiz'
+                    description="Are you sure you want to delete this quiz?"
+                    title="Delete Quiz"
                     onConfirm={() => {
                       deleteQuizMutation.mutate(
                         {
@@ -182,7 +197,7 @@ const QuizPage = () => {
                       );
                     }}
                     button={
-                      <Button variant='destructive'>
+                      <Button variant="destructive">
                         <Trash />
                       </Button>
                     }
@@ -191,10 +206,10 @@ const QuizPage = () => {
               </div>
             </div>
             <FormField
-              name='title'
+              name="title"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full max-w-xl">
                   <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input {...field} />
@@ -204,11 +219,11 @@ const QuizPage = () => {
               )}
             />
             <FormField
-              name='description'
+              name="description"
               control={form.control}
               render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Quiz URL</FormLabel>
+                <FormItem className="w-full">
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
@@ -216,93 +231,95 @@ const QuizPage = () => {
                 </FormItem>
               )}
             />
-            <FormField
-              name='passCount'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Pass Count</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name='resultType'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-start w-fit'>
-                  <FormLabel>Result Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={quiz?.data.resultType ?? field.value}>
+            <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+              <FormField
+                name="passCount"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pass count (correct answers needed)</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select a result type' />
-                      </SelectTrigger>
+                      <Input type="number" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value='Hidden'>Hidden</SelectItem>
-                      <SelectItem value='ResultOnly'>Result Only</SelectItem>
-                      <SelectItem value='ResultWithAnswer'>
-                        Result With Answer
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="expiryMinutes"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Time limit (minutes, 0 = none)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="resultType"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Show answers after submit?</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={quiz?.data?.resultType ?? field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a result type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Hidden">Hide results</SelectItem>
+                        <SelectItem value="ResultOnly">Score only</SelectItem>
+                        <SelectItem value="ResultWithAnswer">
+                          Score + answers
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <h2 className="text-xl mt-2">Questions</h2>
             {questions.map((q) => (
-              <Card
+              <BankQuestionCard
                 key={q.id}
-                className='relative h-[200px] w-full rounded-3xl overflow-clip flex bg-primary/10 text-primary p-0 border-0'>
-                <Badge className='absolute top-2 left-2'>
-                  {q.body.typename}
-                </Badge>
-                <Button
-                  className='absolute top-2 right-2'
-                  variant='destructive'
-                  onClick={() => removeQuestion(q.id)}
-                  size='icon'>
-                  <Delete />
-                </Button>
-                {q.image && (
-                  <HoverCard>
-                    <HoverCardTrigger className='h-full w-[200px] p-0'>
-                      <CardHeader className='h-full p-0'>
-                        <img
-                          src={q.image}
-                          className='object-fill object-center w-full h-full'
-                        />
-                      </CardHeader>
-                    </HoverCardTrigger>
-                    <HoverCardContent
-                      side='left'
-                      className='p-0 w-[500px] rounded overflow-clip aspect-square shadow-primary shadow-md'>
-                      <img src={q.image} className='w-full h-full' alt='' />
-                    </HoverCardContent>
-                  </HoverCard>
-                )}
-                {q.body.typename === "MultipleChoiceQuestion" && (
-                  <MultipleQuestionContent {...q} />
-                )}
-                {q.body.typename === "ValueToleranceQuestion" && (
-                  <ValueQuestionContent {...q} />
-                )}
-              </Card>
+                question={q}
+                onRemove={() => removeQuestion(q.id)}
+              />
             ))}
-            <Button
-              type='button'
-              size='icon'
-              className='self-end'
-              onClick={() => openModal("select-questions-modal")}>
-              <Plus />
-            </Button>
+            {drafts.map((d) => (
+              <InlineQuestionEditor
+                key={d.localId}
+                draft={d}
+                onChange={(patch) => updateDraft(d.localId, patch)}
+                onRemove={() => removeDraft(d.localId)}
+              />
+            ))}
+            <div className="flex flex-wrap gap-2 self-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => openModal("select-questions-modal")}
+              >
+                <Library className="h-4 w-4 mr-2" /> From bank
+              </Button>
+              <Button
+                type="button"
+                onClick={() => addDraft(createEmptyDraft("MultipleChoice"))}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add question
+              </Button>
+            </div>
             <FormField
-              name='questions'
+              name="passCount"
               render={() => (
                 <FormItem>
                   <FormMessage />
@@ -316,44 +333,83 @@ const QuizPage = () => {
   );
 };
 
-function MultipleQuestionContent(question: Question) {
-  if (question.body.typename === "ValueToleranceQuestion") return null;
-  return (
-    <CardContent className={cn("flex flex-col items-start p-4 gap-4")}>
-      <h2 className='text-2xl'>{question.text}</h2>
-      <div className='flex flex-col items-start ms-4'>
-        {question.body!.choices.map((o) => (
-          <Badge
-            className={cn(
-              "mt-3",
-              o !== question.body!.correctAnswer && "text-primary"
-            )}
-            key={o}
-            variant={
-              o === question.body!.correctAnswer ? "default" : "secondary"
-            }>
-            {o}
-          </Badge>
-        ))}
-      </div>
-    </CardContent>
-  );
-}
+function BankQuestionCard({
+  question,
+  onRemove,
+}: {
+  question: Question;
+  onRemove: () => void;
+}) {
+  const body = question.body as {
+    $type?: string;
+    typename?: string;
+    choices?: Array<string | { id: string; text?: string; imageUrl?: string }>;
+    correctAnswer?: string | number;
+    tolerance?: number;
+  };
+  const typeName = body.$type ?? body.typename ?? "Question";
 
-function ValueQuestionContent(question: Question) {
-  if (question.body.typename === "MultipleChoiceQuestion") return null;
   return (
-    <CardContent
-      className={cn(
-        "flex flex-col items-start gap-4 p-4",
-        !question.image && "items-center w-full"
-      )}>
-      <h2 className='text-2xl'>{question.text}</h2>
-      <div className='flex flex-col items-start'>
-        <p className='text-lg'>Correct: {question.body.correctAnswer}</p>
-        <p className='text-lg'>Tolerance: {question.body.tolerance}</p>
-      </div>
-    </CardContent>
+    <Card className="relative w-full rounded-3xl overflow-clip flex flex-col sm:flex-row bg-primary/10 text-primary p-0 border-0 min-h-[120px]">
+      <Badge className="absolute top-2 left-2 z-10">{typeName}</Badge>
+      <Button
+        className="absolute top-2 right-2 z-10"
+        variant="destructive"
+        type="button"
+        onClick={onRemove}
+        size="icon"
+      >
+        <Delete />
+      </Button>
+      {question.image && (
+        <HoverCard>
+          <HoverCardTrigger className="h-[160px] w-full sm:w-[200px] p-0 shrink-0">
+            <CardHeader className="h-full p-0">
+              <img
+                src={question.image}
+                className="object-cover object-center w-full h-full"
+                alt=""
+              />
+            </CardHeader>
+          </HoverCardTrigger>
+          <HoverCardContent
+            side="left"
+            className="p-0 w-[500px] rounded overflow-clip aspect-square shadow-primary shadow-md"
+          >
+            <img src={question.image} className="w-full h-full" alt="" />
+          </HoverCardContent>
+        </HoverCard>
+      )}
+      <CardContent className={cn("flex flex-col items-start p-4 gap-2")}>
+        <h2 className="text-xl pr-10">{question.text}</h2>
+        {question.description && (
+          <p className="text-sm opacity-80">{question.description}</p>
+        )}
+        {Array.isArray(body.choices) && (
+          <div className="flex flex-wrap gap-2">
+            {body.choices.map((o, i) => {
+              const label =
+                typeof o === "string" ? o : o.text || o.imageUrl || o.id;
+              const id = typeof o === "string" ? o : o.id;
+              const isCorrect = String(body.correctAnswer) === String(id);
+              return (
+                <Badge
+                  key={i}
+                  variant={isCorrect ? "default" : "secondary"}
+                >
+                  {label}
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+        {body.tolerance != null && (
+          <p className="text-sm">
+            Answer: {body.correctAnswer} ± {body.tolerance}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

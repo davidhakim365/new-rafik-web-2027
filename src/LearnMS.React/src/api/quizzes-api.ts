@@ -1,30 +1,19 @@
 import { ApiResponse, api } from "@/api";
 import { QuizDashboard, QuizResult } from "@/types/quiz";
+import { InlineQuestionPayload } from "@/types/assessment";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-export const UpdateQuizRequest = z
-  .object({
-    id: z.string().uuid().optional(),
-    title: z.string().min(1, { message: "Title is required" }),
-    resultType: z
-      .enum(["Hidden", "ResultOnly", "ResultWithAnswer"])
-      .default("Hidden"),
-    description: z.string().min(1, { message: "Description is required" }),
-    passCount: z.coerce.number().min(0).max(100),
-    questions: z
-      .array(z.string().uuid())
-      .min(2, { message: "Questions are required" }),
-  })
-  .refine(
-    (data) => data.questions.length >= data.passCount && data.passCount >= 0,
-    {
-      message: "Pass count must be less than questions count",
-      path: ["passCount"],
-    }
-  );
-
-export type UpdateQuizRequest = z.infer<typeof UpdateQuizRequest>;
+export type UpdateQuizRequest = {
+  id?: string;
+  title: string;
+  description: string;
+  resultType: "Hidden" | "ResultOnly" | "ResultWithAnswer";
+  passCount: number;
+  expiryMinutes: number;
+  questions: string[];
+  newQuestions: InlineQuestionPayload[];
+};
 
 export const useUpdateQuizMutation = () => {
   const qc = useQueryClient();
@@ -49,6 +38,7 @@ export const useUpdateQuizMutation = () => {
       });
       qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
       qc.invalidateQueries({ queryKey: ["quiz", { id: res.data.id }] });
+      qc.invalidateQueries({ queryKey: ["questions"] });
     },
   });
 };
@@ -64,7 +54,7 @@ export const useGetQuizQuery = ({
   lectureId: string;
   enabled: boolean;
 }) => {
-  return useQuery<ApiResponse<QuizDashboard>>({
+  return useQuery<ApiResponse<QuizDashboard & { expiryMinutes?: number }>>({
     queryKey: ["quiz", { id }],
     enabled,
     queryFn: () =>

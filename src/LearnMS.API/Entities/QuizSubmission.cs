@@ -6,12 +6,10 @@ namespace LearnMS.API.Entities;
 
 public sealed class QuizSubmission
 {
-
     public required Guid StudentId { get; set; }
     public Student Student { get; set; } = null!;
     public required Guid QuizId { get; set; }
     public Quiz Quiz { get; set; } = null!;
-
 
     public JsonDocument QuestionSubmissionsJson { get; private set; } = null!;
 
@@ -19,13 +17,14 @@ public sealed class QuizSubmission
     [NotMapped]
     public required List<QuestionSubmission> QuestionSubmissions
     {
-        get => JsonSerializer.Deserialize<List<QuestionSubmission>>(QuestionSubmissionsJson)!;
-        set => QuestionSubmissionsJson = JsonSerializer.SerializeToDocument(value);
+        get => JsonSerializer.Deserialize<List<QuestionSubmission>>(QuestionSubmissionsJson, QuestionJson.Options)!;
+        set => QuestionSubmissionsJson = JsonSerializer.SerializeToDocument(value, QuestionJson.Options);
     }
 
     public required int NumOfCorrect { get; set; }
     public required int NumOfQuestions { get; set; }
     public required int PassCount { get; set; }
+    public bool IsPassed => NumOfCorrect >= PassCount;
 
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
 }

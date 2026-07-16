@@ -17,9 +17,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadToImgBb } from "@/lib/imgbb-upload";
 import { toast } from "@/lib/utils";
+import { QuestionChoiceDraft } from "@/types/assessment";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Delete, Plus } from "lucide-react";
+import { Delete, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,50 +33,59 @@ interface AddMultipleQuestionModalProps {
 const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
   onClose,
 }) => {
-  const [options, setOptions] = useState<string[]>([]);
+  const [choices, setChoices] = useState<QuestionChoiceDraft[]>([
+    { id: crypto.randomUUID(), text: "" },
+    { id: crypto.randomUUID(), text: "" },
+  ]);
+  const [uploading, setUploading] = useState(false);
   const addQuestionMutation = useAddQuestionMutation();
 
   const FormSchema = z
     .object({
       description: z.string().min(1),
       text: z.string().min(1),
-      image: z
-        .any()
-        .refine((file) => file instanceof File, {
-          message: "only one image",
-        })
-        .refine((file: File) => file.size / 1024 / 1024 <= 5, {
-          message: "image must be less than 5MB",
-        })
-
-        .optional(),
+      image: z.string().optional(),
       correctAnswer: z.string().min(1),
-      answers: z.array(z.string()).default(options),
-    })
-    .refine((data) => new Set(data.answers).size === data.answers.length, {
-      message: "Answers must be unique",
-      path: ["correctAnswer"],
-    })
-    .refine((data) => data.answers.includes(data.correctAnswer), {
-      message: "Correct answer must be one of the answers",
-      path: ["correctAnswer"],
     })
     .refine(
-      (data) =>
-        data.answers.length >= 2 && data.answers.every((a) => a.length > 0),
-      {
-        message: "Answers must be at least 2 non-empty strings",
-        path: ["correctAnswer"],
-      }
+      (data) => choices.some((c) => c.id === data.correctAnswer),
+      { message: "Pick a correct choice", path: ["correctAnswer"] }
+    )
+    .refine(
+      () =>
+        choices.length >= 2 &&
+        choices.every((c) => (c.text && c.text.length > 0) || c.imageUrl),
+      { message: "Each choice needs text or image", path: ["correctAnswer"] }
     );
 
   const form = useForm({
     resolver: zodResolver(FormSchema),
+    defaultValues: {
+      description: "",
+      text: "",
+      correctAnswer: choices[0]?.id,
+    },
   });
+
+  const upload = async (file: File, apply: (url: string) => void) => {
+    setUploading(true);
+    try {
+      apply(await uploadToImgBb(file));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const onAddQuestion = (data: z.infer<typeof FormSchema>) => {
     addQuestionMutation.mutate(
-      { ...data, image: form.getValues("image") },
+      {
+        text: data.text,
+        description: data.description,
+        image: data.image,
+        questionType: "MultipleChoice",
+        multipleCorrect: data.correctAnswer,
+        multipleChoices: choices,
+      },
       {
         onSuccess: () => {
           toast({
@@ -82,7 +93,6 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
             description: "Question added successfully",
           });
           form.reset();
-          setOptions([]);
           onClose();
         },
       }
@@ -93,20 +103,20 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-[60vw] max-w-screen-xl max-h-[100vh] overflow-y-auto text-foreground">
         <DialogHeader>
-          <DialogTitle>Add Question</DialogTitle>
+          <DialogTitle>Add Multiple Choice Question</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onAddQuestion as any)}>
             <fieldset
               className="space-y-4"
-              disabled={addQuestionMutation.isPending}
+              disabled={addQuestionMutation.isPending || uploading}
             >
               <FormField
                 name="description"
                 control={form.control}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Bank label / description</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -119,7 +129,7 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                 control={form.control}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Text</FormLabel>
+                    <FormLabel>Question text</FormLabel>
                     <FormControl>
                       <Textarea {...field} />
                     </FormControl>
@@ -129,20 +139,25 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
               />
               <FormField
                 name="image"
-                render={({ field: { value, onChange, ...field } }) => (
+                render={() => (
                   <FormItem>
-                    <FormLabel>Image</FormLabel>
+                    <FormLabel>Question image (ImgBB)</FormLabel>
                     <Input
-                      {...field}
-                      value={value?.fileName}
-                      onChange={(e) => {
-                        onChange(e.target.files?.[0]);
-                        form.setValue("image", e.target.files?.[0]);
-                      }}
                       type="file"
-                      id="image"
                       accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f)
+                          upload(f, (url) => form.setValue("image", url));
+                      }}
                     />
+                    {form.watch("image") && (
+                      <img
+                        src={form.watch("image")}
+                        alt=""
+                        className="mt-2 max-h-40 rounded border"
+                      />
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -157,7 +172,12 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                       <Button
                         type="button"
                         size="icon"
-                        onClick={() => setOptions((opts) => [...opts, ""])}
+                        onClick={() =>
+                          setChoices((opts) => [
+                            ...opts,
+                            { id: crypto.randomUUID(), text: "" },
+                          ])
+                        }
                       >
                         <Plus />
                       </Button>
@@ -165,41 +185,70 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
-                        {options.map((option, index) => (
+                        {choices.map((choice, index) => (
                           <FormItem
-                            key={index}
-                            className="flex items-center gap-2"
+                            key={choice.id}
+                            className="flex items-start gap-2"
                           >
                             <FormControl>
-                              <RadioGroupItem value={option} />
+                              <RadioGroupItem value={choice.id} />
                             </FormControl>
-                            <FormLabel className="flex items-center w-full gap-2">
+                            <FormLabel className="flex flex-1 flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={choice.text ?? ""}
+                                  placeholder="Choice text"
+                                  onChange={(e) => {
+                                    setChoices((opts) => {
+                                      const next = [...opts];
+                                      next[index] = {
+                                        ...next[index],
+                                        text: e.target.value,
+                                      };
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="destructive"
+                                  type="button"
+                                  onClick={() =>
+                                    setChoices((opts) =>
+                                      opts.filter((_, i) => i !== index)
+                                    )
+                                  }
+                                >
+                                  <Delete />
+                                </Button>
+                              </div>
                               <Input
-                                value={options[index]}
+                                type="file"
+                                accept="image/*"
                                 onChange={(e) => {
-                                  setOptions((opts) => {
-                                    var newOpts = [...opts];
-                                    newOpts[index] = e.target.value;
-                                    return newOpts;
-                                  });
+                                  const f = e.target.files?.[0];
+                                  if (f)
+                                    upload(f, (url) =>
+                                      setChoices((opts) => {
+                                        const next = [...opts];
+                                        next[index] = {
+                                          ...next[index],
+                                          imageUrl: url,
+                                        };
+                                        return next;
+                                      })
+                                    );
                                 }}
                               />
-                              <Button
-                                size="icon"
-                                variant="destructive"
-                                type="button"
-                                onClick={() =>
-                                  setOptions((opts) => {
-                                    var newOpts = [...opts];
-                                    newOpts.splice(index, 1);
-                                    return newOpts;
-                                  })
-                                }
-                              >
-                                <Delete />
-                              </Button>
+                              {choice.imageUrl && (
+                                <img
+                                  src={choice.imageUrl}
+                                  alt=""
+                                  className="h-16 w-16 rounded object-cover"
+                                />
+                              )}
                             </FormLabel>
                           </FormItem>
                         ))}
@@ -210,7 +259,11 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                 )}
               />
               <Button type="submit" className="w-full">
-                Submit
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Submit"
+                )}
               </Button>
             </fieldset>
           </form>

@@ -70,31 +70,42 @@ const SubmittedExam: React.FC<{
             <p className=" text-2xl">{q.text}</p>
           </div>
           <div className="grid items-center justify-center grid-cols-1 gap-2 p-4 md:grid-cols-3 bg-primary/80">
-            {q.choices.map((option) => (
+            {q.choices.map((option: any) => {
+              const id = typeof option === "string" ? option : option.id;
+              const label =
+                typeof option === "string"
+                  ? option
+                  : option.text || option.imageUrl || option.id;
+              return (
               <div
-                key={option}
+                key={id}
                 className={cn(
                   "p-2 px-10 w-fit flex text-xl border-white border-[3px] items-center justify-center bg-white/40 text-primary/80 rounded-3xl",
                   exam.$type === "ExamResultOnly" &&
-                    q.studentAnswer === option &&
+                    q.studentAnswer === id &&
                     "bg-yellow-500 text-white",
                   exam.$type === "ExamResultWithAnswer" &&
-                    option === q.studentAnswer &&
+                    id === q.studentAnswer &&
                     !(q as any).isCorrect &&
                     "bg-red-500 text-white",
                   exam.$type === "ExamResultWithAnswer" &&
-                    option === (q as any).correctAnswer &&
+                    id === (q as any).correctAnswer &&
                     (q as any).isCorrect &&
                     "bg-green-500 text-white",
                   exam.$type === "ExamResultWithAnswer" &&
-                    option === (q as any).correctAnswer &&
+                    id === (q as any).correctAnswer &&
                     !(q as any).isCorrect &&
                     "bg-zinc-500 text-white"
                 )}
               >
-                <h3>{option}</h3>
+                {typeof option !== "string" && option.imageUrl ? (
+                  <img src={option.imageUrl} alt="" className="h-12 w-12 rounded object-cover" />
+                ) : (
+                  <h3>{label}</h3>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -151,6 +162,34 @@ const SubmittedExam: React.FC<{
               </div>
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  for (const q of ((exam as any).essayQuestions ?? []) as Array<{
+    id: string;
+    text: string;
+    image?: string;
+    studentAnswer: string;
+    isPendingGrade?: boolean;
+    isGradedCorrect?: boolean | null;
+  }>) {
+    questions.push(
+      <div key={q.id} className="w-full rounded-3xl bg-white/40 p-4 text-primary/90">
+        <p className="text-2xl">{q.text}</p>
+        {q.image && (
+          <img src={q.image} alt="" className="mt-2 max-h-40 rounded object-contain" />
+        )}
+        <div className="mt-3 rounded-xl bg-primary/80 p-3 text-white">
+          <p className="whitespace-pre-wrap">{q.studentAnswer}</p>
+          <p className="mt-2 text-sm opacity-90">
+            {q.isPendingGrade
+              ? "Pending teacher grading"
+              : q.isGradedCorrect
+                ? "Marked correct"
+                : "Marked incorrect"}
+          </p>
         </div>
       </div>
     );

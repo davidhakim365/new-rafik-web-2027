@@ -10,7 +10,7 @@ namespace LearnMS.API.Features.Questions;
 public sealed class QuestionsController(IQuestionsService questionsService) : ControllerBase
 {
     [HttpPost]
-    public async Task<ApiWrapper.Success<object?>> Post([FromForm] AddQuestionRequest request)
+    public async Task<ApiWrapper.Success<object?>> Post([FromBody] AddQuestionRequest request)
     {
         await questionsService.ExecuteAsync(new AddQuestionCommand
         {
@@ -19,9 +19,12 @@ public sealed class QuestionsController(IQuestionsService questionsService) : Co
             MultipleChoices = request.MultipleChoices,
             MultipleCorrect = request.MultipleCorrect,
             ValueCorrect = request.ValueCorrect,
-            level = request.level,
             ValueTolerance = request.ValueTolerance,
-            Text = request.Text
+            Text = request.Text,
+            QuestionType = request.QuestionType,
+            EssayMaxLength = request.EssayMaxLength,
+            SourceTitle = request.SourceTitle,
+            SourceIndex = request.SourceIndex
         });
 
         return new()

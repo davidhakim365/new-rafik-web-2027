@@ -1,43 +1,27 @@
 import { ApiResponse, api } from "@/api";
 import { QuestionPageList } from "@/types/question";
+import { QuestionChoiceDraft } from "@/types/assessment";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export type CreateQuestionRequest = {
   description: string;
   text: string;
-  image?: File;
-  correctAnswer?: string;
-  answers?: string[];
-  value?: number;
-  tolerance?: number;
+  image?: string;
+  questionType: "MultipleChoice" | "ValueTolerance" | "Essay";
+  multipleCorrect?: string;
+  multipleChoices?: QuestionChoiceDraft[];
+  valueCorrect?: number;
+  valueTolerance?: number;
+  essayMaxLength?: number;
+  sourceTitle?: string;
+  sourceIndex?: number;
 };
 
 export const useAddQuestionMutation = () => {
   const queryClient = useQueryClient();
   return useMutation<ApiResponse<{}>, Error, CreateQuestionRequest>({
     mutationFn: (data) => {
-      const formData = new FormData();
-
-      formData.append("text", data.text);
-      formData.append("description", data.description);
-      if (data.correctAnswer) {
-        formData.append("multipleCorrect", data.correctAnswer);
-        data.answers!.forEach((o, i) => {
-          formData.append(`multipleChoices[${i}]`, o);
-        });
-      } else if (data.value && data.tolerance) {
-        formData.append("valueCorrect", data.value.toString());
-        formData.append("valueTolerance", data.tolerance.toString());
-      } else {
-        throw new Error(
-          "Either correct answer or value and tolerance is required"
-        );
-      }
-      if (data.image) {
-        formData.append("image", data.image);
-      }
-
-      return api.post("/api/questions", formData).then((res) => res.data);
+      return api.post("/api/questions", data).then((res) => res.data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -61,7 +45,7 @@ export const useAllQuestionsQuery = ({
     queryFn: () =>
       api
         .get(
-          `/api/questions?page=${page}&pageSize=${pageSize}&search=${search}`
+          `/api/questions?page=${page}&pageSize=${pageSize}&search=${search ?? ""}`
         )
         .then((res) => res.data),
   });

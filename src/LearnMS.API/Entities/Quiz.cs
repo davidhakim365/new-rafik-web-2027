@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using Swashbuckle.AspNetCore.Annotations;
 
 namespace LearnMS.API.Entities;
 
@@ -12,6 +11,9 @@ public sealed class Quiz : IOrdered
     public string Description { get; set; } = null!;
     public ResultType ResultType { get; set; } = ResultType.ResultWithAnswer;
     public int PassCount { get; set; }
+
+    /// <summary>Time limit in minutes after the student starts. 0 = no limit.</summary>
+    public int ExpiryMinutes { get; set; }
 
     public List<Question> Questions { get; } = [];
 
@@ -25,6 +27,7 @@ public sealed class Quiz : IOrdered
     public List<QuizSubmission> QuizSubmissions { get; } = [];
 
     public List<QuizQuestion> QuizQuestions { get; } = [];
+    public List<QuizAttempt> QuizAttempts { get; } = [];
 }
 
 public class QuizQuestion
@@ -35,6 +38,17 @@ public class QuizQuestion
     public Question Question { get; set; } = null!;
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+}
+
+/// <summary>Tracks when a student started a timed quiz.</summary>
+public class QuizAttempt
+{
+    public Guid QuizId { get; set; }
+    public Quiz Quiz { get; set; } = null!;
+    public Guid StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ExpiresAt { get; set; }
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -67,6 +81,9 @@ public sealed record QuizDashboard : QuizResult
     public required int PassCount { get; set; }
 
     [Required]
+    public required int ExpiryMinutes { get; set; }
+
+    [Required]
     public required ResultType ResultType { get; set; }
 
     [Required]
@@ -91,7 +108,15 @@ public record QuizNotAnswered : QuizResult
     public required List<ValueToleranceNotAnswered> ValueToleranceQuestions { get; set; }
 
     [Required]
+    public required List<EssayNotAnswered> EssayQuestions { get; set; }
+
+    [Required]
     public required int PassCount { get; set; }
+
+    [Required]
+    public required int ExpiryMinutes { get; set; }
+
+    public DateTime? ExpiresAt { get; set; }
 }
 
 public record QuizHidden : QuizResult
@@ -116,6 +141,9 @@ public record QuizHidden : QuizResult
 
     [Required]
     public required List<ValueToleranceWithStudentAnswer> ValueToleranceQuestions { get; set; }
+
+    [Required]
+    public required List<EssayWithStudentAnswer> EssayQuestions { get; set; }
 }
 
 public record QuizResultOnly : QuizResult
@@ -143,6 +171,11 @@ public record QuizResultOnly : QuizResult
 
     [Required]
     public required List<ValueToleranceWithStudentAnswer> ValueToleranceQuestions { get; set; }
+
+    [Required]
+    public required List<EssayWithStudentAnswer> EssayQuestions { get; set; }
+
+    public int PendingEssayCount { get; set; }
 }
 
 public record QuizResultWithAnswer : QuizResult
@@ -170,4 +203,9 @@ public record QuizResultWithAnswer : QuizResult
 
     [Required]
     public required List<ValueToleranceWithCorrectAnswer> ValueToleranceQuestions { get; set; }
+
+    [Required]
+    public required List<EssayWithCorrectAnswer> EssayQuestions { get; set; }
+
+    public int PendingEssayCount { get; set; }
 }

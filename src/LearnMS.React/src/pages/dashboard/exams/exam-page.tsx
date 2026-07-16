@@ -1,4 +1,5 @@
 import Confirmation from "@/components/confirmation";
+import { InlineQuestionEditor } from "@/components/assessment/inline-question-editor";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,18 +37,26 @@ import { ExamDashboard, Question } from "@/generated/model";
 import { cn, toast } from "@/lib/utils";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQuestionsStore } from "@/store/use-questions-store";
+import { createEmptyDraft, draftToPayload } from "@/types/assessment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Delete, Plus, Trash } from "lucide-react";
+import { Delete, Library, Plus, Trash } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 const ExamPage = () => {
   const { courseId, examId } = useParams();
   const { openModal } = useModalStore();
-  const { questions, removeQuestion } = useQuestionsStore();
+  const {
+    questions,
+    removeQuestion,
+    drafts,
+    addDraft,
+    updateDraft,
+    removeDraft,
+  } = useQuestionsStore();
   const navigate = useNavigate();
   const deleteExamMutation = useDeleteExam();
 
@@ -66,30 +75,30 @@ const ExamPage = () => {
 
   if (isLoading) {
     return (
-      <div className='w-full h-full'>
+      <div className="w-full h-full">
         <Loading />
       </div>
     );
   }
 
   return (
-    <ScrollArea className='w-full h-full p-4 m-auto rounded shadow-md shadow-primary bg-primary/20 text-primary'>
+    <ScrollArea className="w-full h-full p-4 m-auto rounded shadow-md shadow-primary bg-primary/20 text-primary">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='px-4'>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="px-4">
           <fieldset
             disabled={form.formState.isSubmitting}
-            className='flex flex-col items-start gap-4 '>
-            <div className='flex items-center justify-between w-full'>
-              {(!examId && (
-                <h1 className='text-3xl text-primary'>Creating A exam</h1>
-              )) || <h1 className='text-3xl text-primary'>Editing A exam</h1>}
-              <div className='flex items-center gap-2'>
-
-                <Button type='submit'>Save</Button>
+            className="flex flex-col items-start gap-4 "
+          >
+            <div className="flex items-center justify-between w-full">
+              <h1 className="text-3xl text-primary">
+                {!examId ? "Creating An Exam" : "Editing An Exam"}
+              </h1>
+              <div className="flex items-center gap-2">
+                <Button type="submit">Save</Button>
                 {examId && (
                   <Confirmation
-                    description='Are you sure you want to delete this exam?'
-                    title='Delete exam'
+                    description="Are you sure you want to delete this exam?"
+                    title="Delete exam"
                     onConfirm={() => {
                       deleteExamMutation.mutate(
                         {
@@ -110,7 +119,7 @@ const ExamPage = () => {
                       );
                     }}
                     button={
-                      <Button variant='destructive'>
+                      <Button variant="destructive">
                         <Trash />
                       </Button>
                     }
@@ -119,10 +128,10 @@ const ExamPage = () => {
               </div>
             </div>
             <FormField
-              name='title'
+              name="title"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full max-w-xl">
                   <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input {...field} />
@@ -132,11 +141,11 @@ const ExamPage = () => {
               )}
             />
             <FormField
-              name='description'
+              name="description"
               control={form.control}
               render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Exam URL</FormLabel>
+                <FormItem className="w-full">
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
@@ -144,141 +153,119 @@ const ExamPage = () => {
                 </FormItem>
               )}
             />
-            <FormField
-              name='price'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Price</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name='retakePrice'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Retake Price</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name='passCount'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Pass Count</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              name='expiryHours'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-center w-full'>
-                  <FormLabel>Expiry Minutes</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name='resultType'
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className='self-start w-fit'>
-                  <FormLabel>Result Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={exam?.resultType ?? field.value}>
+            <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <FormField
+                name="price"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select a result type' />
-                      </SelectTrigger>
+                      <Input type="number" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value='Hidden'>Hidden</SelectItem>
-                      <SelectItem value='ResultOnly'>Result Only</SelectItem>
-                      <SelectItem value='ResultWithAnswer'>
-                        Result With Answer
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="retakePrice"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Retake Price</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="passCount"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pass count</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="expiryHours"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access duration (minutes)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="resultType"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Show answers after submit?</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={exam?.resultType ?? field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a result type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Hidden">Hide results</SelectItem>
+                        <SelectItem value="ResultOnly">Score only</SelectItem>
+                        <SelectItem value="ResultWithAnswer">
+                          Score + answers
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <h2 className="text-xl mt-2">Questions</h2>
             {questions.map((q) => (
-              <Card
+              <BankQuestionCard
                 key={q.id}
-                className='relative h-[200px] w-full rounded-3xl overflow-clip flex bg-primary/10 text-primary p-0 border-0'>
-                <Badge className='absolute top-2 left-2'>
-                  {q.body.$type === "MultipleChoiceQuestion"
-                    ? "Multiple Choice"
-                    : "Value Tolerance"}
-                </Badge>
-                <Button
-                  className='absolute top-2 right-2'
-                  variant='destructive'
-                  onClick={() => removeQuestion(q.id)}
-                  size='icon'>
-                  <Delete />
-                </Button>
-                {q.image && (
-                  <HoverCard>
-                    <HoverCardTrigger className='h-full w-[200px] p-0'>
-                      <CardHeader className='h-full p-0'>
-                        <img
-                          src={q.image}
-                          className='object-fill object-center w-full h-full'
-                        />
-                      </CardHeader>
-                    </HoverCardTrigger>
-                    <HoverCardContent
-                      side='left'
-                      className='p-0 w-[500px] rounded overflow-clip aspect-square shadow-primary shadow-md'>
-                      <img src={q.image} className='w-full h-full' alt='' />
-                    </HoverCardContent>
-                  </HoverCard>
-                )}
-                {q.body.$type === "MultipleChoiceQuestion" && (
-                  <MultipleQuestionContent {...q} />
-                )}
-                {q.body.$type === "ValueToleranceQuestion" && (
-                  <ValueQuestionContent {...q} />
-                )}
-              </Card>
+                question={q}
+                onRemove={() => removeQuestion(q.id)}
+              />
             ))}
-            <Button
-              type='button'
-              size='icon'
-              className='self-end'
-              onClick={() => openModal("select-questions-modal")}>
-              <Plus />
-            </Button>
-            <FormField
-              name='questions'
-              render={() => (
-                <FormItem>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {drafts.map((d) => (
+              <InlineQuestionEditor
+                key={d.localId}
+                draft={d}
+                onChange={(patch) => updateDraft(d.localId, patch)}
+                onRemove={() => removeDraft(d.localId)}
+              />
+            ))}
+            <div className="flex flex-wrap gap-2 self-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => openModal("select-questions-modal")}
+              >
+                <Library className="h-4 w-4 mr-2" /> From bank
+              </Button>
+              <Button
+                type="button"
+                onClick={() => addDraft(createEmptyDraft("MultipleChoice"))}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add question
+              </Button>
+            </div>
           </fieldset>
         </form>
       </Form>
@@ -286,45 +273,82 @@ const ExamPage = () => {
   );
 };
 
-function MultipleQuestionContent(question: Question) {
-  console.log(question.body.$type);
-  if (question.body.$type === "ValueToleranceQuestion") return null;
-  return (
-    <CardContent className={cn("flex flex-col items-start p-4 gap-4")}>
-      <h2 className='text-2xl'>{question.text}</h2>
-      <div className='flex flex-col items-start ms-4'>
-        {question.body!.choices.map((o) => (
-          <Badge
-            className={cn(
-              "mt-3",
-              o !== question.body!.correctAnswer && "text-primary"
-            )}
-            key={o}
-            variant={
-              o === question.body!.correctAnswer ? "default" : "secondary"
-            }>
-            {o}
-          </Badge>
-        ))}
-      </div>
-    </CardContent>
-  );
-}
+function BankQuestionCard({
+  question,
+  onRemove,
+}: {
+  question: Question;
+  onRemove: () => void;
+}) {
+  const body = question.body as {
+    $type?: string;
+    choices?: Array<string | { id: string; text?: string; imageUrl?: string }>;
+    correctAnswer?: string | number;
+    tolerance?: number;
+  };
+  const typeName = body.$type ?? "Question";
 
-function ValueQuestionContent(question: Question) {
-  if (question.body.$type === "MultipleChoiceQuestion") return null;
   return (
-    <CardContent
-      className={cn(
-        "flex flex-col items-start gap-4 p-4",
-        !question.image && "items-center w-full"
-      )}>
-      <h2 className='text-2xl'>{question.text}</h2>
-      <div className='flex flex-col items-start'>
-        <p className='text-lg'>Correct: {question.body.correctAnswer}</p>
-        <p className='text-lg'>Tolerance: {question.body.tolerance}</p>
-      </div>
-    </CardContent>
+    <Card className="relative w-full rounded-3xl overflow-clip flex flex-col sm:flex-row bg-primary/10 text-primary p-0 border-0 min-h-[120px]">
+      <Badge className="absolute top-2 left-2 z-10">{typeName}</Badge>
+      <Button
+        className="absolute top-2 right-2 z-10"
+        variant="destructive"
+        type="button"
+        onClick={onRemove}
+        size="icon"
+      >
+        <Delete />
+      </Button>
+      {question.image && (
+        <HoverCard>
+          <HoverCardTrigger className="h-[160px] w-full sm:w-[200px] p-0 shrink-0">
+            <CardHeader className="h-full p-0">
+              <img
+                src={question.image}
+                className="object-cover object-center w-full h-full"
+                alt=""
+              />
+            </CardHeader>
+          </HoverCardTrigger>
+          <HoverCardContent
+            side="left"
+            className="p-0 w-[500px] rounded overflow-clip aspect-square shadow-primary shadow-md"
+          >
+            <img src={question.image} className="w-full h-full" alt="" />
+          </HoverCardContent>
+        </HoverCard>
+      )}
+      <CardContent className={cn("flex flex-col items-start p-4 gap-2")}>
+        <h2 className="text-xl pr-10">{question.text}</h2>
+        {Array.isArray(body.choices) && (
+          <div className="flex flex-wrap gap-2">
+            {body.choices.map((o, i) => {
+              const label =
+                typeof o === "string" ? o : o.text || o.imageUrl || o.id;
+              const id = typeof o === "string" ? o : o.id;
+              return (
+                <Badge
+                  key={i}
+                  variant={
+                    String(body.correctAnswer) === String(id)
+                      ? "default"
+                      : "secondary"
+                  }
+                >
+                  {label}
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+        {body.tolerance != null && (
+          <p className="text-sm">
+            Answer: {body.correctAnswer} ± {body.tolerance}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -337,7 +361,7 @@ function useUpdateExamForm({
   exam?: ExamDashboard;
   courseId: string;
 }) {
-  const { addQuestions, questions, clearQuestions } = useQuestionsStore();
+  const { addQuestions, questions, drafts, resetAll } = useQuestionsStore();
   const qc = useQueryClient();
   const updateExamMutation = useUpdateExam({
     mutation: {
@@ -349,6 +373,7 @@ function useUpdateExamForm({
         qc.invalidateQueries({
           queryKey: getGetExamQueryKey(courseId!, data?.id!),
         });
+        qc.invalidateQueries({ queryKey: ["questions"] });
       },
     },
   });
@@ -365,22 +390,15 @@ function useUpdateExamForm({
           price: z.coerce.number(),
           retakePrice: z.coerce.number(),
           expiryHours: z.coerce.number().min(1),
-          questions: z
-            .array(z.string().uuid(), {
-              required_error: "Questions are required",
-            })
-            .min(1, { message: "Questions must  be at least 1" })
-            .default(questions.map((q) => q.id)),
         })
         .refine(
-          (data) =>
-            data.questions.length >= data.passCount && data.passCount >= 0,
-          {
-            message: "Pass count must be less than or equal to questions count",
-            path: ["passCount"],
-          }
+          () => {
+            const total = questions.length + drafts.length;
+            return total >= 1;
+          },
+          { message: "Add at least one question", path: ["title"] }
         ),
-    [questions]
+    [questions, drafts]
   );
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -389,12 +407,12 @@ function useUpdateExamForm({
       id: undefined,
       title: "",
       description: "",
-      resultType: "Hidden",
+      resultType: "ResultWithAnswer",
     },
   });
 
   useEffect(() => {
-    clearQuestions();
+    resetAll();
   }, []);
 
   useEffect(() => {
@@ -411,17 +429,15 @@ function useUpdateExamForm({
     }
   }, [exam, addQuestions]);
 
-  useEffect(() => {
-    questions.forEach((q, i) => {
-      form.setValue(`questions.${i}`, q.id);
-    });
-  }, [questions]);
-
   return {
     form,
     onSubmit: (data: z.infer<typeof FormSchema>) => {
       updateExamMutation.mutate({
-        data: { ...data, questions: data.questions },
+        data: {
+          ...data,
+          questions: questions.map((q) => q.id),
+          newQuestions: drafts.map(draftToPayload),
+        } as any,
         courseId,
       });
     },

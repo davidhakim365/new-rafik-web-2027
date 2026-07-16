@@ -6,12 +6,10 @@ using LearnMS.API.Entities;
 
 public sealed class ExamSubmission
 {
-
     public required Guid StudentId { get; set; }
     public Student Student { get; set; } = null!;
     public required Guid ExamId { get; set; }
     public Exam Exam { get; set; } = null!;
-
 
     public JsonDocument QuestionSubmissionsJson { get; set; } = null!;
 
@@ -19,8 +17,8 @@ public sealed class ExamSubmission
     [NotMapped]
     public required List<QuestionSubmission> QuestionSubmissions
     {
-        get => JsonSerializer.Deserialize<List<QuestionSubmission>>(QuestionSubmissionsJson)!;
-        set => QuestionSubmissionsJson = JsonSerializer.SerializeToDocument(value);
+        get => JsonSerializer.Deserialize<List<QuestionSubmission>>(QuestionSubmissionsJson, QuestionJson.Options)!;
+        set => QuestionSubmissionsJson = JsonSerializer.SerializeToDocument(value, QuestionJson.Options);
     }
 
     public required int NumOfCorrect { get; set; }

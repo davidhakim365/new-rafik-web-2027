@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using LearnMS.API.Entities;
-using Newtonsoft.Json;
+using LearnMS.API.Features.Questions.Contracts;
 
 namespace LearnMS.API.Features.Courses.Contracts;
 
@@ -15,7 +15,10 @@ public sealed record UpdateQuizRequest
     public required ResultType ResultType { get; set; }
     [Required]
     public required int PassCount { get; set; }
-    public required List<Guid> Questions { get; set; }
+    /// <summary>Time limit in minutes after start. 0 = no limit.</summary>
+    public int ExpiryMinutes { get; set; }
+    public List<Guid> Questions { get; set; } = [];
+    public List<InlineQuestionPayload> NewQuestions { get; set; } = [];
 }
 
 public sealed record UpdateQuizCommand
@@ -27,7 +30,9 @@ public sealed record UpdateQuizCommand
     public required string Description;
     public required ResultType ResultType;
     public required int PassCount;
+    public int ExpiryMinutes;
     public required List<Guid> Questions;
+    public List<InlineQuestionPayload> NewQuestions = [];
 }
 
 public sealed record UpdateQuizResponse
@@ -37,6 +42,7 @@ public sealed record UpdateQuizResponse
     public required string Description { get; set; }
     public required ResultType ResultType { get; set; }
     public required int PassCount { get; set; }
+    public required int ExpiryMinutes { get; set; }
     public required List<Question> Questions { get; set; }
 }
 
@@ -47,5 +53,6 @@ public sealed record UpdateQuizResult
     public required string Description;
     public required ResultType ResultType;
     public required int PassCount;
+    public required int ExpiryMinutes;
     public required List<Question> Questions;
 }

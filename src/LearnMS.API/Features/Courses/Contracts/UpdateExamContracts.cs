@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using LearnMS.API.Entities;
-using Newtonsoft.Json;
+using LearnMS.API.Features.Questions.Contracts;
 
 namespace LearnMS.API.Features.Courses.Contracts;
 
@@ -26,11 +26,12 @@ public sealed record UpdateExamRequest
     [Required]
     public required int PassCount { get; set; }
 
+    /// <summary>Enrollment duration in minutes (legacy name ExpiryHours).</summary>
     [Required]
     public required int ExpiryHours { get; set; }
 
-    [Required]
-    public required List<Guid> Questions { get; set; }
+    public List<Guid> Questions { get; set; } = [];
+    public List<InlineQuestionPayload> NewQuestions { get; set; } = [];
 }
 
 public sealed record UpdateExamCommand
@@ -45,6 +46,7 @@ public sealed record UpdateExamCommand
     public required int PassCount;
     public required int ExpiryHours;
     public required List<Guid> Questions;
+    public List<InlineQuestionPayload> NewQuestions = [];
 }
 
 public sealed record UpdateExamResponse

@@ -38,6 +38,7 @@ public class Student : User
 
     public List<Quiz> SubmittedQuizzes { get; } = [];
     public List<QuizSubmission> QuizSubmissions { get; } = [];
+    public List<QuizAttempt> QuizAttempts { get; } = [];
 
     public List<Lesson> AttendedLessons { get; } = [];
     public List<LessonAttendance> LessonAttendances { get; } = [];

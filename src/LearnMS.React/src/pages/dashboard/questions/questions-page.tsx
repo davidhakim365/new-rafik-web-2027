@@ -24,11 +24,19 @@ const QuestionsPage = () => {
             Multiple Choice
           </Button>
           <Button
-            className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
+            variant="outline"
+            className="border-color2/20"
             onClick={() => openModal("add-value-question-modal")}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Value Question
+            Number
+          </Button>
+          <Button
+            className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
+            onClick={() => openModal("add-essay-question-modal")}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Essay
           </Button>
         </div>
       }

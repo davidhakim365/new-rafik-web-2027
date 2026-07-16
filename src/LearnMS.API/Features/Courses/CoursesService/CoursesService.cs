@@ -574,11 +574,24 @@ public sealed class CoursesService : ICoursesService
         quiz.Title = command.Title;
         quiz.ResultType = command.ResultType;
         quiz.PassCount = command.PassCount;
+        quiz.ExpiryMinutes = command.ExpiryMinutes;
 
-        var questions = await _context
+        var existingQuestions = await _context
             .Set<Question>()
             .Where(x => command.Questions.Contains(x.Id))
             .ToListAsync();
+
+        var startIndex = existingQuestions.Count + 1;
+        var inlineQuestions = AssessmentHelpers.CreateInlineQuestions(
+            quiz.Title,
+            command.NewQuestions,
+            startIndex);
+        if (inlineQuestions.Count > 0)
+            await _context.Set<Question>().AddRangeAsync(inlineQuestions);
+
+        var allQuestions = existingQuestions.Concat(inlineQuestions).ToList();
+        if (allQuestions.Count == 0)
+            throw new ApiException(QuizzesErrors.NotFound);
 
         _context.Update(lecture);
         if (!isNew)
@@ -591,11 +604,8 @@ public sealed class CoursesService : ICoursesService
         _context.Update(quiz);
         await _context.SaveChangesAsync();
 
-        foreach (var question in questions)
-            if (question.Body is MultipleChoiceQuestion)
-                quiz.Questions.Add(question);
-            else
-                quiz.Questions.Add(question);
+        foreach (var question in allQuestions)
+            quiz.Questions.Add(question);
         _context.Update(quiz);
         await _context.SaveChangesAsync();
 
@@ -608,7 +618,8 @@ public sealed class CoursesService : ICoursesService
             ResultType = quiz.ResultType,
             Title = quiz.Title,
             Id = quiz.Id,
-            Questions = questions
+            ExpiryMinutes = quiz.ExpiryMinutes,
+            Questions = allQuestions
         };
     }
 
@@ -642,7 +653,7 @@ public sealed class CoursesService : ICoursesService
                 .ThenInclude(x => x.Questions)
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
                 .ThenInclude(x => x.Quizzes.Where(x => x.Id == command.QuizId))
-                .ThenInclude(x => x.SubmittedStudents.Where(x => x.Id == command.StudentId))
+                .ThenInclude(x => x.QuizAttempts.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
                 .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == command.CourseId && x.IsPublished)
@@ -672,6 +683,11 @@ public sealed class CoursesService : ICoursesService
         )
             throw new ApiException(QuizzesErrors.AlreadySubmitted);
 
+        var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == command.StudentId);
+        if (attempt?.ExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
+            throw new ApiException(new ApiError("quizzes/expired", "Quiz time has expired",
+                StatusCodes.Status400BadRequest));
+
         var questionsIds = quiz
             .Questions.Select(x => x.Id)
             .Intersect(command.QuestionAnswers.Select(x => x.QuestionId));
@@ -682,34 +698,15 @@ public sealed class CoursesService : ICoursesService
         {
             var question = quiz.Questions.Single(x => x.Id == qId);
             var studentQuestion = command.QuestionAnswers.Single(x => x.QuestionId == qId);
-            if (question.Body is MultipleChoiceQuestion multipleChoiceQuestion)
-                questionSubmissions.Add(
-                    new MultipleChoiceSubmission
-                    {
-                        Choices = multipleChoiceQuestion.Choices,
-                        CorrectAnswer = multipleChoiceQuestion.CorrectAnswer,
-                        QuestionId = question.Id,
-                        StudentAnswer = studentQuestion.Answer
-                    }
-                );
-            else if (question.Body is ValueToleranceQuestion valueToleranceQuestion)
-                questionSubmissions.Add(
-                    new ValueToleranceSubmission
-                    {
-                        QuestionId = question.Id,
-                        StudentAnswer = decimal.Parse(studentQuestion.Answer),
-                        Tolerance = valueToleranceQuestion.Tolerance,
-                        CorrectAnswer = valueToleranceQuestion.CorrectAnswer
-                    }
-                );
+            questionSubmissions.Add(AssessmentHelpers.BuildSubmission(question, studentQuestion.Answer));
         }
 
         quiz.QuizSubmissions.Add(
             new QuizSubmission
             {
                 QuizId = command.QuizId,
-                NumOfQuestions = questionSubmissions.Count(),
-                NumOfCorrect = questionSubmissions.Count(x => x.IsCorrect),
+                NumOfQuestions = questionSubmissions.Count,
+                NumOfCorrect = AssessmentHelpers.CountCorrect(questionSubmissions),
                 QuestionSubmissions = questionSubmissions,
                 PassCount = quiz.PassCount,
                 StudentId = command.StudentId
@@ -800,8 +797,19 @@ public sealed class CoursesService : ICoursesService
         exam.PassCount = command.PassCount;
         exam.ExpiryHours = command.ExpiryHours;
         exam.Questions.Clear();
-        var questions = _context.Set<Question>().Where(x => command.Questions.Contains(x.Id));
-        foreach (var q in questions)
+
+        var existingQuestions = await _context.Set<Question>()
+            .Where(x => command.Questions.Contains(x.Id))
+            .ToListAsync();
+        var inlineQuestions = AssessmentHelpers.CreateInlineQuestions(
+            exam.Title,
+            command.NewQuestions,
+            existingQuestions.Count + 1);
+        if (inlineQuestions.Count > 0)
+            await _context.Set<Question>().AddRangeAsync(inlineQuestions);
+
+        var allQuestions = existingQuestions.Concat(inlineQuestions).ToList();
+        foreach (var q in allQuestions)
             exam.Questions.Add(q);
 
         _context.Update(exam);
@@ -813,7 +821,7 @@ public sealed class CoursesService : ICoursesService
             Description = exam.Description,
             PassCount = exam.PassCount,
             Price = exam.Price,
-            Questions = exam.Questions,
+            Questions = exam.Questions.ToList(),
             ResultType = exam.ResultType,
             ExpiryHours = exam.ExpiryHours,
             RetakePrice = exam.RetakePrice,
@@ -871,34 +879,15 @@ public sealed class CoursesService : ICoursesService
         {
             var question = exam.Questions.Single(x => x.Id == qId);
             var studentQuestion = command.QuestionAnswers.Single(x => x.QuestionId == qId);
-            if (question.Body is MultipleChoiceQuestion multipleChoiceQuestion)
-                questionSubmissions.Add(
-                    new MultipleChoiceSubmission
-                    {
-                        Choices = multipleChoiceQuestion.Choices,
-                        CorrectAnswer = multipleChoiceQuestion.CorrectAnswer,
-                        QuestionId = question.Id,
-                        StudentAnswer = studentQuestion.Answer
-                    }
-                );
-            else if (question.Body is ValueToleranceQuestion valueToleranceQuestion)
-                questionSubmissions.Add(
-                    new ValueToleranceSubmission
-                    {
-                        QuestionId = question.Id,
-                        StudentAnswer = decimal.Parse(studentQuestion.Answer),
-                        Tolerance = valueToleranceQuestion.Tolerance,
-                        CorrectAnswer = valueToleranceQuestion.CorrectAnswer
-                    }
-                );
+            questionSubmissions.Add(AssessmentHelpers.BuildSubmission(question, studentQuestion.Answer));
         }
 
         enrollment.Submission = new ExamSubmission
         {
             StudentId = command.StudentId,
             ExamId = exam.Id,
-            NumOfQuestions = questionSubmissions.Count(),
-            NumOfCorrect = questionSubmissions.Count(x => x.IsCorrect),
+            NumOfQuestions = questionSubmissions.Count,
+            NumOfCorrect = AssessmentHelpers.CountCorrect(questionSubmissions),
             QuestionSubmissions = questionSubmissions,
             PassCount = exam.PassCount
         };
@@ -1017,7 +1006,71 @@ public sealed class CoursesService : ICoursesService
 
         quiz.QuizSubmissions.RemoveAll(x => x.StudentId == command.StudentId);
 
+        var attempt = await _context.Set<QuizAttempt>()
+            .FirstOrDefaultAsync(x => x.QuizId == command.QuizId && x.StudentId == command.StudentId);
+        if (attempt is not null)
+            _context.Remove(attempt);
+
         _context.Update(quiz);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ExecuteAsync(GradeQuizEssayCommand command)
+    {
+        var submission = await _context.Set<QuizSubmission>()
+            .FirstOrDefaultAsync(x => x.QuizId == command.QuizId && x.StudentId == command.StudentId)
+            ?? throw new ApiException(QuizzesErrors.NotFound);
+
+        var quiz = await _context.Set<Quiz>()
+            .FirstOrDefaultAsync(x =>
+                x.Id == command.QuizId
+                && x.LectureId == command.LectureId
+                && x.Lecture.CourseId == command.CourseId)
+            ?? throw new ApiException(QuizzesErrors.NotFound);
+        _ = quiz;
+
+        var subs = submission.QuestionSubmissions;
+        var essay = subs.OfType<EssaySubmission>().FirstOrDefault(x => x.QuestionId == command.QuestionId)
+            ?? throw new ApiException(new ApiError("essay/not-found", "Essay answer not found", 404));
+
+        essay.IsGradedCorrect = command.IsCorrect;
+        essay.GradedAt = DateTime.UtcNow;
+        essay.GradedBy = command.GradedBy;
+
+        submission.QuestionSubmissions = subs;
+        submission.NumOfCorrect = AssessmentHelpers.CountCorrect(subs);
+        _context.Entry(submission).Property(x => x.QuestionSubmissionsJson).IsModified = true;
+        _context.Update(submission);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ExecuteAsync(GradeExamEssayCommand command)
+    {
+        var enrollment = await _context.Set<ExamEnrollment>()
+            .Include(x => x.Submission)
+            .FirstOrDefaultAsync(x => x.ExamId == command.ExamId && x.StudentId == command.StudentId)
+            ?? throw new ApiException(ExamsErrors.NotAccessible);
+
+        _ = await _context.Set<Exam>()
+            .FirstOrDefaultAsync(x => x.Id == command.ExamId && x.CourseId == command.CourseId)
+            ?? throw new ApiException(ExamsErrors.NotFound);
+
+        if (enrollment.Submission is null)
+            throw new ApiException(ExamsErrors.NotAccessible);
+
+        var submission = enrollment.Submission;
+        var subs = submission.QuestionSubmissions;
+        var essay = subs.OfType<EssaySubmission>().FirstOrDefault(x => x.QuestionId == command.QuestionId)
+            ?? throw new ApiException(new ApiError("essay/not-found", "Essay answer not found", 404));
+
+        essay.IsGradedCorrect = command.IsCorrect;
+        essay.GradedAt = DateTime.UtcNow;
+        essay.GradedBy = command.GradedBy;
+
+        submission.QuestionSubmissions = subs;
+        submission.NumOfCorrect = AssessmentHelpers.CountCorrect(subs);
+        _context.Entry(submission).Property(x => x.QuestionSubmissionsJson).IsModified = true;
+        _context.Update(submission);
         await _context.SaveChangesAsync();
     }
 
@@ -1687,7 +1740,8 @@ public sealed class CoursesService : ICoursesService
             Description = result.Description,
             Title = result.Title,
             Questions = result.Questions.OrderBy(q => q.CreatedAt).ToList(),
-            ResultType = result.ResultType
+            ResultType = result.ResultType,
+            ExpiryMinutes = result.ExpiryMinutes
         };
     }
 
@@ -1696,7 +1750,6 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
-                .AsNoTracking()
                 .Include(x => x.CourseEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes.Where(x => x.Id == query.QuizId))
@@ -1704,6 +1757,9 @@ public sealed class CoursesService : ICoursesService
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes.Where(x => x.Id == query.QuizId))
                 .ThenInclude(x => x.Questions.OrderBy(x => x.CreatedAt))
+                .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
+                .ThenInclude(x => x.Quizzes.Where(x => x.Id == query.QuizId))
+                .ThenInclude(x => x.QuizAttempts.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == query.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == query.CourseId && x.IsPublished)
@@ -1730,37 +1786,40 @@ public sealed class CoursesService : ICoursesService
         var submission = quiz.QuizSubmissions.FirstOrDefault(x => x.StudentId == query.StudentId);
 
         if (submission is null)
+        {
+            var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == query.StudentId);
+            if (attempt is null)
+            {
+                attempt = new QuizAttempt
+                {
+                    QuizId = quiz.Id,
+                    StudentId = query.StudentId,
+                    StartedAt = DateTime.UtcNow,
+                    ExpiresAt = quiz.ExpiryMinutes > 0
+                        ? DateTime.UtcNow.AddMinutes(quiz.ExpiryMinutes)
+                        : null
+                };
+                await _context.Set<QuizAttempt>().AddAsync(attempt);
+                await _context.SaveChangesAsync();
+            }
+
             return new QuizNotAnswered
             {
                 Description = quiz.Description,
                 Title = quiz.Title,
                 Id = quiz.Id,
-                MultipleChoiceQuestions = quiz
-                    .Questions.Where(q => q.Body is MultipleChoiceQuestion)
-                    .Select(q => new MultipleChoiceNotAnswered
-                    {
-                        Choices = (q.Body as MultipleChoiceQuestion)!.Choices,
-                        Description = q.Description,
-                        Id = q.Id,
-                        Image = q.Image,
-                        Text = q.Text
-                    })
-                    .ToList(),
-                ValueToleranceQuestions = quiz
-                    .Questions.Where(q => q.Body is ValueToleranceQuestion)
-                    .Select(q => new ValueToleranceNotAnswered
-                    {
-                        Description = q.Description,
-                        Id = q.Id,
-                        Image = q.Image,
-                        Text = q.Text,
-                        Tolerance = (q.Body as ValueToleranceQuestion)!.Tolerance
-                    })
-                    .ToList(),
-                PassCount = quiz.PassCount
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcNotAnswered(quiz.Questions),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtNotAnswered(quiz.Questions),
+                EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(quiz.Questions),
+                PassCount = quiz.PassCount,
+                ExpiryMinutes = quiz.ExpiryMinutes,
+                ExpiresAt = attempt.ExpiresAt
             };
+        }
 
         var questionsById = quiz.Questions.ToDictionary(q => q.Id);
+        var pendingEssays = submission.QuestionSubmissions.OfType<EssaySubmission>()
+            .Count(x => x.IsPendingGrade);
 
         if (quiz.ResultType == ResultType.ResultWithAnswer)
             return new QuizResultWithAnswer
@@ -1768,37 +1827,16 @@ public sealed class CoursesService : ICoursesService
                 Description = quiz.Description,
                 NumOfCorrect = submission.NumOfCorrect,
                 NumOfQuestions = submission.QuestionSubmissions.Count,
-                MultipleChoiceQuestions = submission
-                    .QuestionSubmissions.OfType<MultipleChoiceSubmission>()
-                    .Select(x => new MultipleChoiceWithCorrectAnswer
-                    {
-                        Choices = x.Choices,
-                        CorrectAnswer = x.CorrectAnswer,
-                        Id = x.QuestionId,
-                        IsCorrect = x.IsCorrect,
-                        StudentAnswer = x.StudentAnswer,
-                        Description = questionsById[x.QuestionId].Description,
-                        Image = questionsById[x.QuestionId].Image,
-                        Text = questionsById[x.QuestionId].Text
-                    })
-                    .ToList(),
-                ValueToleranceQuestions = submission
-                    .QuestionSubmissions.OfType<ValueToleranceSubmission>()
-                    .Select(x => new ValueToleranceWithCorrectAnswer
-                    {
-                        CorrectAnswer = x.CorrectAnswer,
-                        IsCorrect = x.IsCorrect,
-                        Id = x.QuestionId,
-                        Description = questionsById[x.QuestionId].Description,
-                        Image = questionsById[x.QuestionId].Image,
-                        StudentAnswer = x.StudentAnswer,
-                        Text = questionsById[x.QuestionId].Text,
-                        Tolerance = x.Tolerance
-                    })
-                    .ToList(),
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcWithCorrect(
+                    submission.QuestionSubmissions.OfType<MultipleChoiceSubmission>(), questionsById),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtWithCorrect(
+                    submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
+                EssayQuestions = AssessmentHelpers.MapEssayWithCorrect(
+                    submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
                 PassCount = quiz.PassCount,
                 Title = quiz.Title,
-                Id = quiz.Id
+                Id = quiz.Id,
+                PendingEssayCount = pendingEssays
             };
 
         if (quiz.ResultType == ResultType.ResultOnly)
@@ -1809,31 +1847,14 @@ public sealed class CoursesService : ICoursesService
                 PassCount = quiz.PassCount,
                 Title = quiz.Title,
                 Id = quiz.Id,
-                MultipleChoiceQuestions = submission
-                    .QuestionSubmissions.OfType<MultipleChoiceSubmission>()
-                    .Select(x => new MultipleChoiceWithStudentAnswer
-                    {
-                        Choices = x.Choices,
-                        Description = questionsById[x.QuestionId].Description,
-                        Image = questionsById[x.QuestionId].Image,
-                        Text = questionsById[x.QuestionId].Text,
-                        StudentAnswer = x.StudentAnswer,
-                        Id = x.QuestionId
-                    })
-                    .ToList(),
-                ValueToleranceQuestions = submission
-                    .QuestionSubmissions.OfType<ValueToleranceSubmission>()
-                    .Select(x => new ValueToleranceWithStudentAnswer
-                    {
-                        Description = questionsById[x.QuestionId].Description,
-                        Image = questionsById[x.QuestionId].Image,
-                        StudentAnswer = x.StudentAnswer,
-                        Text = questionsById[x.QuestionId].Text,
-                        Tolerance = x.Tolerance,
-                        Id = x.QuestionId
-                    })
-                    .ToList(),
-                NumOfCorrect = submission.NumOfCorrect
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcWithStudent(
+                    submission.QuestionSubmissions.OfType<MultipleChoiceSubmission>(), questionsById),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtWithStudent(
+                    submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
+                EssayQuestions = AssessmentHelpers.MapEssayWithStudent(
+                    submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
+                NumOfCorrect = submission.NumOfCorrect,
+                PendingEssayCount = pendingEssays
             };
 
         return new QuizHidden()
@@ -1842,30 +1863,12 @@ public sealed class CoursesService : ICoursesService
             NumOfQuestions = submission.QuestionSubmissions.Count,
             Title = quiz.Title,
             Id = quiz.Id,
-            MultipleChoiceQuestions = submission
-                .QuestionSubmissions.OfType<MultipleChoiceSubmission>()
-                .Select(x => new MultipleChoiceWithStudentAnswer
-                {
-                    Choices = x.Choices,
-                    Description = questionsById[x.QuestionId].Description,
-                    Image = questionsById[x.QuestionId].Image,
-                    Text = questionsById[x.QuestionId].Text,
-                    StudentAnswer = x.StudentAnswer,
-                    Id = x.QuestionId
-                })
-                .ToList(),
-            ValueToleranceQuestions = submission
-                .QuestionSubmissions.OfType<ValueToleranceSubmission>()
-                .Select(x => new ValueToleranceWithStudentAnswer
-                {
-                    Description = questionsById[x.QuestionId].Description,
-                    Image = questionsById[x.QuestionId].Image,
-                    StudentAnswer = x.StudentAnswer,
-                    Text = questionsById[x.QuestionId].Text,
-                    Tolerance = x.Tolerance,
-                    Id = x.QuestionId
-                })
-                .ToList(),
+            MultipleChoiceQuestions = AssessmentHelpers.MapMcWithStudent(
+                submission.QuestionSubmissions.OfType<MultipleChoiceSubmission>(), questionsById),
+            ValueToleranceQuestions = AssessmentHelpers.MapVtWithStudent(
+                submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
+            EssayQuestions = AssessmentHelpers.MapEssayWithStudent(
+                submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
             PassCount = quiz.PassCount
         };
     }
@@ -1941,36 +1944,14 @@ public sealed class CoursesService : ICoursesService
                 PassCount = exam.PassCount,
                 ExpiresAt = enrollment.ExpiresAt,
                 Title = exam.Title,
-                MultipleChoiceQuestions = exam
-                    .Questions.Where(x => x.Body is MultipleChoiceQuestion)
-                    .Select(x => new MultipleChoiceNotAnswered
-                    {
-                        Choices = (x.Body as MultipleChoiceQuestion)!.Choices,
-                        Description = x.Description,
-                        Id = x.Id,
-                        Text = x.Text,
-                        Image = x.Image
-                    })
-                    .ToList(),
-                ValueToleranceQuestions = exam
-                    .Questions.Where(x => x.Body is ValueToleranceQuestion)
-                    .Select(x => new ValueToleranceNotAnswered
-                    {
-                        Description = x.Description,
-                        Id = x.Id,
-                        Text = x.Text,
-                        Image = x.Image,
-                        Tolerance = (x.Body as ValueToleranceQuestion)!.Tolerance
-                    })
-                    .ToList()
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcNotAnswered(exam.Questions),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtNotAnswered(exam.Questions),
+                EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(exam.Questions)
             };
 
         var questionsById = exam.Questions.ToDictionary(x => x.Id, x => x);
-
-        var studentQuestionsById = submission.QuestionSubmissions.ToDictionary(
-            x => x.QuestionId,
-            x => x
-        );
+        var pendingEssays = submission.QuestionSubmissions.OfType<EssaySubmission>()
+            .Count(x => x.IsPendingGrade);
 
         if (exam.ResultType == ResultType.ResultWithAnswer)
             return new ExamResultWithAnswer
@@ -1980,49 +1961,15 @@ public sealed class CoursesService : ICoursesService
                 PassCount = exam.PassCount,
                 Title = exam.Title,
                 NumOfQuestions = exam.Questions.Count,
-                MultipleChoiceQuestions = exam
-                    .Questions.Where(x => x.Body is MultipleChoiceQuestion)
-                    .Select(x =>
-                    {
-                        var q = x.Body as MultipleChoiceQuestion;
-                        studentQuestionsById.TryGetValue(x.Id, out var qs);
-                        var s = qs as MultipleChoiceSubmission;
-
-                        return new MultipleChoiceWithCorrectAnswer
-                        {
-                            Choices = q!.Choices,
-                            StudentAnswer = s?.StudentAnswer ?? "",
-                            CorrectAnswer = q.CorrectAnswer,
-                            Description = x.Description,
-                            Id = x.Id,
-                            IsCorrect = qs?.IsCorrect ?? false,
-                            Text = x.Text,
-                            Image = x.Image
-                        };
-                    })
-                    .ToList(),
-                ValueToleranceQuestions = exam
-                    .Questions.Where(x => x.Body is ValueToleranceQuestion)
-                    .Select(x =>
-                    {
-                        var q = x.Body as ValueToleranceQuestion;
-                        studentQuestionsById.TryGetValue(x.Id, out var qs);
-                        var s = qs as ValueToleranceSubmission;
-                        return new ValueToleranceWithCorrectAnswer
-                        {
-                            CorrectAnswer = q!.CorrectAnswer,
-                            Description = x.Description,
-                            Id = x.Id,
-                            IsCorrect = qs?.IsCorrect ?? false,
-                            StudentAnswer = s?.StudentAnswer ?? -1,
-                            Text = x.Text,
-                            Image = x.Image,
-                            Tolerance = q!.Tolerance
-                        };
-                    })
-                    .ToList(),
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcWithCorrect(
+                    submission.QuestionSubmissions.OfType<MultipleChoiceSubmission>(), questionsById),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtWithCorrect(
+                    submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
+                EssayQuestions = AssessmentHelpers.MapEssayWithCorrect(
+                    submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
                 NumOfCorrect = submission.NumOfCorrect,
-                RetakePrice = exam.RetakePrice
+                RetakePrice = exam.RetakePrice,
+                PendingEssayCount = pendingEssays
             };
 
         if (exam.ResultType == ResultType.ResultOnly)
@@ -2032,45 +1979,16 @@ public sealed class CoursesService : ICoursesService
                 Description = exam.Description,
                 PassCount = exam.PassCount,
                 Title = exam.Title,
-                MultipleChoiceQuestions = exam
-                    .Questions.Where(x => x.Body is MultipleChoiceQuestion)
-                    .Select(x =>
-                    {
-                        var q = x.Body as MultipleChoiceQuestion;
-                        studentQuestionsById.TryGetValue(x.Id, out var qs);
-                        var s = qs as MultipleChoiceSubmission;
-                        return new MultipleChoiceWithStudentAnswer
-                        {
-                            Choices = q!.Choices,
-                            StudentAnswer = s?.StudentAnswer ?? "",
-                            Description = x.Description,
-                            Id = x.Id,
-                            Text = x.Text,
-                            Image = x.Image
-                        };
-                    })
-                    .ToList(),
-                ValueToleranceQuestions = exam
-                    .Questions.Where(x => x.Body is ValueToleranceQuestion)
-                    .Select(x =>
-                    {
-                        var q = x.Body as ValueToleranceQuestion;
-                        studentQuestionsById.TryGetValue(x.Id, out var qs);
-                        var s = qs as ValueToleranceSubmission;
-                        return new ValueToleranceWithStudentAnswer
-                        {
-                            Description = x.Description,
-                            Id = x.Id,
-                            StudentAnswer = s?.StudentAnswer ?? -1,
-                            Text = x.Text,
-                            Image = x.Image,
-                            Tolerance = q!.Tolerance
-                        };
-                    })
-                    .ToList(),
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcWithStudent(
+                    submission.QuestionSubmissions.OfType<MultipleChoiceSubmission>(), questionsById),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtWithStudent(
+                    submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
+                EssayQuestions = AssessmentHelpers.MapEssayWithStudent(
+                    submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
                 NumOfQuestions = submission.NumOfQuestions,
                 NumOfCorrect = submission.NumOfCorrect,
-                RetakePrice = exam.RetakePrice
+                RetakePrice = exam.RetakePrice,
+                PendingEssayCount = pendingEssays
             };
 
         return new ExamHidden
@@ -2079,30 +1997,12 @@ public sealed class CoursesService : ICoursesService
             Id = exam.Id,
             PassCount = exam.PassCount,
             Title = exam.Title,
-            MultipleChoiceQuestions = submission
-                .QuestionSubmissions.OfType<MultipleChoiceSubmission>()
-                .Select(x => new MultipleChoiceWithStudentAnswer
-                {
-                    Choices = x.Choices,
-                    Description = questionsById[x.QuestionId].Description,
-                    Image = questionsById[x.QuestionId].Image,
-                    Text = questionsById[x.QuestionId].Text,
-                    StudentAnswer = x.StudentAnswer,
-                    Id = x.QuestionId
-                })
-                .ToList(),
-            ValueToleranceQuestions = submission
-                .QuestionSubmissions.OfType<ValueToleranceSubmission>()
-                .Select(x => new ValueToleranceWithStudentAnswer
-                {
-                    Description = questionsById[x.QuestionId].Description,
-                    Image = questionsById[x.QuestionId].Image,
-                    StudentAnswer = x.StudentAnswer,
-                    Text = questionsById[x.QuestionId].Text,
-                    Tolerance = x.Tolerance,
-                    Id = x.QuestionId
-                })
-                .ToList(),
+            MultipleChoiceQuestions = AssessmentHelpers.MapMcWithStudent(
+                submission.QuestionSubmissions.OfType<MultipleChoiceSubmission>(), questionsById),
+            ValueToleranceQuestions = AssessmentHelpers.MapVtWithStudent(
+                submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
+            EssayQuestions = AssessmentHelpers.MapEssayWithStudent(
+                submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
             NumOfQuestions = submission.NumOfQuestions
         };
     }

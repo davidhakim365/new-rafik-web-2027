@@ -14,6 +14,8 @@ public class QuizzesConfigurations : IEntityTypeConfiguration<Quiz>
         builder.Property(x => x.ResultType)
             .HasConversion(x => x.ToString(), x => (ResultType)Enum.Parse(typeof(ResultType), x));
 
+        builder.Property(x => x.ExpiryMinutes).HasDefaultValue(0);
+
         builder.HasOne(x => x.Lecture).WithMany(x => x.Quizzes).HasForeignKey(x => x.LectureId).OnDelete(DeleteBehavior.Cascade);
 
 
@@ -31,6 +33,20 @@ public class QuizzesConfigurations : IEntityTypeConfiguration<Quiz>
                 jtb.Property(x => x.QuestionSubmissionsJson);
             }
         );
+
+        builder.HasMany(x => x.QuizAttempts)
+            .WithOne(x => x.Quiz)
+            .HasForeignKey(x => x.QuizId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
+public class QuizAttemptConfigurations : IEntityTypeConfiguration<QuizAttempt>
+{
+    public void Configure(EntityTypeBuilder<QuizAttempt> builder)
+    {
+        builder.HasKey(x => new { x.QuizId, x.StudentId });
+        builder.HasOne(x => x.Student).WithMany(x => x.QuizAttempts).HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

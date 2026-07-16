@@ -28,50 +28,41 @@ const FormSchema = z.object({
   description: z.string().min(1),
   text: z.string().min(1),
   image: z.string().optional(),
-  valueCorrect: z.coerce.number(),
-  valueTolerance: z.coerce.number(),
 });
 
-const AddValueQuestionModal: React.FC<{ onClose: () => void }> = ({
+export default function AddEssayQuestionModal({
   onClose,
-}) => {
+}: {
+  onClose: () => void;
+}) {
   const [uploading, setUploading] = useState(false);
   const addQuestionMutation = useAddQuestionMutation();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
-    defaultValues: {
-      description: "",
-      text: "",
-      valueCorrect: 0,
-      valueTolerance: 0,
-    },
+    defaultValues: { description: "", text: "" },
   });
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="w-[60vw] max-w-screen-xl max-h-[100vh] overflow-y-auto text-foreground">
+      <DialogContent className="max-w-lg text-foreground">
         <DialogHeader>
-          <DialogTitle>Add Number Question</DialogTitle>
+          <DialogTitle>Add Essay Question</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
+            className="space-y-4"
             onSubmit={form.handleSubmit((data) => {
               addQuestionMutation.mutate(
                 {
-                  text: data.text,
-                  description: data.description,
-                  image: data.image,
-                  questionType: "ValueTolerance",
-                  valueCorrect: data.valueCorrect,
-                  valueTolerance: data.valueTolerance,
+                  ...data,
+                  questionType: "Essay",
                 },
                 {
                   onSuccess: () => {
                     toast({
                       title: "Question added",
-                      description: "Question added successfully",
+                      description: "Essay question saved to bank",
                     });
-                    form.reset();
                     onClose();
                   },
                 }
@@ -79,8 +70,8 @@ const AddValueQuestionModal: React.FC<{ onClose: () => void }> = ({
             })}
           >
             <fieldset
-              className="space-y-4"
               disabled={addQuestionMutation.isPending || uploading}
+              className="space-y-4"
             >
               <FormField
                 name="description"
@@ -102,7 +93,7 @@ const AddValueQuestionModal: React.FC<{ onClose: () => void }> = ({
                   <FormItem>
                     <FormLabel>Question</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <Textarea rows={4} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -126,36 +117,8 @@ const AddValueQuestionModal: React.FC<{ onClose: () => void }> = ({
                 />
                 {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
               </FormItem>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  name="valueCorrect"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Correct value</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="any" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="valueTolerance"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tolerance</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="any" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               <Button type="submit" className="w-full">
-                Submit
+                Save to bank
               </Button>
             </fieldset>
           </form>
@@ -163,6 +126,4 @@ const AddValueQuestionModal: React.FC<{ onClose: () => void }> = ({
       </DialogContent>
     </Dialog>
   );
-};
-
-export default AddValueQuestionModal;
+}

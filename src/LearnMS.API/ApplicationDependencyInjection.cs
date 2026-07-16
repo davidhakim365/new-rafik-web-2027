@@ -46,6 +46,7 @@ public static class ApplicationDependencyInjection
         services.AddControllers().AddJsonOptions(opts =>
         {
             opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            opts.JsonSerializerOptions.Converters.Add(new LearnMS.API.Entities.QuestionChoiceListConverter());
             opts.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         });
     }
@@ -102,6 +103,10 @@ services.AddEndpointsApiExplorer();
         services.Configure<EmailConfig>(cfg.GetSection(EmailConfig.Section));
         services.AddSingleton<IEmailService, EmailService>();
         services.AddSingleton<StorageService>();
+        services.Configure<LearnMS.API.Common.ImgBb.ImgBbConfig>(
+            cfg.GetSection(LearnMS.API.Common.ImgBb.ImgBbConfig.Section));
+        services.AddHttpClient("ImgBb");
+        services.AddScoped<LearnMS.API.Common.ImgBb.IImgBbService, LearnMS.API.Common.ImgBb.ImgBbService>();
     }
 
     private static void RegisterAuth(IServiceCollection services, IConfiguration cfg)

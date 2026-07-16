@@ -108,7 +108,8 @@ public sealed class ExamsController(ICoursesService coursesService) : Controller
                 PassCount = request.PassCount,
                 ExpiryHours = request.ExpiryHours,
                 Price = request.Price,
-                Questions = request.Questions,
+                Questions = request.Questions ?? [],
+                NewQuestions = request.NewQuestions ?? [],
                 ResultType = request.ResultType,
                 RetakePrice = request.RetakePrice
             }
@@ -179,5 +180,27 @@ public sealed class ExamsController(ICoursesService coursesService) : Controller
         );
 
         return new ApiWrapper.Success<PageList<SingleExamStudent>> { Data = result };
+    }
+
+    [HttpPost("{examId:guid}/grade-essay")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "GradeExamEssay")]
+    public async Task<ApiWrapper.Success<object>> GradeEssay(
+        [FromBody] GradeEssayRequest request,
+        Guid courseId,
+        Guid examId)
+    {
+        var user = HttpContext.CurrentUser()!;
+        await coursesService.ExecuteAsync(new GradeExamEssayCommand
+        {
+            CourseId = courseId,
+            ExamId = examId,
+            StudentId = request.StudentId,
+            QuestionId = request.QuestionId,
+            IsCorrect = request.IsCorrect,
+            GradedBy = user.Id
+        });
+
+        return new ApiWrapper.Success<object> { Message = "Essay graded successfully" };
     }
 }

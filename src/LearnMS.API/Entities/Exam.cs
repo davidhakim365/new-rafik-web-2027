@@ -13,6 +13,7 @@ public sealed class Exam : IOrdered
     public decimal Price { get; set; }
     public decimal RetakePrice { get; set; }
     public int PassCount { get; set; }
+    /// <summary>Enrollment duration in minutes (legacy field name ExpiryHours).</summary>
     public int ExpiryHours { get; set; }
 
     public List<Question> Questions { get; } = [];
@@ -128,6 +129,9 @@ public class ExamNotAnswered : ExamResult
     public required List<ValueToleranceNotAnswered> ValueToleranceQuestions { get; set; }
 
     [Required]
+    public required List<EssayNotAnswered> EssayQuestions { get; set; }
+
+    [Required]
     public required int PassCount { get; set; }
 }
 
@@ -153,6 +157,9 @@ public class ExamHidden : ExamResult
 
     [Required]
     public required List<ValueToleranceWithStudentAnswer> ValueToleranceQuestions { get; set; }
+
+    [Required]
+    public required List<EssayWithStudentAnswer> EssayQuestions { get; set; }
 }
 
 public class ExamResultOnly : ExamResult
@@ -183,6 +190,11 @@ public class ExamResultOnly : ExamResult
 
     [Required]
     public required List<ValueToleranceWithStudentAnswer> ValueToleranceQuestions { get; set; }
+
+    [Required]
+    public required List<EssayWithStudentAnswer> EssayQuestions { get; set; }
+
+    public int PendingEssayCount { get; set; }
 }
 
 public class ExamResultWithAnswer : ExamResult
@@ -213,4 +225,9 @@ public class ExamResultWithAnswer : ExamResult
 
     [Required]
     public required List<ValueToleranceWithCorrectAnswer> ValueToleranceQuestions { get; set; }
+
+    [Required]
+    public required List<EssayWithCorrectAnswer> EssayQuestions { get; set; }
+
+    public int PendingEssayCount { get; set; }
 }

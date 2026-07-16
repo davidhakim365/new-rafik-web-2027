@@ -81,8 +81,10 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
             LectureId = lectureId,
             Title = request.Title,
             Description = request.Description,
-            Questions = request.Questions,
+            Questions = request.Questions ?? [],
+            NewQuestions = request.NewQuestions ?? [],
             ResultType = request.ResultType,
+            ExpiryMinutes = request.ExpiryMinutes,
             Id = request.Id
         });
 
@@ -95,7 +97,8 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
                 Description = result.Description,
                 Title = result.Title,
                 Questions = result.Questions,
-                ResultType = result.ResultType
+                ResultType = result.ResultType,
+                ExpiryMinutes = result.ExpiryMinutes
             },
             Message = request.Id == Guid.Empty || request.Id == null
                 ? "Quiz created successfully"
@@ -137,6 +140,33 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
         return new ApiWrapper.Success<object>
         {
             Message = "Quiz retaken successfully"
+        };
+    }
+
+    [HttpPost("{quizId:guid}/grade-essay")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "GradeQuizEssay")]
+    public async Task<ApiWrapper.Success<object>> GradeEssay(
+        [FromBody] GradeEssayRequest request,
+        Guid courseId,
+        Guid lectureId,
+        Guid quizId)
+    {
+        var user = await currentUserService.GetUserAsync();
+        await coursesService.ExecuteAsync(new GradeQuizEssayCommand
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            QuizId = quizId,
+            StudentId = request.StudentId,
+            QuestionId = request.QuestionId,
+            IsCorrect = request.IsCorrect,
+            GradedBy = user!.Id
+        });
+
+        return new ApiWrapper.Success<object>
+        {
+            Message = "Essay graded successfully"
         };
     }
 }
