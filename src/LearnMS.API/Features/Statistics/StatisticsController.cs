@@ -146,6 +146,11 @@ public class StatisticsController(AppDbContext context) : ControllerBase
             totalLectureEnrollments = totalLectureEnrollments.Where(x => x.AttendedAt <= query.EndDate!);
         }
 
+        if (query.CenterId != null)
+        {
+            totalLectureEnrollments = totalLectureEnrollments.Where(x => x.CenterId == query.CenterId);
+        }
+
         return await totalLectureEnrollments.CountAsync();
     }
 
@@ -199,6 +204,11 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         if (query.EndDate != null)
         {
             totalStudentsQuery = totalStudentsQuery.Where(x => x.AttendedAt <= query.EndDate!);
+        }
+
+        if (query.CenterId != null)
+        {
+            totalStudentsQuery = totalStudentsQuery.Where(x => x.CenterId == query.CenterId);
         }
 
         return await totalStudentsQuery.CountAsync();

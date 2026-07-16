@@ -7,4 +7,6 @@ public sealed class LectureAttendance
     public Guid LectureId { get; set; }
     public Lecture Lecture { get; } = null!;
     public DateTime? AttendedAt { get; set; }
+    public Guid? CenterId { get; set; }
+    public Center? Center { get; set; }
 }

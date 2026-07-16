@@ -107,6 +107,7 @@ type LectureStudentStatsProps = {
   gradeLevel?: StudentLevel;
   filteredCount?: number;
   isSearching?: boolean;
+  selectedCenterName?: string;
 };
 
 export function LectureStudentStats({
@@ -116,6 +117,7 @@ export function LectureStudentStats({
   gradeLevel,
   filteredCount,
   isSearching,
+  selectedCenterName,
 }: LectureStudentStatsProps) {
   if (isLoading) {
     return (
@@ -138,9 +140,11 @@ export function LectureStudentStats({
         <div>
           <h3 className="text-lg font-semibold">Lecture Overview</h3>
           <p className="text-sm text-muted-foreground">
-            {gradeLevel
-              ? `All ${levelMap[gradeLevel]} students for this lecture`
-              : "Students matching this lecture grade"}
+            {selectedCenterName
+              ? `Attendance stats for ${selectedCenterName}`
+              : gradeLevel
+                ? `All ${levelMap[gradeLevel]} students for this lecture`
+                : "Students matching this lecture grade"}
           </p>
         </div>
         {isSearching && filteredCount !== undefined && (

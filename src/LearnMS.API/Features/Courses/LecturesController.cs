@@ -3,6 +3,8 @@ using CsvHelper;
 using LearnMS.API.Common;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
+using LearnMS.API.Features.Centers;
+using LearnMS.API.Features.Centers.Contracts;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Students;
 using LearnMS.API.Security;
@@ -323,8 +325,16 @@ public sealed class LecturesController : ControllerBase
     [HttpPost("{lectureId:guid}/students/{code}/attend")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
     [SwaggerOperation(OperationId = "AttendLecture")]
-    public async Task<ApiWrapper.Success<object?>> AttendLecture(Guid lectureId, string code)
+    public async Task<ApiWrapper.Success<object?>> AttendLecture(
+        Guid lectureId,
+        string code,
+        [FromBody] AttendLectureRequest request
+    )
     {
+        var center = await _context.Set<Center>()
+            .FirstOrDefaultAsync(c => c.Id == request.CenterId && c.IsActive)
+            ?? throw new ApiException(CentersErrors.NotFound);
+
         var lecture = await _context
             .Lectures
             .Include(x => x.LectureAttendances
@@ -347,27 +357,41 @@ public sealed class LecturesController : ControllerBase
                 {
                     LectureId = lectureId,
                     StudentId = student.Id,
-                    AttendedAt = DateTime.UtcNow
+                    AttendedAt = DateTime.UtcNow,
+                    CenterId = center.Id
                 });
         }
         else
         {
             lectureAttendance.AttendedAt ??= DateTime.UtcNow;
+            lectureAttendance.CenterId = center.Id;
         }
 
         await _context.SaveChangesAsync();
 
-        return new ApiWrapper.Success<object?> { Message = $"{student.FullName} attended successfully" };
+        return new ApiWrapper.Success<object?>
+        {
+            Message = $"{student.FullName} attended successfully at {center.Name}"
+        };
     }
 
 
     [HttpPost("{lectureId:guid}/students/{studentId:guid}/toggle-attendance")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
     [SwaggerOperation(OperationId = "ToggleLectureAttendance")]
-    public async Task<ApiWrapper.Success<object?>> ToggleAttendance(Guid lectureId, Guid studentId)
+    public async Task<ApiWrapper.Success<object?>> ToggleAttendance(
+        Guid lectureId,
+        Guid studentId,
+        [FromBody] ToggleLectureAttendanceRequest? request
+    )
     {
         await _coursesService.ExecuteAsync(
-            new ToggleStudentAttendance { StudentId = studentId, LectureId = lectureId }
+            new ToggleStudentAttendance
+            {
+                StudentId = studentId,
+                LectureId = lectureId,
+                CenterId = request?.CenterId
+            }
         );
 
         return new ApiWrapper.Success<object?> { Message = "Updated attendance successfully" };

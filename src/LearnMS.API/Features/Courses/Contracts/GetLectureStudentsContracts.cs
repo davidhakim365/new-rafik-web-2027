@@ -24,4 +24,6 @@ public sealed record SingleLectureStudent
     [Required] public decimal? TotalQuizzesScore { get; set; }
     [Required] public required bool Attended { get; set; }
     [Required] public required bool Enrolled { get; set; }
+    public Guid? CenterId { get; set; }
+    public string? CenterName { get; set; }
 }

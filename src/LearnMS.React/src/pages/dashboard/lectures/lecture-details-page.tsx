@@ -1,4 +1,9 @@
-import { useUpdateLectureAssetsMutation } from "@/api/lectures-api";
+import {
+  getLectureStatisticsParams,
+  readSelectedCenterId,
+  useAttendLectureAtCenter,
+} from "@/api/centers-api";
+import { CenterSelector } from "@/components/dashboard/center-selector";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +39,7 @@ import {
   Trash,
 } from "lucide-react";
 import Papa from "papaparse";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Link,
@@ -51,7 +56,6 @@ import {
   getGetLectureQueryKey,
   getGetLectureStudentsQueryKey,
   getGetLectureStatisticsQueryKey,
-  useAttendLecture,
   useCreateLesson,
   useDeleteLecture,
   useGetCourse,
@@ -66,7 +70,7 @@ import {
 } from "@/generated/api";
 import { GetLectureDashboardResult, StudentGradeItem } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
-import { lectureStudentsColumns } from "@/pages/dashboard/lectures/lecture-students-columns";
+import { createLectureStudentsColumns } from "@/pages/dashboard/lectures/lecture-students-columns";
 import { LectureStudentStats } from "@/pages/dashboard/lectures/lecture-student-stats";
 import { useAssetsStore } from "@/store/use-assets-store";
 import { useModalStore } from "@/store/use-modal-store";
@@ -129,6 +133,18 @@ type TabProps = {
 
 const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
   const { download, isDownloading } = useDownloadFile();
+  const [selectedCenterId, setSelectedCenterId] = useState<string | null>(
+    () => readSelectedCenterId()
+  );
+  const [selectedCenterName, setSelectedCenterName] = useState<string>();
+
+  const handleCenterChange = useCallback(
+    (centerId: string | null, center?: { name: string }) => {
+      setSelectedCenterId(centerId);
+      setSelectedCenterName(center?.name);
+    },
+    []
+  );
 
   const qc = useQueryClient();
   const updateLectureGrades = useUpdateLectureGrades({
@@ -151,7 +167,14 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
   });
 
   const { data: lectureStatistics, isLoading: lectureStatisticsLoading } =
-    useGetLectureStatistics({ lectureId: lecture.id });
+    useGetLectureStatistics(
+      getLectureStatisticsParams(lecture.id, selectedCenterId) as any
+    );
+
+  const studentColumns = useMemo(
+    () => createLectureStudentsColumns(selectedCenterId),
+    [selectedCenterId]
+  );
 
   const { data: gradeTotalData } = useGetLectureStudents(
     lecture.courseId,
@@ -260,7 +283,21 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
         gradeLevel={gradeLevel}
         filteredCount={data?.data?.totalCount}
         isSearching={!!search.trim()}
+        selectedCenterName={selectedCenterName}
       />
+
+      <CenterSelector
+        value={selectedCenterId}
+        onChange={handleCenterChange}
+        className="rounded-xl border border-color2/15 bg-muted/20 p-3"
+      />
+
+      {!selectedCenterId && (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+          Select an attendance center before scanning barcodes or marking students
+          as attended.
+        </p>
+      )}
 
       <div className="flex flex-col gap-3">
         <Input
@@ -271,7 +308,11 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
         />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <AttendInput lectureId={lecture.id} courseId={lecture.courseId} />
+          <AttendInput
+            lectureId={lecture.id}
+            courseId={lecture.courseId}
+            centerId={selectedCenterId}
+          />
           <Button
             disabled={updateLectureGrades.isPending}
             variant="outline"
@@ -316,7 +357,7 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
             pageCount: data!.data!.totalCount,
           }}
           rowCount={data?.data!.totalCount!}
-          columns={lectureStudentsColumns}
+          columns={studentColumns}
           setPagination={setPagination}
         />
       )}
@@ -1028,16 +1069,18 @@ function LectureAssetsFrom({
 function AttendInput({
   lectureId,
   courseId,
+  centerId,
 }: {
   lectureId: string;
   courseId: string;
+  centerId: string | null;
 }) {
   const navigate = useNavigate();
   const [showManual, setShowManual] = useState(false);
   const [code, setCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
-  const { mutate: attendLecture, isPending } = useAttendLecture({
+  const { mutate: attendLecture, isPending } = useAttendLectureAtCenter({
     mutation: {
       throwOnError: false,
     },
@@ -1053,13 +1096,23 @@ function AttendInput({
   }, [code, showManual]);
 
   const handleSubmit = async () => {
-    if (!code) return;
+    if (!code || !centerId) {
+      if (!centerId) {
+        toast({
+          title: "Select a center",
+          description: "Choose an attendance center before marking attendance.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
 
     attendLecture(
       {
         courseId,
         lectureId,
         code,
+        centerId,
       },
       {
         onSuccess: (data) => {
@@ -1071,7 +1124,9 @@ function AttendInput({
             queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
           });
           qc.invalidateQueries({
-            queryKey: getGetLectureStatisticsQueryKey({ lectureId }),
+            queryKey: getGetLectureStatisticsQueryKey(
+              getLectureStatisticsParams(lectureId, centerId) as any
+            ),
           });
           setCode("");
           inputRef.current?.focus();
@@ -1088,6 +1143,7 @@ function AttendInput({
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
       <Button
         className="w-full gap-2 bg-gradient-to-r from-color1 to-color2 sm:w-auto"
+        disabled={!centerId}
         onClick={() =>
           navigate(
             `/dashboard/courses/${courseId}/lectures/${lectureId}/scan`

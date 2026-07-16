@@ -4,6 +4,7 @@ using LearnMS.API.Common;
 using LearnMS.API.Common.StorageService;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
+using LearnMS.API.Features.Centers;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Profile;
 using LearnMS.API.Features.Students;
@@ -981,25 +982,43 @@ public sealed class CoursesService : ICoursesService
             lecture.LectureAttendances.FirstOrDefault(x => x.StudentId == command.StudentId) is
             { } attendance
         )
-            if (command.Attend)
+        {
+            if (attendance.AttendedAt == null)
             {
-                if (attendance.AttendedAt == null)
-                {
-                    attendance.AttendedAt = DateTime.UtcNow;
-                }
+                if (command.CenterId is null)
+                    throw new ApiException(CentersErrors.Required);
+
+                var center = await _context.Set<Center>()
+                    .FirstOrDefaultAsync(c => c.Id == command.CenterId && c.IsActive)
+                    ?? throw new ApiException(CentersErrors.NotFound);
+
+                attendance.AttendedAt = DateTime.UtcNow;
+                attendance.CenterId = center.Id;
             }
             else
             {
-                attendance.AttendedAt = attendance.AttendedAt == null ? DateTime.UtcNow : null;
+                attendance.AttendedAt = null;
+                attendance.CenterId = null;
             }
+        }
         else
+        {
+            if (command.CenterId is null)
+                throw new ApiException(CentersErrors.Required);
+
+            var center = await _context.Set<Center>()
+                .FirstOrDefaultAsync(c => c.Id == command.CenterId && c.IsActive)
+                ?? throw new ApiException(CentersErrors.NotFound);
+
             lecture.LectureAttendances.Add(
                 new LectureAttendance
                 {
                     StudentId = command.StudentId,
-                    AttendedAt = DateTime.UtcNow
+                    AttendedAt = DateTime.UtcNow,
+                    CenterId = center.Id
                 }
             );
+        }
 
         _context.Update(lecture);
         await _context.SaveChangesAsync();
@@ -1814,6 +1833,7 @@ public sealed class CoursesService : ICoursesService
             .Include(x => x.LectureQuizzes.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.AttendedLessons.Where(x => x.LectureId == query.LectureId))
             .Include(x => x.LectureAttendances.Where(x => x.LectureId == query.LectureId).Take(1))
+                .ThenInclude(a => a.Center)
             .Include(x => x.LectureEnrollments.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.QuizSubmissions.Where(x => x.Quiz.LectureId == query.LectureId))
             .ThenInclude(x => x.Quiz)
@@ -1862,6 +1882,8 @@ public sealed class CoursesService : ICoursesService
                     TotalQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfQuestions),
                     Attended = attendance is { AttendedAt: not null },
                     Enrolled = enrollment != null,
+                    CenterId = attendance?.CenterId,
+                    CenterName = attendance?.Center?.Name,
                 }
             );
         }

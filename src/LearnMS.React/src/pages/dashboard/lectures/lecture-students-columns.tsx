@@ -2,6 +2,10 @@ import {
   ChangeHomeworkScoreRequest,
   ChangeQuizScoreRequest,
 } from "@/api/lectures-api";
+import {
+  SingleLectureStudentWithCenter,
+  useToggleLectureAttendanceAtCenter,
+} from "@/api/centers-api";
 import Confirmation from "@/components/confirmation";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +30,6 @@ import {
   useChangeLectureHomeworkScore,
   useChangeLectureQuizScore,
   useEnrollStudentInLecture,
-  useToggleLectureAttendance,
 } from "@/generated/api";
 import { SingleLectureStudent } from "@/generated/model";
 import { toast } from "@/lib/utils";
@@ -86,7 +89,10 @@ function EnrollAction({ student }: { student: SingleLectureStudent }) {
   );
 }
 
-export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
+export function createLectureStudentsColumns(
+  centerId?: string | null
+): ColumnDef<SingleLectureStudent & SingleLectureStudentWithCenter>[] {
+  return [
   {
     accessorKey: "fullName",
     header: "Full Name",
@@ -114,7 +120,7 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
       const { lectureId, courseId } = useParams();
       const qc = useQueryClient();
       const { mutate: toggleAttendance, isPending } =
-        useToggleLectureAttendance({
+        useToggleLectureAttendanceAtCenter({
           mutation: {
             onSuccess() {
               qc.invalidateQueries({
@@ -123,6 +129,7 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
               qc.invalidateQueries({
                 queryKey: getGetLectureStatisticsQueryKey({
                   lectureId: lectureId!,
+                  ...(centerId ? { centerId } : {}),
                 }),
               });
             },
@@ -135,13 +142,24 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
             disabled={isPending}
             pressed={student.attended}
             className="h-10 w-10 data-[state=on]:text-primary data-[state=off]:text-zinc-400"
-            onPressedChange={() =>
+            onPressedChange={() => {
+              if (!student.attended && !centerId) {
+                toast({
+                  title: "Select a center",
+                  description:
+                    "Choose an attendance center before marking students as attended.",
+                  variant: "destructive",
+                });
+                return;
+              }
+
               toggleAttendance({
                 lectureId: lectureId!,
                 courseId: courseId!,
                 studentId: student.id,
-              })
-            }
+                centerId: !student.attended ? centerId ?? undefined : undefined,
+              });
+            }}
           >
             {student.attended ? (
               <CheckCircle className="h-6 w-6" />
@@ -152,6 +170,15 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
         </div>
       );
     },
+  },
+  {
+    accessorKey: "centerName",
+    header: "Center",
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {row.original.centerName ?? "—"}
+      </div>
+    ),
   },
   {
     accessorKey: "enrolled",
@@ -352,5 +379,6 @@ export const lectureStudentsColumns: ColumnDef<SingleLectureStudent>[] = [
     ),
   },
 ];
+}
 
-export default lectureStudentsColumns;
+export default createLectureStudentsColumns;

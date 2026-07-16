@@ -2,7 +2,8 @@ namespace LearnMS.API.Features.Statistics.Contracts;
 
 public sealed record GetLectureStatisticsQuery(
     DateTimeOffset? StartDate,
-    DateTimeOffset? EndDate
+    DateTimeOffset? EndDate,
+    Guid? CenterId
 );
 
 public sealed record GetLectureStatisticsResponse(

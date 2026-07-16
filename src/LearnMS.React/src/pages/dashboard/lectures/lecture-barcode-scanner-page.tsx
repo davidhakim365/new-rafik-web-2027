@@ -1,8 +1,13 @@
+import {
+  getLectureStatisticsParams,
+  readSelectedCenterId,
+  useAttendLectureAtCenter,
+  useGetCenters,
+} from "@/api/centers-api";
 import { Button } from "@/components/ui/button";
 import {
   getGetLectureStudentsQueryKey,
   getGetLectureStatisticsQueryKey,
-  useAttendLecture,
 } from "@/generated/api";
 import { toast } from "@/lib/utils";
 import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
@@ -26,8 +31,13 @@ const LectureBarcodeScannerPage = () => {
     "initializing" | "scanning" | "processing" | "success" | "error"
   >("initializing");
   const [feedback, setFeedback] = useState("");
+  const centerId = readSelectedCenterId();
+  const { data: centersData } = useGetCenters();
+  const centerName =
+    centersData?.data?.find((center) => center.id === centerId)?.name ??
+    "No center selected";
 
-  const { mutate: attendLecture } = useAttendLecture({
+  const { mutate: attendLecture } = useAttendLectureAtCenter({
     mutation: { throwOnError: false },
   });
 
@@ -48,6 +58,18 @@ const LectureBarcodeScannerPage = () => {
       const code = rawCode.trim();
       if (!code || !courseId || !lectureId) return;
 
+      if (!centerId) {
+        setStatus("error");
+        setFeedback("Select an attendance center before scanning.");
+        toast({
+          title: "No center selected",
+          description: "Go back and choose a center first.",
+          variant: "destructive",
+        });
+        resumeScanning(2500);
+        return;
+      }
+
       const now = Date.now();
       if (processingRef.current) return;
       if (code === lastCodeRef.current && now - lastScanTimeRef.current < SCAN_COOLDOWN_MS) {
@@ -61,7 +83,7 @@ const LectureBarcodeScannerPage = () => {
       setFeedback(`Processing: ${code}`);
 
       attendLecture(
-        { courseId, lectureId, code },
+        { courseId, lectureId, code, centerId },
         {
           onSuccess: (data) => {
             const message = data.message ?? "Student attended successfully";
@@ -72,7 +94,9 @@ const LectureBarcodeScannerPage = () => {
               queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
             });
             qc.invalidateQueries({
-              queryKey: getGetLectureStatisticsQueryKey({ lectureId }),
+              queryKey: getGetLectureStatisticsQueryKey(
+                getLectureStatisticsParams(lectureId, centerId) as any
+              ),
             });
             resumeScanning(1200);
           },
@@ -89,7 +113,7 @@ const LectureBarcodeScannerPage = () => {
         }
       );
     },
-    [attendLecture, courseId, lectureId, qc, resumeScanning]
+    [attendLecture, centerId, courseId, lectureId, qc, resumeScanning]
   );
 
   useEffect(() => {
@@ -171,7 +195,9 @@ const LectureBarcodeScannerPage = () => {
         </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">Center Attendance Scanner</p>
-          <p className="text-xs text-white/60">Scan → attend → scan next</p>
+          <p className="truncate text-xs text-white/60">
+            {centerName} · Scan → attend → scan next
+          </p>
         </div>
         <ScanLine className="h-5 w-5 shrink-0 text-color2" />
       </header>
