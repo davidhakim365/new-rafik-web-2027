@@ -62,7 +62,7 @@ const ExamPage = () => {
 
   const { data, isLoading } = useGetExam(courseId!, examId!, {
     query: {
-      enabled: !!courseId && !!examId,
+      enabled: !!courseId && !!examId && examId !== "add",
     },
   });
 
@@ -71,6 +71,7 @@ const ExamPage = () => {
   const { form, onSubmit } = useUpdateExamForm({
     exam,
     courseId: courseId as string,
+    examId: examId && examId !== "add" ? examId : undefined,
   });
 
   if (isLoading) {
@@ -91,11 +92,13 @@ const ExamPage = () => {
           >
             <div className="flex items-center justify-between w-full">
               <h1 className="text-3xl text-primary">
-                {!examId ? "Creating An Exam" : "Editing An Exam"}
+                {!examId || examId === "add"
+                  ? "Creating An Exam"
+                  : "Editing An Exam"}
               </h1>
               <div className="flex items-center gap-2">
                 <Button type="submit">Save</Button>
-                {examId && (
+                {examId && examId !== "add" && (
                   <Confirmation
                     description="Are you sure you want to delete this exam?"
                     title="Delete exam"
@@ -357,23 +360,32 @@ export default ExamPage;
 function useUpdateExamForm({
   exam,
   courseId,
+  examId,
 }: {
   exam?: ExamDashboard;
   courseId: string;
+  examId?: string;
 }) {
   const { addQuestions, questions, drafts, resetAll } = useQuestionsStore();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const updateExamMutation = useUpdateExam({
     mutation: {
-      onSuccess: ({ data }) => {
+      onSuccess: ({ data, message }) => {
         toast({
-          title: "Exam updated",
-          description: "Exam updated successfully",
+          title: "Success",
+          description: message || "Exam updated successfully",
         });
         qc.invalidateQueries({
           queryKey: getGetExamQueryKey(courseId!, data?.id!),
         });
         qc.invalidateQueries({ queryKey: ["questions"] });
+        qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
+        if (!examId && data?.id) {
+          navigate(`/dashboard/courses/${courseId}/exams/${data.id}`, {
+            replace: true,
+          });
+        }
       },
     },
   });

@@ -13,4 +13,8 @@ export type StudentExamDto = StudentCourseItemDto & {
   price: number;
   questionsCount: number;
   retakePrice: number;
+  isPurchased?: boolean;
+  isSubmitted?: boolean;
+  expiresAt?: string | null;
+  isActive?: boolean;
 };

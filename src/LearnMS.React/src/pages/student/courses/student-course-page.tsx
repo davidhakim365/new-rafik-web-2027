@@ -14,6 +14,7 @@ import {
   useGetStudentCourseDetails,
   getGetStudentCourseDetailsQueryKey,
   useGetProfile,
+  getGetProfileQueryKey,
 } from "@/generated/api";
 import {
   StudentLectureDto,
@@ -1425,14 +1426,23 @@ function ExamAccordionHeader({ exam }: { exam: StudentExamDto }) {
 function ExamAccordionContent({ exam }: { exam: StudentExamDto }) {
   const { t, i18n } = useTranslation();
   const { courseId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const buyExamMutation = useBuyExamMutation();
   const { openModal } = useModalStore();
 
   const isRTL = i18n.language === "ar";
+  const examPath = `/courses/${courseId}/exams/${exam.id}`;
+  const isActive =
+    exam.isActive ||
+    (!!exam.isPurchased &&
+      !exam.isSubmitted &&
+      !!exam.expiresAt &&
+      new Date(exam.expiresAt) > new Date());
+
+  const openExam = () => navigate(examPath);
 
   const onBuyClick = () => {
-    // Purchase the exam
     buyExamMutation.mutate(
       {
         courseId: courseId!,
@@ -1444,10 +1454,13 @@ function ExamAccordionContent({ exam }: { exam: StudentExamDto }) {
             title: t("exams.purchaseSuccessful"),
             description: t("exams.enrollNow"),
           });
-          // Invalidate relevant queries to refresh the data
           queryClient.invalidateQueries({
             queryKey: getGetStudentCourseDetailsQueryKey(courseId!),
           });
+          queryClient.invalidateQueries({
+            queryKey: getGetProfileQueryKey(),
+          });
+          navigate(examPath);
         },
         onError: (error) => {
           if (isInsufficientBalanceError(error)) {
@@ -1464,7 +1477,33 @@ function ExamAccordionContent({ exam }: { exam: StudentExamDto }) {
     );
   };
 
+  const onActionClick = () => {
+    if (isActive || exam.isSubmitted) {
+      openExam();
+      return;
+    }
+    onBuyClick();
+  };
+
   const getButtonConfig = () => {
+    if (exam.isSubmitted) {
+      return {
+        text: "View result",
+        icon: FaFileAlt,
+        variant: "outline" as const,
+        className:
+          "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300 hover:border-emerald-400 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700 shadow-md hover:shadow-lg transition-all duration-200",
+      };
+    }
+    if (isActive) {
+      return {
+        text: t("exams.buttons.takeExam"),
+        icon: FaPlay,
+        variant: "outline" as const,
+        className:
+          "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300 hover:border-orange-400 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700 shadow-md hover:shadow-lg transition-all duration-200",
+      };
+    }
     return {
       text: t("exams.buttons.takeExam"),
       icon: FaFileAlt,
@@ -1485,7 +1524,7 @@ function ExamAccordionContent({ exam }: { exam: StudentExamDto }) {
       {/* Action Button Section */}
       <div className="space-y-3 sm:space-y-4">
         <PlasticButton
-          onClick={onBuyClick}
+          onClick={onActionClick}
           size="default"
           disabled={buyExamMutation.isPending}
           className={`w-full h-10 text-sm font-semibold tracking-wide sm:h-11 sm:text-base transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 ${buttonConfig.className}`}

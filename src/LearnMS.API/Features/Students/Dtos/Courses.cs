@@ -109,4 +109,9 @@ public sealed record StudentExamDto : StudentCourseItemDto
     [Required] public required decimal Price { get; init; }
     [Required] public required decimal RetakePrice { get; init; }
     [Required] public required int ExpiryHours { get; init; }
+    public bool IsPurchased { get; init; }
+    public bool IsSubmitted { get; init; }
+    public DateTime? ExpiresAt { get; init; }
+    public bool IsActive =>
+        IsPurchased && !IsSubmitted && ExpiresAt != null && ExpiresAt > DateTime.UtcNow;
 }

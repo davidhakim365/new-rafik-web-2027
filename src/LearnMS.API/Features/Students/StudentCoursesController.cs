@@ -166,7 +166,16 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             QuestionsCount = e.Questions.Count,
                             Price = e.Price,
                             RetakePrice = e.RetakePrice,
-                            ExpiryHours = e.ExpiryHours
+                            ExpiryHours = e.ExpiryHours,
+                            IsPurchased = user != null && e.ExamEnrollments.Any(en => en.StudentId == user.Id),
+                            IsSubmitted = user != null && e.ExamEnrollments
+                                .Any(en => en.StudentId == user.Id && en.Submission != null),
+                            ExpiresAt = user == null
+                                ? null
+                                : e.ExamEnrollments
+                                    .Where(en => en.StudentId == user.Id)
+                                    .Select(en => (DateTime?)en.ExpiresAt)
+                                    .FirstOrDefault(),
                         })
                         .ToList()
                 }

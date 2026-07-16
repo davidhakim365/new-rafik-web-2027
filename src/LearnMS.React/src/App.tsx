@@ -194,17 +194,6 @@ function App() {
                 }
               />
               <Route
-                path="courses/:courseId/lectures/:lectureId/quizzes/:quizId"
-                element={
-                  <RequireAuth
-                    roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
-                  >
-                    <QuizPage />
-                  </RequireAuth>
-                }
-              />
-              <Route
                 path="courses/:courseId/lectures/:lectureId/quizzes/add"
                 element={
                   <RequireAuth
@@ -215,7 +204,29 @@ function App() {
                   </RequireAuth>
                 }
               />
+              <Route
+                path="courses/:courseId/lectures/:lectureId/quizzes/:quizId"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageCourses"]}
+                  >
+                    <QuizPage />
+                  </RequireAuth>
+                }
+              />
 
+              <Route
+                path="courses/:courseId/exams/add"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageCourses"]}
+                  >
+                    <ExamPage />
+                  </RequireAuth>
+                }
+              />
               <Route
                 path="courses/:courseId/exams/:examId"
                 element={
@@ -235,17 +246,6 @@ function App() {
                     permissions={["ManageCourses"]}
                   >
                     <ExamStudentsPage />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="courses/:courseId/exams/add"
-                element={
-                  <RequireAuth
-                    roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
-                  >
-                    <ExamPage />
                   </RequireAuth>
                 }
               />
