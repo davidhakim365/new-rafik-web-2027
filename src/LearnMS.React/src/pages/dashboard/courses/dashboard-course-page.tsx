@@ -26,6 +26,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
+import { ImageUploadField } from "@/components/image-upload-field";
 import {
   Select,
   SelectContent,
@@ -307,12 +308,15 @@ function CourseDetailsForm({
               <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-color2'>Image</FormLabel>
                 <FormControl>
-                  <Input className='text-color2' {...field} />
+                  <ImageUploadField
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={updateCourseMutation.isPending}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
-
           />
         </form>
       </Form>

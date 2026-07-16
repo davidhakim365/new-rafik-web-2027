@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { toast } from "@/components/ui/use-toast";
 import { Lesson } from "@/types/lessons";
 import { Quiz } from "@/types/quiz";
@@ -614,7 +615,11 @@ function LectureDetailsForm({
               <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
                 <FormLabel className='text-primary'>Image</FormLabel>
                 <FormControl>
-                  <Input className='text-primary' {...field} />
+                  <ImageUploadField
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={isPending}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
