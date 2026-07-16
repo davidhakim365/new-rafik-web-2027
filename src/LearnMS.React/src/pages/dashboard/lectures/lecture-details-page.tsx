@@ -1,3 +1,4 @@
+import { useUpdateLectureAssetsMutation } from "@/api/lectures-api";
 import {
   getLectureStatisticsParams,
   readSelectedCenterId,
