@@ -61,6 +61,7 @@ public sealed record StudentLectureDto : StudentCourseItemDto
     [Required] public required List<StudentAssetDto> Assets { get; init; }
     [Required] public required decimal Price { get; init; }
     [Required] public required decimal RenewalPrice { get; init; }
+    public string? ImageUrl { get; init; }
 
     public int? ExpirationDays { get; init; }
     public required DateTime? ExpiresAt { get; init; }

@@ -246,7 +246,13 @@ function LectureHeader({
           <div className="order-first lg:order-last lg:justify-self-end">
             <div className="w-full h-48 mx-auto overflow-hidden border shadow-2xl max-w-64 sm:h-56 lg:w-64 lg:h-64 rounded-2xl">
               <img
-                src={lecture.imageUrl ?? ""}
+                src={
+                  lecture.imageUrl &&
+                  lecture.imageUrl !== "." &&
+                  lecture.imageUrl.trim().length > 0
+                    ? lecture.imageUrl
+                    : ""
+                }
                 alt={lecture.title}
                 className="object-cover w-full h-full"
               />

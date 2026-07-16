@@ -334,7 +334,6 @@ const CourseAccordion = React.forwardRef<
                       {item.$type === "StudentLectureDto" ? (
                         <LectureAccordionHeader
                           lecture={item as StudentLectureDto}
-                          course={course}
                         />
                       ) : (
                         <ExamAccordionHeader exam={item as StudentExamDto} />
@@ -378,10 +377,8 @@ CourseAccordion.displayName = "CourseAccordion";
 
 function LectureAccordionHeader({
   lecture,
-  course,
 }: {
   lecture: StudentLectureDto;
-  course: StudentCourseDetailsDto;
 }) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -430,7 +427,13 @@ function LectureAccordionHeader({
       <div className="flex-shrink-0">
         <div className="relative w-16 h-16 overflow-hidden transition-all duration-300 shadow-lg sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32 rounded-xl group-hover:scale-105 group-hover:shadow-xl">
           <img
-            src={course.imageUrl || ""}
+            src={
+              lecture.imageUrl &&
+              lecture.imageUrl !== "." &&
+              lecture.imageUrl.trim().length > 0
+                ? lecture.imageUrl
+                : ""
+            }
             alt={lecture.title}
             className="object-cover w-full h-full"
             onError={(e) => {
