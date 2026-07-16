@@ -242,6 +242,7 @@
     "noContentMessage": "This course doesn't have any content yet. Please check back later.",
     "attachments": "Attachments",
     "assets": "Attachments",
+    "homeworkVideo": "Homework Video",
     "noAttachmentsAvailable": "No Attachments",
     "noAssetsAvailable": "No Attachments Available",
     "enrollmentExpiredMessage": "Your enrollment has expired. Renew to continue accessing course content.",
@@ -442,6 +443,7 @@
   },
   "lectures": {
     "lectureContent": "Lecture Content",
+    "homeworkVideo": "Homework Video",
     "confirmPurchase": "Confirm Purchase",
     "confirmPurchaseDescription": "Are you sure you want to buy this lecture?",
     "buyFor": "Buy for {{price}} LE ({{days}} days)",

@@ -36,6 +36,9 @@ Homework Video :
 
     public string? ImageUrl { get; set; } = ".";
 
+    /// <summary>YouTube URL for lecture homework video (embedded for students).</summary>
+    public string? HomeworkVideoUrl { get; set; }
+
     public decimal? Price { get; set; } = 90;
     public decimal? RenewalPrice { get; set; } = 90;
     public int? ExpirationDays { get; set; } = 7;

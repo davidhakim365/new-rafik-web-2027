@@ -2219,6 +2219,7 @@ export interface components {
       price?: number | null;
       /** Format: uri */
       imageUrl?: string | null;
+      homeworkVideoUrl?: string | null;
       /** Format: double */
       renewalPrice?: number | null;
       /** Format: int32 */

@@ -14,6 +14,7 @@ export type GetStudentLectureResult = GetLectureResult & {
   enrollment: Enrollment;
   expirationDays: number;
   expiresAt?: string | null;
+  homeworkVideoUrl?: string | null;
   imageUrl: string;
   isPublished?: boolean | null;
   price: number;

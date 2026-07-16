@@ -55,7 +55,8 @@ export const UpdateLectureRequest = z.object({
   expirationDays: z.coerce
     .number()
     .min(0, { message: "Expiration days must be greater than 0" }),
-    imageUrl: z.string(),
+  imageUrl: z.string(),
+  homeworkVideoUrl: z.string().optional().or(z.literal("")),
 });
 
 export type UpdateLectureRequest = z.infer<typeof UpdateLectureRequest>;

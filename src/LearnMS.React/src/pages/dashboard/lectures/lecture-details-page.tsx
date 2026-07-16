@@ -452,6 +452,17 @@ const UpdateLectureRequest = z.object({
     .number()
     .min(0, { message: "Expiration days must be greater than 0" }),
   imageUrl: z.string(),
+  homeworkVideoUrl: z
+    .string()
+    .trim()
+    .refine(
+      (v) =>
+        !v ||
+        /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(v),
+      { message: "Enter a valid YouTube link" }
+    )
+    .optional()
+    .or(z.literal("")),
 });
 
 type UpdateLectureRequest = z.infer<typeof UpdateLectureRequest>;
@@ -462,6 +473,7 @@ function LectureDetailsForm({
   title,
   expirationDays,
   imageUrl,
+  homeworkVideoUrl,
   renewalPrice,
   courseId,
   price,
@@ -489,6 +501,7 @@ function LectureDetailsForm({
       renewalPrice,
       price,
       imageUrl,
+      homeworkVideoUrl: homeworkVideoUrl ?? "",
     },
     values: {
       description,
@@ -497,6 +510,7 @@ function LectureDetailsForm({
       renewalPrice,
       price,
       imageUrl,
+      homeworkVideoUrl: homeworkVideoUrl ?? "",
     },
   });
 
@@ -564,6 +578,26 @@ function LectureDetailsForm({
                       {...field}
                     />
                   </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='homeworkVideoUrl'
+            render={({ field }) => (
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-primary'>
+                  Lecture Video Homework (YouTube)
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    className='text-primary'
+                    placeholder='https://www.youtube.com/watch?v=...'
+                    {...field}
+                    value={field.value ?? ""}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

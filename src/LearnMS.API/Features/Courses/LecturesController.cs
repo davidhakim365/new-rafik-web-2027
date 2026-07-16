@@ -155,6 +155,7 @@ public sealed class LecturesController : ControllerBase
             {
                 CourseId = courseId,
                 ImageUrl = request.ImageUrl,
+                HomeworkVideoUrl = request.HomeworkVideoUrl,
                 Id = lectureId,
                 Title = request.Title,
                 Description = request.Description,

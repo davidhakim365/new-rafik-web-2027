@@ -1,6 +1,7 @@
 import { useBuyLectureMutation } from "@/api/lectures-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
+import { YoutubeEmbed } from "@/components/youtube-embed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +68,20 @@ const StudentLecturePage = () => {
       <LectureHeader lecture={lecture} course={course} />
       <div className="w-full px-4 py-8 sm:px-6 lg:px-8 sm:py-12">
         <div className="max-w-6xl mx-auto space-y-6">
+          {lecture.homeworkVideoUrl && (
+            <div className="space-y-3">
+              <h2
+                dir={isRTL ? "rtl" : "ltr"}
+                className="text-xl font-bold sm:text-2xl text-foreground"
+              >
+                {t("lectures.homeworkVideo")}
+              </h2>
+              <YoutubeEmbed
+                url={lecture.homeworkVideoUrl}
+                title={t("lectures.homeworkVideo")}
+              />
+            </div>
+          )}
           <h2
             dir={isRTL ? "rtl" : "ltr"}
             className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl lg:text-4xl text-foreground"

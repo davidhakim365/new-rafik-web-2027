@@ -11,6 +11,7 @@ export type GetLectureDashboardResult = GetLectureResult & {
   $type: GetLectureDashboardResultType;
   description: string;
   expirationDays: number;
+  homeworkVideoUrl?: string | null;
   imageUrl: string;
   isPublished: boolean;
   price: number;

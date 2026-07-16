@@ -1,5 +1,6 @@
 import { useBuyLectureMutation } from "@/api/lectures-api";
 import { useBuyExamMutation } from "@/api/exams-api";
+import { YoutubeEmbed } from "@/components/youtube-embed";
 import {
   Accordion,
   AccordionContent,
@@ -847,6 +848,11 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
       {/* Description Section */}
       <DescriptionSection description={lecture.description} />
 
+      {/* Homework YouTube video — embedded in-app */}
+      {lecture.homeworkVideoUrl && (
+        <HomeworkVideoSection url={lecture.homeworkVideoUrl} />
+      )}
+
       {/* Attachments Section */}
       <AttachmentsSection attachments={lecture.assets} />
 
@@ -903,6 +909,22 @@ function DescriptionSection({ description }: { description?: string | null }) {
           </MarkdownWrapper>
         </div>
       )}
+    </div>
+  );
+}
+
+function HomeworkVideoSection({ url }: { url: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex items-center gap-2">
+        <FaPlay className="w-4 h-4 text-primary sm:w-5 sm:h-5" />
+        <h4 className="text-base font-semibold text-foreground sm:text-xl">
+          {t("courses.homeworkVideo")}
+        </h4>
+      </div>
+      <YoutubeEmbed url={url} title={t("courses.homeworkVideo")} />
     </div>
   );
 }

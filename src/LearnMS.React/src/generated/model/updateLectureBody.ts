@@ -8,6 +8,7 @@
 export type UpdateLectureBody = {
   description?: string;
   expirationDays?: number;
+  homeworkVideoUrl?: string | null;
   imageUrl?: string;
   price?: number;
   renewalPrice?: number;

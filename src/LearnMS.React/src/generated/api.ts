@@ -2215,6 +2215,9 @@ if(updateLectureBody.price !== undefined) {
 if(updateLectureBody.imageUrl !== undefined) {
  formData.append('imageUrl', updateLectureBody.imageUrl)
  }
+if(updateLectureBody.homeworkVideoUrl !== undefined) {
+ formData.append('homeworkVideoUrl', updateLectureBody.homeworkVideoUrl ?? '')
+ }
 if(updateLectureBody.renewalPrice !== undefined) {
  formData.append('renewalPrice', updateLectureBody.renewalPrice.toString())
  }

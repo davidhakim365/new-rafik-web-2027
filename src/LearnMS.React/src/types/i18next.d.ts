@@ -248,6 +248,7 @@ declare module "i18next" {
           noContentMessage: string;
           attachments: string;
           assets: string;
+          homeworkVideo: string;
           noAttachmentsAvailable: string;
           noAssetsAvailable: string;
           enrollmentExpiredMessage: string;
@@ -346,6 +347,7 @@ declare module "i18next" {
         };
         lectures: {
           lectureContent: string;
+          homeworkVideo: string;
           confirmPurchase: string;
           confirmPurchaseDescription: string;
           buyFor: string;

@@ -40,6 +40,7 @@ public record GetLectureDashboardResult : GetLectureResult
     public string? Description { get; set; }
     [Required]
     public string? ImageUrl { get; set; }
+    public string? HomeworkVideoUrl { get; set; }
     [Required]
     public decimal? Price { get; set; }
     [Required]
@@ -98,6 +99,7 @@ public sealed record GetStudentLectureResult : GetLectureResult
     public required string Description { get; set; }
     [Required]
     public required string ImageUrl { get; set; }
+    public string? HomeworkVideoUrl { get; set; }
     [Required]
     public required decimal Price { get; set; }
     [Required]

@@ -103,6 +103,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             l.Price,
                             l.RenewalPrice,
                             l.ImageUrl,
+                            l.HomeworkVideoUrl,
                             Enrollment = user == null
                                 ? null
                                 : l.LectureEnrollments
@@ -200,6 +201,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             RenewalPrice = l.RenewalPrice!.Value,
             Order = l.Order,
             ImageUrl = l.ImageUrl,
+            HomeworkVideoUrl = l.HomeworkVideoUrl,
             Assets = l.Assets,
             ExpirationDays = l.ExpirationDays,
             Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),

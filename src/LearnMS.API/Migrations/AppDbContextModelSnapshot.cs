@@ -314,6 +314,9 @@ namespace LearnMS.API.Migrations
                     b.Property<int?>("ExpirationDays")
                         .HasColumnType("integer");
 
+                    b.Property<string>("HomeworkVideoUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 

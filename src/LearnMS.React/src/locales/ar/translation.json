@@ -242,6 +242,7 @@
     "noContentMessage": "هذه الدورة لا تحتوي على أي محتوى حتى الآن. يرجى المراجعة لاحقاً.",
     "attachments": "المرفقات",
     "assets": "المرفقات",
+    "homeworkVideo": "فيديو الواجب",
     "noAttachmentsAvailable": "لا توجد مرفقات",
     "noAssetsAvailable": "لا توجد مرفقات متاحة",
     "startLesson": "ابدأ الدرس",
@@ -440,6 +441,7 @@
   },
   "lectures": {
     "lectureContent": "محتوى المحاضرة",
+    "homeworkVideo": "فيديو الواجب",
     "confirmPurchase": "تأكيد الشراء",
     "confirmPurchaseDescription": "هل أنت متأكد من أنك تريد شراء هذه المحاضرة؟",
     "buyFor": "اشتري مقابل {{price}} جم ({{days}} يوم)",

@@ -6,16 +6,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LearnMS.API.Migrations;
 
 [DbContext(typeof(Data.AppDbContext))]
-[Migration("20260716180000_AssetGoogleDriveLinks")]
-public partial class AssetGoogleDriveLinks : Migration
+[Migration("20260716200000_LectureHomeworkVideoUrl")]
+public partial class LectureHomeworkVideoUrl : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        // Idempotent: existing DBs may already have applied this via the .sql companion script
         migrationBuilder.Sql("""
-            ALTER TABLE "Asset" ADD COLUMN IF NOT EXISTS "Url" text NULL;
-            ALTER TABLE "Asset" ADD COLUMN IF NOT EXISTS "LectureName" text NULL;
+            ALTER TABLE "Lectures" ADD COLUMN IF NOT EXISTS "HomeworkVideoUrl" text NULL;
             """);
     }
 
@@ -23,8 +21,7 @@ public partial class AssetGoogleDriveLinks : Migration
     protected override void Down(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.Sql("""
-            ALTER TABLE "Asset" DROP COLUMN IF EXISTS "Url";
-            ALTER TABLE "Asset" DROP COLUMN IF EXISTS "LectureName";
+            ALTER TABLE "Lectures" DROP COLUMN IF EXISTS "HomeworkVideoUrl";
             """);
     }
 }

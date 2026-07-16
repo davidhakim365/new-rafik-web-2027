@@ -64,6 +64,11 @@ public sealed class CoursesService : ICoursesService
         if (!string.IsNullOrEmpty(command.ImageUrl))
             lecture.ImageUrl = command.ImageUrl;
 
+        if (command.HomeworkVideoUrl is not null)
+            lecture.HomeworkVideoUrl = string.IsNullOrWhiteSpace(command.HomeworkVideoUrl)
+                ? null
+                : command.HomeworkVideoUrl.Trim();
+
         if (command.Price is not null)
             lecture.Price = command.Price.Value;
 
@@ -1512,6 +1517,7 @@ public sealed class CoursesService : ICoursesService
             Title = lecture.Title,
             Description = lecture.Description,
             ImageUrl = lecture.ImageUrl,
+            HomeworkVideoUrl = lecture.HomeworkVideoUrl,
             IsPublished = lecture.IsPublished,
             Price = lecture.Price,
             RenewalPrice = lecture.RenewalPrice,
@@ -1637,6 +1643,7 @@ public sealed class CoursesService : ICoursesService
             CourseId = lecture.CourseId,
             ExpiresAt = expiresAt,
             ImageUrl = lecture.ImageUrl!,
+            HomeworkVideoUrl = lecture.HomeworkVideoUrl,
             Price = lecture.Price!.Value,
             ExpirationDays = lecture.ExpirationDays!.Value,
             RenewalPrice = lecture.RenewalPrice!.Value,
