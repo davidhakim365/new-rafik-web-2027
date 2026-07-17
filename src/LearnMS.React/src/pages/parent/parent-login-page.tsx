@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ArrowLeft, IdCard, Phone, Users } from "lucide-react";
+import { ArrowLeft, Hash, Phone, Users } from "lucide-react";
 import {
   ParentLoginRequest,
   getParentToken,
@@ -101,7 +101,7 @@ const ParentLoginPage = () => {
               placeholder={t("parent.login.studentCodePlaceholder")}
               register={form.register}
               error={errors.studentCode}
-              icon={<IdCard className="size-4" />}
+              icon={<Hash className="size-4" />}
             />
             <InputField
               name="phoneNumber"
