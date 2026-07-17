@@ -166,7 +166,8 @@
     "links": {
       "home": "Home",
       "courses": "Courses",
-      "payments": "Payments"
+      "payments": "Payments",
+      "parent": "Parent Follow-up"
     },
     "language": "Language",
     "languages": {
@@ -177,6 +178,76 @@
     "profile": "Profile",
     "logout": "Logout",
     "signIn": "Sign In"
+  },
+  "parent": {
+    "backHome": "Back to home",
+    "section": {
+      "badge": "For Parents",
+      "title": "Follow Your Child's Progress",
+      "description": "Track attendance, quiz grades, exam results, and overall statistics — securely, using your child's student ID and phone numbers.",
+      "cta": "Parent Sign In",
+      "items": {
+        "attendance": {
+          "title": "Attendance",
+          "description": "See which sessions your child attended and which were missed."
+        },
+        "quizzes": {
+          "title": "Quiz Grades",
+          "description": "Review homework and quiz scores across lectures."
+        },
+        "exams": {
+          "title": "Exam Grades",
+          "description": "Check exam results and submission dates."
+        },
+        "stats": {
+          "title": "Statistics",
+          "description": "Get a clear overview of attendance rate and average scores."
+        }
+      }
+    },
+    "login": {
+      "title": "Parent Sign In",
+      "description": "Enter your child's student ID and the registered phone numbers to follow their progress.",
+      "studentCode": "Student ID",
+      "studentCodePlaceholder": "Enter student ID",
+      "studentPhone": "Student Phone Number",
+      "studentPhonePlaceholder": "01xxxxxxxxx",
+      "parentPhone": "Parent Phone Number",
+      "parentPhonePlaceholder": "01xxxxxxxxx",
+      "submit": "View Progress",
+      "submitting": "Verifying...",
+      "hint": "Use the same phone numbers registered on the student account.",
+      "successTitle": "Welcome",
+      "successDescription": "You can now follow your child's progress."
+    },
+    "dashboard": {
+      "badge": "Parent follow-up",
+      "logout": "Sign out",
+      "studentId": "Student ID",
+      "loadError": "Could not load progress. Please sign in again.",
+      "attended": "Attended",
+      "absent": "Absent",
+      "offlineQuiz": "Center quiz",
+      "homework": "Homework",
+      "onlineQuiz": "Online quiz",
+      "stats": {
+        "attendance": "Attendance",
+        "quizzes": "Quizzes",
+        "exams": "Exams",
+        "avgExam": "Avg. exam",
+        "overall": "Overall"
+      },
+      "tabs": {
+        "attendance": "Attendance",
+        "quizzes": "Quizzes",
+        "exams": "Exams"
+      },
+      "empty": {
+        "attendance": "No session records yet.",
+        "quizzes": "No quiz grades yet.",
+        "exams": "No exam grades yet."
+      }
+    }
   },
   "footer": {
     "brand": "Newton's Academy",

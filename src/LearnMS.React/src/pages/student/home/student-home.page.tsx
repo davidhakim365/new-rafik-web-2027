@@ -3,6 +3,7 @@ import MemoriesSection from "@/components/landing-page/memories-section";
 import SeniorsSection from "@/components/landing-page/seniors-section";
 import AboutSection from "@/components/landing-page/about-section";
 import FeaturesSection from "@/components/landing-page/features-section";
+import ParentFollowUpSection from "@/components/landing-page/parent-follow-up-section";
 import Footer from "@/components/footer";
 import GradesSection from "@/components/landing-page/grades-section";
 import {
@@ -20,6 +21,7 @@ const StudentHomePage = () => {
       <main className="flex-1">
         <HeroSection />
         {!isSignedIn && <FeaturesSection />}
+        {!isSignedIn && <ParentFollowUpSection />}
         {!isSignedIn && <GradesSection />}
         {isSignedIn && <ImportantLecturesSection />}
         {isSignedIn && <LatestLecturesSection />}

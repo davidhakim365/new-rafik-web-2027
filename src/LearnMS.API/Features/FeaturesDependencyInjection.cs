@@ -4,6 +4,7 @@ using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Courses.Lectures;
 using LearnMS.API.Features.Courses.Lectures.Lessons;
 using LearnMS.API.Features.CreditCodes;
+using LearnMS.API.Features.Parent;
 using LearnMS.API.Features.Profile;
 using LearnMS.API.Features.Questions;
 using LearnMS.API.Features.Students;
@@ -28,6 +29,7 @@ public static class FeaturesDependencyInjection
         // services.AddScoped<ILessonsService>();
         services.AddScoped<ICoursesService, CoursesService>();
         services.AddScoped<IStudentsService, StudentsService>();
+        services.AddScoped<IParentService, ParentService>();
         
     services.Configure<AdministrationConfig>(cfg.GetSection(AdministrationConfig.Section));
         services.AddScoped<IAdministrationService, AdministrationService>();

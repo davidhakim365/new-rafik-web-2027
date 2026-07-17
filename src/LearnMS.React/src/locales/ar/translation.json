@@ -166,7 +166,8 @@
     "links": {
       "home": "الرئيسية",
       "courses": "الدورات",
-      "payments": "المدفوعات"
+      "payments": "المدفوعات",
+      "parent": "متابعة ولي الأمر"
     },
     "language": "اللغة",
     "languages": {
@@ -177,6 +178,76 @@
     "profile": "الملف الشخصي",
     "logout": "تسجيل الخروج",
     "signIn": "تسجيل الدخول"
+  },
+  "parent": {
+    "backHome": "العودة للرئيسية",
+    "section": {
+      "badge": "لأولياء الأمور",
+      "title": "تابع تقدم ابنك",
+      "description": "تابع الحضور ودرجات الواجبات والاختبارات والإحصائيات بأمان باستخدام رقم الطالب وأرقام الهواتف المسجلة.",
+      "cta": "دخول ولي الأمر",
+      "items": {
+        "attendance": {
+          "title": "الحضور",
+          "description": "اعرف الحصص التي حضرها ابنك والتي غاب عنها."
+        },
+        "quizzes": {
+          "title": "درجات الكويز",
+          "description": "راجع درجات الواجبات والكويزات عبر المحاضرات."
+        },
+        "exams": {
+          "title": "درجات الامتحانات",
+          "description": "اطّلع على نتائج الامتحانات وتواريخ التسليم."
+        },
+        "stats": {
+          "title": "الإحصائيات",
+          "description": "نظرة واضحة على نسبة الحضور ومتوسط الدرجات."
+        }
+      }
+    },
+    "login": {
+      "title": "دخول ولي الأمر",
+      "description": "أدخل رقم الطالب وأرقام الهواتف المسجلة لمتابعة تقدمه.",
+      "studentCode": "رقم الطالب",
+      "studentCodePlaceholder": "أدخل رقم الطالب",
+      "studentPhone": "هاتف الطالب",
+      "studentPhonePlaceholder": "01xxxxxxxxx",
+      "parentPhone": "هاتف ولي الأمر",
+      "parentPhonePlaceholder": "01xxxxxxxxx",
+      "submit": "عرض التقدم",
+      "submitting": "جاري التحقق...",
+      "hint": "استخدم نفس أرقام الهواتف المسجلة في حساب الطالب.",
+      "successTitle": "مرحباً",
+      "successDescription": "يمكنك الآن متابعة تقدم ابنك."
+    },
+    "dashboard": {
+      "badge": "متابعة ولي الأمر",
+      "logout": "تسجيل الخروج",
+      "studentId": "رقم الطالب",
+      "loadError": "تعذر تحميل التقدم. يرجى تسجيل الدخول مرة أخرى.",
+      "attended": "حضر",
+      "absent": "غاب",
+      "offlineQuiz": "كويز السنتر",
+      "homework": "واجب",
+      "onlineQuiz": "كويز أونلاين",
+      "stats": {
+        "attendance": "الحضور",
+        "quizzes": "الكويزات",
+        "exams": "الامتحانات",
+        "avgExam": "متوسط الامتحان",
+        "overall": "إجمالي"
+      },
+      "tabs": {
+        "attendance": "الحضور",
+        "quizzes": "الكويزات",
+        "exams": "الامتحانات"
+      },
+      "empty": {
+        "attendance": "لا توجد سجلات حضور بعد.",
+        "quizzes": "لا توجد درجات كويز بعد.",
+        "exams": "لا توجد درجات امتحان بعد."
+      }
+    }
   },
   "footer": {
     "brand": "أكاديمية نيوتن",

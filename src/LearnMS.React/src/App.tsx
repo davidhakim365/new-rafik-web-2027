@@ -31,6 +31,8 @@ import StudentLecturePage from "@/pages/student/lectures/student-lecture-page";
 import StudentLessonPage from "@/pages/student/lessons/student-lesson-page";
 import StudentPayments from "@/pages/student/payment/student-payments";
 import StudentQuizPage from "@/pages/student/quizzes/student-quiz-page";
+import ParentLoginPage from "@/pages/parent/parent-login-page";
+import ParentDashboardPage from "@/pages/parent/parent-dashboard-page";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { Route, Routes, useLocation } from "react-router-dom";
@@ -56,6 +58,8 @@ function App() {
               path="/auth/reset-password"
               element={<PasswordResetPage />}
             />
+            <Route path="/parent" element={<ParentLoginPage />} />
+            <Route path="/parent/dashboard" element={<ParentDashboardPage />} />
             <Route path="/" element={<StudentLayout />}>
               <Route path="/" element={<StudentHomePage2 />} />
             </Route>
