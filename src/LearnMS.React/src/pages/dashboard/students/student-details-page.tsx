@@ -9,7 +9,6 @@ import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { DataTable } from "@/components/data-table";
 import Loading from "@/components/loading/loading";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +41,7 @@ import {
   studentExamsColumns,
   studentLecturesColumns,
 } from "@/pages/dashboard/students/columns";
+import { useModalStore } from "@/store/use-modal-store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ResetIcon } from "@radix-ui/react-icons";
 import { PaginationState } from "@tanstack/react-table";
@@ -49,7 +49,6 @@ import { Save, Trash, User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { getFirstCharacters } from "../../../lib/utils";
 
 const StudentDetailsPage = () => {
   const { studentId } = useParams();
@@ -92,6 +91,7 @@ function StudentProfile({ studentId }: { studentId: string }) {
   const updateStudentMutation = useUpdateStudentMutation();
   const deleteStudentMutation = useDeleteStudentMutation();
   const navigate = useNavigate();
+  const { openModal } = useModalStore();
 
   const levelMap: { [key: string]: string } = {
     Level0: "3rd Prep",
@@ -173,6 +173,17 @@ function StudentProfile({ studentId }: { studentId: string }) {
           <p>{student!.data.email}</p>
         </div>
         <Badge className="ms-auto">{student!.data.credit} LE</Badge>
+        <Badge variant="secondary">{student!.data.apples ?? 0} apples</Badge>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            openModal("add-apples-modal", { student: student!.data })
+          }
+        >
+          Edit apples
+        </Button>
       </div>
       <Separator />
       <Form {...form}>
@@ -273,7 +284,11 @@ function StudentProfile({ studentId }: { studentId: string }) {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue
-                          placeholder={levelMap[student?.data.level]}
+                          placeholder={
+                            student?.data.level
+                              ? levelMap[student.data.level]
+                              : "Select level"
+                          }
                         />
                       </SelectTrigger>
                     </FormControl>

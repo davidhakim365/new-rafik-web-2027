@@ -186,6 +186,13 @@ const onQuickAddCredit = () => {
                 <CreditCard />
                 Add Credit
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => openModal("add-apples-modal", { student })}
+                className="flex items-center gap-2 hover:cursor-pointer hover:bg-primary hover:text-white"
+              >
+                <CreditCard />
+                Add Apples
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <Link to={`/dashboard/students/${student.id}`}>
                 <DropdownMenuItem className="flex items-center gap-2 hover:cursor-pointer hover:bg-primary hover:text-white">
@@ -235,6 +242,16 @@ const onQuickAddCredit = () => {
     cell: ({ row }) => (
       <div className="text-xs sm:text-sm font-medium">
         {row.getValue("credit")}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "apples",
+    header: "Apples",
+    size: 80,
+    cell: ({ row }) => (
+      <div className="text-xs sm:text-sm font-medium">
+        {(row.original as { apples?: number }).apples ?? 0}
       </div>
     ),
   },

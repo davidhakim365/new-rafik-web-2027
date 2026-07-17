@@ -161,6 +161,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
                 DeviceLinked = !string.IsNullOrWhiteSpace(students.DeviceKey),
                 Email = accounts.Email,
                 Credit = students.Credit,
+                Apples = students.Apples,
                 FullName = students.FullName,
                 Level = students.Level,
                 ParentPhoneNumber = students.ParentPhoneNumber,
@@ -194,6 +195,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
                 PhoneNumber = students.PhoneNumber,
                 SchoolName = students.SchoolName,
                 Credit = students.Credit,
+                Apples = students.Apples,
                 Email = accounts.Email,
                 Id = students.Id,
             };
@@ -223,6 +225,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
                     Email = x.Accounts.First().Email,
                     Code = x.StudentCode,
                     Credits = x.Credit,
+                    Apples = x.Apples,
                     Level = x.Level,
                     PhoneNumber = x.PhoneNumber,
                     SchoolName = x.SchoolName,

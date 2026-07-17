@@ -15,5 +15,6 @@ public enum Permission
     ManageFiles,
     ViewStatistics,
     ManageGrantedAccess,
-    ManageExpirationTime
+    ManageExpirationTime,
+    ManageStudentApples
 }

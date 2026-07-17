@@ -7,6 +7,7 @@ using LearnMS.API.Features.CreditCodes;
 using LearnMS.API.Features.Parent;
 using LearnMS.API.Features.Profile;
 using LearnMS.API.Features.Questions;
+using LearnMS.API.Features.Rewards;
 using LearnMS.API.Features.Students;
 using LearnMS.API.Security.PasswordHasher;
 using LearnMS.API.ThirdParties;
@@ -32,7 +33,9 @@ public static class FeaturesDependencyInjection
         services.AddScoped<IParentService, ParentService>();
         
     services.Configure<AdministrationConfig>(cfg.GetSection(AdministrationConfig.Section));
+        services.Configure<RewardSystemConfig>(cfg.GetSection(RewardSystemConfig.Section));
         services.AddScoped<IAdministrationService, AdministrationService>();
+        services.AddScoped<IRewardsService, RewardsService>();
         services.AddScoped<IQuestionsService, QuestionsService>();
 
         services.AddAssets();

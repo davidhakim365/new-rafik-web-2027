@@ -7,6 +7,7 @@
 import type { StudentLevel } from './studentLevel';
 
 export interface GetStudentResponse {
+  apples?: number;
   credit?: number;
   email?: string;
   fullName?: string;

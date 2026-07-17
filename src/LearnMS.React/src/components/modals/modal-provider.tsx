@@ -8,6 +8,7 @@ import AddMultipleQuestionModal from "@/pages/dashboard/questions/add-multiple-q
 import AddValueQuestionModal from "@/pages/dashboard/questions/add-value-question-modal";
 import AddEssayQuestionModal from "@/pages/dashboard/questions/add-essay-question-modal";
 import SelectQuestionsModal from "@/pages/dashboard/questions/select-questions-modal";
+import AddApplesModal from "@/pages/dashboard/students/add-apples-modal";
 import AddCreditModal from "@/pages/dashboard/students/add-credit-modal";
 import AddStudentModal from "@/pages/dashboard/students/add-student-modal";
 import LectureAssetsModal from "@/pages/student/lectures/lecture-assets-modal";
@@ -20,6 +21,7 @@ const modals: Record<string, React.FC<any>> = {
   "add-assistant-modal": AddAssistantModal,
   "add-student-modal": AddStudentModal,
   "add-credit-modal": AddCreditModal,
+  "add-apples-modal": AddApplesModal,
   "profile-modal": ProfileModal,
   "forgot-password-modal": ForgotPasswordModal,
   "add-multiple-question-modal": AddMultipleQuestionModal,

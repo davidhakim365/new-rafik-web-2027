@@ -27,6 +27,10 @@ export const UpdateAssistantRequest = z.object({
     .string()
     .optional()
     .transform((val) => (val ? val : undefined)),
+  code: z
+    .string()
+    .optional()
+    .transform((val) => (val ? val : undefined)),
   permissions: z.array(z.string().min(1)),
 });
 

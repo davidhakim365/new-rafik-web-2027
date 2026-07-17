@@ -7,6 +7,7 @@
 import type { StudentLevel } from './studentLevel';
 
 export interface SingleStudent {
+  apples?: number;
   credit: number;
   deviceLinked: boolean;
   email: string;

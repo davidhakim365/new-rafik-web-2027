@@ -14,6 +14,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   LogOut,
+  Apple,
   QrCode,
   Shield,
   Star,
@@ -29,6 +30,9 @@ type NavItem = {
   icon: React.ElementType;
   match: (pathname: string) => boolean;
   permission?: Permission;
+  anyPermissions?: Permission[];
+  teacherOnly?: boolean;
+  assistantOnly?: boolean;
 };
 
 const materialItems: NavItem[] = [
@@ -76,7 +80,7 @@ const userItems: NavItem[] = [
     label: "Students",
     icon: Users,
     match: (pathname) => pathname.startsWith("/dashboard/students"),
-    permission: Permission.ManageStudents,
+    anyPermissions: [Permission.ManageStudents, Permission.ManageStudentApples],
   },
   {
     to: "/dashboard/granted-access",
@@ -98,6 +102,20 @@ const userItems: NavItem[] = [
     icon: Shield,
     match: (pathname) => pathname.startsWith("/dashboard/assistants"),
     permission: Permission.ManageAssistants,
+  },
+  {
+    to: "/dashboard/assistant-rewards-scanner",
+    label: "Reward Scanner",
+    icon: QrCode,
+    match: (pathname) => pathname.startsWith("/dashboard/assistant-rewards-scanner"),
+    teacherOnly: true,
+  },
+  {
+    to: "/dashboard/my-rewards",
+    label: "My Rewards",
+    icon: Apple,
+    match: (pathname) => pathname.startsWith("/dashboard/my-rewards"),
+    assistantOnly: true,
   },
 ];
 
@@ -150,13 +168,18 @@ const DashboardSideBar = ({
 }: DashboardSideBarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const logoutMutation = useLogoutMutation();
-  const { hasPermission } = useDashboardPermissions();
+  const { hasPermission, hasAnyPermission, isTeacher } = useDashboardPermissions();
   const isMobile = variant === "mobile";
   const isCollapsed = isMobile ? false : collapsed;
 
-  const visibleUserItems = userItems.filter(
-    (item) => !item.permission || hasPermission(item.permission)
-  );
+  const visibleUserItems = userItems.filter((item) => {
+    if (item.teacherOnly && !isTeacher) return false;
+    if (item.assistantOnly && isTeacher) return false;
+    if (item.anyPermissions?.length) {
+      return hasAnyPermission(item.anyPermissions);
+    }
+    return !item.permission || hasPermission(item.permission);
+  });
 
   const Wrapper = isMobile ? "div" : "aside";
 

@@ -33,6 +33,15 @@ public sealed class AdministrationService : IAdministrationService
             assistant.Permissions = command.Permissions.ToHashSet();
         }
 
+        if (!string.IsNullOrWhiteSpace(command.Code))
+        {
+            var code = command.Code.Trim();
+            var exists = await _dbContext.Assistants.AnyAsync(x => x.Code == code && x.Id != command.Id);
+            if (exists)
+                throw new ApiException(AdministrationErrors.CodeAlreadyExists);
+            assistant.Code = code;
+        }
+
         if (!string.IsNullOrWhiteSpace(command.Password))
         {
             var passwordHash = _passwordHasher.Hash(command.Password);
@@ -74,13 +83,19 @@ public sealed class AdministrationService : IAdministrationService
         }
 
         var passwordHash = _passwordHasher.Hash(command.Password.Trim());
+        string code;
+        do
+        {
+            code = Assistant.GenerateCode();
+        } while (await _dbContext.Assistants.AnyAsync(x => x.Code == code));
+
         var assistant = Assistant.Register(new Account
         {
             Email = command.Email,
             Password = command.Password.Trim(),
             PasswordHash = passwordHash,
             ProviderType = ProviderType.Local,
-        });
+        }, code);
         assistant.Permissions.Add(Permission.ManageCourses);
         await _dbContext.Assistants.AddAsync(assistant);
         await _dbContext.SaveChangesAsync();
@@ -118,6 +133,9 @@ public sealed class AdministrationService : IAdministrationService
                      {
                          Id = accounts.Id,
                          Email = accounts.Email,
+                         Code = assistants.Code,
+                         Apples = assistants.Apples,
+                         SessionsAttended = assistants.SessionsAttended,
                          Permissions = assistants.Permissions.ToList()
                      };
         return new GetAssistantsResult { Items = await result.ToListAsync() };
@@ -184,6 +202,9 @@ public sealed class AdministrationService : IAdministrationService
         {
             Id = assistant.Id,
             Email = assistant.Accounts.FirstOrDefault()!.Email,
+            Code = assistant.Code,
+            Apples = assistant.Apples,
+            SessionsAttended = assistant.SessionsAttended,
             Permissions = assistant.Permissions.ToList()
         };
     }

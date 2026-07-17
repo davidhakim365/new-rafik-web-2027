@@ -47,6 +47,8 @@ public class Student : User
 
     public decimal Credit => _credit;
 
+    public int Apples { get; set; }
+
     public void AddCredit(Guid? assistantId, decimal amount, out StudentCredit studentCredit)
     {
         _credit += amount;
@@ -64,6 +66,28 @@ public class Student : User
                     assistantId == null
                         ? $"Credited {amount} LE by Teacher"
                         : $"Credited {amount} LE by Assistant {assistantId}"
+            }
+        );
+    }
+
+    public void AddApples(Guid? actorId, int amount, string? reason, out StudentAppleTransaction transaction)
+    {
+        Apples = Math.Max(0, Apples + amount);
+        transaction = new StudentAppleTransaction
+        {
+            StudentId = Id,
+            ActorId = actorId,
+            Amount = amount,
+            Reason = reason
+        };
+
+        Events.Add(
+            new StudentEvent
+            {
+                Message =
+                    amount >= 0
+                        ? $"Added {amount} apples{(string.IsNullOrWhiteSpace(reason) ? "" : $": {reason}")}"
+                        : $"Removed {Math.Abs(amount)} apples{(string.IsNullOrWhiteSpace(reason) ? "" : $": {reason}")}"
             }
         );
     }

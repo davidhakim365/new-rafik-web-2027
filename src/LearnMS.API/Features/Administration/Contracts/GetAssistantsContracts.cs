@@ -19,6 +19,9 @@ public sealed record SingleAssistant
 {
     public required Guid Id { get; init; }
     public required string Email { get; init; }
+    public required string Code { get; init; }
+    public required int Apples { get; init; }
+    public required int SessionsAttended { get; init; }
 
     [JsonProperty(ItemConverterType = typeof(StringEnumConverter))]
     public required List<Permission> Permissions { get; init; }

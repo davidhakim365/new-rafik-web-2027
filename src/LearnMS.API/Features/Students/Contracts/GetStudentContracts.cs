@@ -20,6 +20,7 @@ public sealed class GetStudentResult
 
     public required string SchoolName { get; init; }
     public required decimal Credit { get; init; }
+    public required int Apples { get; init; }
     public required StudentLevel Level { get; init; }
 }
 
@@ -36,5 +37,6 @@ public sealed class GetStudentResponse
 
     public required string SchoolName { get; init; }
     public required decimal Credit { get; init; }
+    public required int Apples { get; init; }
     public required StudentLevel Level { get; init; }
 }

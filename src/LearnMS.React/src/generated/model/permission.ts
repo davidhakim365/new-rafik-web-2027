@@ -20,4 +20,5 @@ export const Permission = {
   ViewStatistics: 'ViewStatistics',
   ManageGrantedAccess: 'ManageGrantedAccess',
   ManageExpirationTime: 'ManageExpirationTime',
+  ManageStudentApples: 'ManageStudentApples',
 } as const;

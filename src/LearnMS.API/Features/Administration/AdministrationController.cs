@@ -74,6 +74,7 @@ public sealed class AdministrationController : ControllerBase
         {
             Id = assistantId,
             Password = request.Password,
+            Code = request.Code,
             Permissions = request.Permissions
         });
 
@@ -150,6 +151,9 @@ public sealed class AdministrationController : ControllerBase
             {
                 Id = result.Id,
                 Email = result.Email,
+                Code = result.Code,
+                Apples = result.Apples,
+                SessionsAttended = result.SessionsAttended,
                 Permissions = result.Permissions
             },
             Message = "Successfully retrieved assistant"

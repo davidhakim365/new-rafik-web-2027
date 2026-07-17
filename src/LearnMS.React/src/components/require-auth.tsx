@@ -11,12 +11,15 @@ interface RequireAuthProps {
   children: JSX.Element;
   roles: ("Student" | "Teacher" | "Assistant")[];
   permissions?: Permission[];
+  /** When true, assistant needs any listed permission instead of all */
+  requireAnyPermission?: boolean;
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({
   children,
   roles,
   permissions,
+  requireAnyPermission = false,
 }) => {
   const { data: profile, isError, isLoading, isFetching } = useGetProfile();
 
@@ -62,14 +65,21 @@ const RequireAuth: React.FC<RequireAuthProps> = ({
   if (
     profile?.data &&
     profile.data.$type === "GetAssistantProfileResult" &&
-    permissions &&
-    !permissions.every((permission) =>
-      (profile.data as GetAssistantProfileResult)?.permissions.includes(
-        permission as any
-      )
-    )
+    permissions
   ) {
-    return <PermissionDeniedPage permissions={permissions} />;
+    const assistantPermissions =
+      (profile.data as GetAssistantProfileResult)?.permissions ?? [];
+    const allowed = requireAnyPermission
+      ? permissions.some((permission) =>
+          assistantPermissions.includes(permission as any)
+        )
+      : permissions.every((permission) =>
+          assistantPermissions.includes(permission as any)
+        );
+
+    if (!allowed) {
+      return <PermissionDeniedPage permissions={permissions} />;
+    }
   }
 
   return children;

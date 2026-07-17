@@ -28,5 +28,8 @@ public sealed class AssistantsConfigurations : IEntityTypeConfiguration<Assistan
         builder.Property(x => x.Permissions)
         .HasConversion(x => JsonSerializer.Serialize(x, jsonSerializerOptions),
                         x => JsonSerializer.Deserialize<HashSet<Permission>>(x, jsonSerializerOptions) ?? new()).Metadata.SetValueComparer(valueComparer);
+
+        builder.Property(x => x.Code).IsRequired();
+        builder.HasIndex(x => x.Code).IsUnique();
     }
 }

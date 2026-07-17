@@ -3,6 +3,7 @@ using CsvHelper;
 using LearnMS.API.Common;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Auth;
+using LearnMS.API.Features.Rewards;
 using LearnMS.API.Features.Students.Contracts;
 using LearnMS.API.Security;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,7 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents, Permission.ManageGrantedAccess, Permission.ManageExpirationTime])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents, Permission.ManageGrantedAccess, Permission.ManageExpirationTime, Permission.ManageStudentApples])]
     [SwaggerOperation(OperationId = "GetAllStudents")]
     public async Task<ApiWrapper.Success<PageList<SingleStudent>>> Get(string search, int? page, int? pageSize,
         StudentLevel? level)
@@ -95,8 +96,32 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpPost("{studentId:guid}/apples")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples, Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "AddStudentApples")]
+    public async Task<ApiWrapper.Success<object?>> AddApples(
+        [FromBody] LearnMS.API.Features.Rewards.Contracts.AddStudentApplesRequest request,
+        Guid studentId,
+        [FromServices] IRewardsService rewardsService)
+    {
+        var currentUser = await currentUserService.GetUserAsync();
+
+        var result = await rewardsService.ExecuteAsync(new LearnMS.API.Features.Rewards.Contracts.AddStudentApplesCommand
+        {
+            StudentId = studentId,
+            Amount = request.Amount,
+            Reason = request.Reason,
+            ActorId = currentUser!.Role == UserRole.Assistant ? currentUser.Id : currentUser.Id
+        });
+
+        return new ApiWrapper.Success<object?>
+        {
+            Message = $"Updated apples successfully. Balance: {result.Apples}"
+        };
+    }
+
     [HttpGet("{studentId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents, Permission.ManageStudentApples])]
     [SwaggerOperation(OperationId = "GetStudent")]
     public async Task<ApiWrapper.Success<GetStudentResponse>> Get(Guid studentId)
     {
@@ -110,6 +135,7 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
             {
                 Password = result.Password,
                 Credit = result.Credit,
+                Apples = result.Apples,
                 Email = result.Email,
                 FullName = result.FullName,
                 Level = result.Level,
@@ -118,8 +144,9 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
                 PhoneNumber = result.PhoneNumber,
                 ProfilePicture = result.ProfilePicture,
                 SchoolName = result.SchoolName,
-                Id = result.Id,
-            }
+                Id = result.Id
+            },
+            Message = "Retrieved student successfully"
         };
     }
 
