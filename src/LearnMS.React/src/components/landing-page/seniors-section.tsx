@@ -1,10 +1,18 @@
 import { useMemo, useState } from "react";
-import { Gallery4 } from "@/components/ui/gallery4";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Heading } from "../ui/heading";
-import { SubHeading } from "../ui/sub-heading";
-import { PhysicsGrid, GlowOrb } from "@/components/ui/physics-graphics";
+import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
+import { Heading } from "@/components/ui/heading";
+import { SubHeading } from "@/components/ui/sub-heading";
+import {
+  PhysicsGrid,
+  GlowOrb,
+  FloatingFormulas,
+  AtomOrbit,
+  PhysicsDivider,
+} from "@/components/ui/physics-graphics";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const seniors = [
   {
@@ -13,302 +21,299 @@ const seniors = [
       {
         id: "old-1",
         src: "https://i.ibb.co/swp6Z4P/old.jpg",
-        description:
-          "Capturing the legacy of our earliest senior class, filled with pioneering spirit.",
       },
       {
         id: "old-2",
         src: "https://i.ibb.co/xSVJJLC/old3.jpg",
-        description:
-          "Moments of camaraderie from our Old Seniors, building lifelong bonds.",
       },
       {
         id: "old-3",
         src: "https://i.ibb.co/KW9k91Z/old2.jpg",
-        description:
-          "Celebrating achievements with the Old Seniors, a class of trailblazers.",
       },
       {
         id: "old-4",
         src: "https://i.ibb.co/Rzkxd1r/old4.jpg",
-        description: "Memorable events that defined the Old Seniors' journey.",
       },
       {
         id: "old-5",
-        src: "https://i.ibb.co/KW9k91Z/old2.jpg",
-        description:
-          "Joyful gatherings of the Old Seniors, creating lasting memories.",
+        src: "https://i.ibb.co/JQ7CWMs/old6.jpg",
       },
       {
         id: "old-6",
-        src: "https://i.ibb.co/JQ7CWMs/old6.jpg",
-        description:
-          "The Old Seniors' dedication to excellence in every moment.",
+        src: "https://i.ibb.co/swp6Z4P/old.jpg",
       },
       {
         id: "old-7",
-        src: "https://i.ibb.co/swp6Z4P/old.jpg",
-        description: "Reliving the triumphs of the Old Seniors' time with us.",
+        src: "https://i.ibb.co/xSVJJLC/old3.jpg",
       },
       {
         id: "old-8",
-        src: "https://i.ibb.co/xSVJJLC/old3.jpg",
-        description: "The Old Seniors' journey, marked by unity and growth.",
+        src: "https://i.ibb.co/KW9k91Z/old2.jpg",
       },
     ],
   },
   {
     year: "Seniors'22",
     images: [
-      {
-        id: "s22-1",
-        src: "https://i.ibb.co/wzZMpvY/221.jpg",
-        description:
-          "Seniors'22 kicking off their year with enthusiasm and teamwork.",
-      },
-      {
-        id: "s22-2",
-        src: "https://i.ibb.co/VwfY0J9/222.jpg",
-        description:
-          "Seniors'22 collaborating on projects that shaped their future.",
-      },
-      {
-        id: "s22-3",
-        src: "https://i.ibb.co/djsGqP2/223.jpg",
-        description:
-          "Moments of joy from Seniors'22, celebrating their achievements.",
-      },
-      {
-        id: "s22-4",
-        src: "https://i.ibb.co/vchwxRq/224.jpg",
-        description: "Seniors'22 embracing challenges and growing together.",
-      },
-      {
-        id: "s22-5",
-        src: "https://i.ibb.co/v3HxWtY/225.jpg",
-        description: "Seniors'22 creating memories during their final year.",
-      },
-      {
-        id: "s22-6",
-        src: "https://i.ibb.co/R4CMtSf/226.jpg",
-        description: "Seniors'22 showcasing their creativity and passion.",
-      },
-      {
-        id: "s22-7",
-        src: "https://i.ibb.co/YtGhTWS/227.jpg",
-        description: "Seniors'22 leaving a legacy of inspiration and success.",
-      },
-      {
-        id: "s22-8",
-        src: "https://i.ibb.co/VwfY0J9/222.jpg",
-        description: "Seniors'22 reflecting on their journey with pride.",
-      },
+      { id: "s22-1", src: "https://i.ibb.co/wzZMpvY/221.jpg" },
+      { id: "s22-2", src: "https://i.ibb.co/VwfY0J9/222.jpg" },
+      { id: "s22-3", src: "https://i.ibb.co/djsGqP2/223.jpg" },
+      { id: "s22-4", src: "https://i.ibb.co/vchwxRq/224.jpg" },
+      { id: "s22-5", src: "https://i.ibb.co/v3HxWtY/225.jpg" },
+      { id: "s22-6", src: "https://i.ibb.co/R4CMtSf/226.jpg" },
+      { id: "s22-7", src: "https://i.ibb.co/YtGhTWS/227.jpg" },
+      { id: "s22-8", src: "https://i.ibb.co/VwfY0J9/222.jpg" },
     ],
   },
   {
     year: "Seniors'23",
     images: [
-      {
-        id: "s23-1",
-        src: "https://i.ibb.co/kJCF7YH/231.jpg",
-        description: "Seniors'23 starting their year with ambition and unity.",
-      },
-      {
-        id: "s23-2",
-        src: "https://i.ibb.co/FKXzZps/232.jpg",
-        description: "Seniors'23 pushing boundaries with innovative ideas.",
-      },
-      {
-        id: "s23-3",
-        src: "https://i.ibb.co/pWdYTLK/233.jpg",
-        description: "Seniors'23 celebrating milestones with enthusiasm.",
-      },
-      {
-        id: "s23-4",
-        src: "https://i.ibb.co/vJV0LC2/234.jpg",
-        description: "Seniors'23 building connections that last a lifetime.",
-      },
-      {
-        id: "s23-5",
-        src: "https://i.ibb.co/R798fxL/235.jpg",
-        description: "Seniors'23 thriving in collaborative environments.",
-      },
-      {
-        id: "s23-6",
-        src: "https://i.ibb.co/RYZc9mg/236.jpg",
-        description:
-          "Seniors'23 marking their journey with unforgettable moments.",
-      },
-      {
-        id: "s23-7",
-        src: "https://i.ibb.co/RQR7KRf/237.jpg",
-        description:
-          "Seniors'23 leaving their mark with determination and spirit.",
-      },
-      {
-        id: "s23-8",
-        src: "https://i.ibb.co/vJV0LC2/234.jpg",
-        description: "Seniors'23 reflecting on a year of growth and success.",
-      },
+      { id: "s23-1", src: "https://i.ibb.co/kJCF7YH/231.jpg" },
+      { id: "s23-2", src: "https://i.ibb.co/FKXzZps/232.jpg" },
+      { id: "s23-3", src: "https://i.ibb.co/pWdYTLK/233.jpg" },
+      { id: "s23-4", src: "https://i.ibb.co/vJV0LC2/234.jpg" },
+      { id: "s23-5", src: "https://i.ibb.co/R798fxL/235.jpg" },
+      { id: "s23-6", src: "https://i.ibb.co/RYZc9mg/236.jpg" },
+      { id: "s23-7", src: "https://i.ibb.co/RQR7KRf/237.jpg" },
+      { id: "s23-8", src: "https://i.ibb.co/vJV0LC2/234.jpg" },
     ],
   },
 ];
 
-interface Gallery4Props {
-  title: string;
-  description: string;
-  items: {
-    id: string;
-    title: string;
-    description: string;
-    href: string;
-    image: string;
-  }[];
-}
-
-const leftToRightVariants = {
-  hidden: { opacity: 0, filter: "blur(20px)", x: -300 },
-  visible: {
-    opacity: 1,
-    filter: "blur(0px)",
-    x: 0,
-    transition: {
-      duration: 1.0,
-      ease: "easeInOut",
-    },
-  },
-};
+const mathMarks = ["∑", "π", "∫", "Δ", "∞", "θ"];
 
 function SeniorsSection() {
   const [activeYear, setActiveYear] = useState(0);
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [activeImage, setActiveImage] = useState(0);
   const { t } = useTranslation();
-  const shouldReduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion();
 
-  const galleryData: Gallery4Props = useMemo(
-    () => ({
-      title: t("seniors.title"),
-      description: t("seniors.description"),
-      items: seniors[activeYear].images.map(({ id, src }) => ({
-        id,
-        title: t(`seniors.classes.${activeYear + 1}.title`),
-        description: t(`seniors.classes.${activeYear + 1}.description`),
-        href: `#${id}`,
-        image: src,
+  const batch = seniors[activeYear];
+  const images = batch.images;
+  const current = images[activeImage] ?? images[0];
+
+  const classTitle = t(`seniors.classes.${activeYear + 1}.title`);
+  const classDescription = t(`seniors.classes.${activeYear + 1}.description`);
+
+  const goPrev = () =>
+    setActiveImage((i) => (i - 1 + images.length) % images.length);
+  const goNext = () => setActiveImage((i) => (i + 1) % images.length);
+
+  const yearTabs = useMemo(
+    () =>
+      seniors.map((s, index) => ({
+        key: s.year,
+        index,
+        label: t(`seniors.classes.${index + 1}.title`),
       })),
-    }),
-    [activeYear, t]
+    [t]
   );
 
+  return (
+    <section className="relative w-full overflow-hidden bg-seniorsSection py-20 md:py-28">
+      <PhysicsGrid className="opacity-40" />
+      <FloatingFormulas className="opacity-50" />
+      <GlowOrb className="-left-24 top-10 size-80 from-color2/20 to-color1/10" />
+      <GlowOrb className="-right-20 bottom-0 size-72 from-color1/15 to-color2/10" />
 
-  if (shouldReduceMotion) {
-    return (
-      <section className="relative w-full pt-16 pb-20 bg-seniorsSection overflow-hidden">
-        <PhysicsGrid className="opacity-30" />
-        <GlowOrb className="top-1/2 -left-32 size-80 from-color2/15 to-color1/10" />
-        <div className="container relative z-10 px-4 mx-auto">
-          <div className="flex flex-col gap-6 text-center">
-            <span className="inline-block px-4 py-1.5 mb-2 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
-              {t("seniors.badge")}
-            </span>
-            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
-              {t("seniors.title")}
-            </Heading>
-            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
-              {t("seniors.description")}
-            </SubHeading>
+      <div className="pointer-events-none absolute right-4 top-16 hidden opacity-40 lg:block xl:right-12">
+        <AtomOrbit className="text-color2" />
+      </div>
 
-            <div className="flex flex-wrap justify-center gap-3">
-              {seniors.map((batch, index) => (
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-4">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="mx-auto max-w-3xl text-center"
+        >
+          <span className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-color2">
+            <GraduationCap className="size-3.5" />
+            {t("seniors.badge")}
+          </span>
+          <Heading className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+            {t("seniors.title")}
+          </Heading>
+          <SubHeading className="mt-4 text-lg md:text-xl">
+            {t("seniors.description")}
+          </SubHeading>
+        </motion.div>
+
+        <PhysicsDivider />
+
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1, duration: 0.55 }}
+          className="mt-8 flex justify-center"
+        >
+          <div
+            role="tablist"
+            className="inline-flex flex-wrap items-center justify-center gap-1 border-b border-color2/15"
+          >
+            {yearTabs.map((tab) => {
+              const active = activeYear === tab.index;
+              return (
                 <button
-                  key={batch.year}
+                  key={tab.key}
+                  role="tab"
+                  aria-selected={active}
                   onClick={() => {
-                    setActiveYear(index);
-                    setSelectedTab(index);
+                    setActiveYear(tab.index);
+                    setActiveImage(0);
                   }}
-                  className="relative px-6 py-2.5 text-sm font-medium transition-all rounded-full bg-background/80 border border-color2/10 text-paragraph hover:border-color2/30"
-                >
-                  {selectedTab === index && (
-                    <span className="absolute inset-0 z-10 rounded-full bg-gradient-to-r from-color1 to-color2"></span>
+                  className={cn(
+                    "relative px-4 py-3 text-sm font-medium transition-colors sm:px-6",
+                    active
+                      ? "text-heading"
+                      : "text-muted-foreground hover:text-heading"
                   )}
-                  <span className={`relative z-20 ${selectedTab === index ? "text-white" : ""}`}>
-                    {t(`seniors.classes.${index + 1}.title`)}
-                  </span>
+                >
+                  {tab.label}
+                  {active && (
+                    <motion.span
+                      layoutId={reduceMotion ? undefined : "seniors-year-underline"}
+                      className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-color1 to-color2"
+                    />
+                  )}
                 </button>
-              ))}
+              );
+            })}
+          </div>
+        </motion.div>
+
+        <div className="mt-10 grid items-center gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <motion.div
+            key={`${activeYear}-${current.id}`}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.45 }}
+            className="relative"
+          >
+            <div className="relative overflow-hidden rounded-[1.75rem] border border-color2/15 bg-background/40 shadow-xl shadow-color2/10">
+              <div className="relative aspect-[16/11] overflow-hidden">
+                <img
+                  src={current.src}
+                  alt={classTitle}
+                  className="size-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+
+                <span
+                  aria-hidden
+                  className="absolute left-4 top-4 font-mono text-3xl text-white/25 md:text-5xl"
+                >
+                  {mathMarks[activeImage % mathMarks.length]}
+                </span>
+                <span
+                  aria-hidden
+                  className="absolute bottom-20 right-5 font-mono text-sm text-white/30"
+                >
+                  f(x) → legacy
+                </span>
+
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 sm:p-6">
+                  <div className="min-w-0 text-start">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-white/70">
+                      {classTitle}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm text-white/90 sm:text-base">
+                      {classDescription}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      className="size-10 rounded-xl border border-white/20 bg-white/15 text-white backdrop-blur hover:bg-white/25"
+                      onClick={goPrev}
+                      aria-label="Previous photo"
+                    >
+                      <ArrowLeft className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      className="size-10 rounded-xl border border-white/20 bg-white/15 text-white backdrop-blur hover:bg-white/25"
+                      onClick={goNext}
+                      aria-label="Next photo"
+                    >
+                      <ArrowRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Gallery4 {...galleryData} />
+
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-3 -top-3 size-16 rounded-tl-2xl border-l-2 border-t-2 border-color2/40"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-3 -right-3 size-16 rounded-br-2xl border-b-2 border-r-2 border-color1/40"
+            />
+          </motion.div>
+
+          <div className="space-y-5">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeYear}
+                initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
+                transition={{ duration: 0.35 }}
+                className="space-y-3 text-center lg:text-start"
+              >
+                <p className="font-mono text-sm text-color2">
+                  class_of = &quot;{classTitle}&quot;
+                </p>
+                <h3 className="text-2xl font-bold tracking-tight text-heading md:text-3xl">
+                  {classTitle}
+                </h3>
+                <p className="text-sm leading-relaxed text-paragraph md:text-base">
+                  {classDescription}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
+              {images.slice(0, 8).map((img, index) => {
+                const selected = index === activeImage;
+                return (
+                  <button
+                    key={img.id}
+                    type="button"
+                    onClick={() => setActiveImage(index)}
+                    className={cn(
+                      "group relative aspect-square overflow-hidden rounded-xl border transition",
+                      selected
+                        ? "border-color2 ring-2 ring-color2/30"
+                        : "border-color2/10 opacity-80 hover:opacity-100"
+                    )}
+                  >
+                    <img
+                      src={img.src}
+                      alt=""
+                      className="size-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                    {selected && (
+                      <span className="absolute inset-0 bg-color2/10" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-center font-mono text-xs text-muted-foreground lg:text-start">
+              {activeImage + 1} / {images.length} · Σ moments
+            </p>
           </div>
         </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="relative w-full pt-16 pb-20 bg-seniorsSection overflow-hidden">
-      <PhysicsGrid className="opacity-30" />
-      <GlowOrb className="top-1/2 -left-32 size-80 from-color2/15 to-color1/10" />
-      <div className="container relative z-10 px-4 mx-auto">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{
-            visible: {
-              transition: {
-                staggerChildren: 0.15,
-                delayChildren: 0.2,
-              },
-            },
-          }}
-          className="flex flex-col gap-6 text-center"
-        >
-          <motion.div variants={leftToRightVariants}>
-            <span className="inline-block px-4 py-1.5 mb-4 text-xs font-semibold tracking-widest uppercase rounded-full bg-color2/10 text-color2 border border-color2/20">
-              {t("seniors.badge")}
-            </span>
-            <Heading className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
-              {t("seniors.title")}
-            </Heading>
-          </motion.div>
-          <motion.div variants={leftToRightVariants}>
-            <SubHeading className="mt-4 text-lg tracking-wide text-balance md:text-xl">
-              {t("seniors.description")}
-            </SubHeading>
-          </motion.div>
-
-          <motion.div
-            variants={leftToRightVariants}
-            className="flex flex-wrap justify-center gap-3"
-          >
-            {seniors.map((batch, index) => (
-              <button
-                key={batch.year}
-                onClick={() => {
-                  setActiveYear(index);
-                  setSelectedTab(index);
-                }}
-                className="relative px-6 py-2.5 text-sm font-medium transition-all rounded-full bg-background/80 border border-color2/10 text-paragraph hover:border-color2/30"
-              >
-                {selectedTab === index && (
-                  <motion.span
-                    layoutId="active-year"
-                    className="absolute inset-0 z-10 rounded-full bg-gradient-to-r from-color1 to-color2"
-                    transition={{ duration: 0.2 }}
-                  ></motion.span>
-                )}
-
-                <span className={`relative z-20 ${selectedTab === index ? "text-white" : ""}`}>
-                  {t(`seniors.classes.${index + 1}.title`)}
-                </span>
-              </button>
-            ))}
-          </motion.div>
-
-          <motion.div variants={leftToRightVariants}>
-            <Gallery4 {...galleryData} />
-          </motion.div>
-        </motion.div>
       </div>
     </section>
   );
