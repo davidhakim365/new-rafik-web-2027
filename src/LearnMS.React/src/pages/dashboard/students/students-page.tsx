@@ -17,7 +17,7 @@ import useDownloadFile from "@/hooks/useDownloadFile";
 import { studentsColumns } from "@/pages/dashboard/students/columns";
 import { useModalStore } from "@/store/use-modal-store";
 import { PaginationState } from "@tanstack/react-table";
-import { Download, Loader2, Plus, Search, Users } from "lucide-react";
+import { Apple, Download, Loader2, Plus, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -62,9 +62,12 @@ const StudentsPage = () => {
           <Button
             asChild
             variant="outline"
-            className="border-color2/20"
+            className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
           >
-            <Link to="/dashboard/student-apples-scanner">Apple Scanner</Link>
+            <Link to="/dashboard/student-apples-scanner">
+              <Apple className="size-4" />
+              Apple Scanner
+            </Link>
           </Button>
           <Button
             onClick={() => openModal("add-student-modal")}

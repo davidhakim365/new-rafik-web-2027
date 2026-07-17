@@ -1,8 +1,13 @@
 import { useMyRewardsQuery } from "@/api/rewards-api";
-import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  MilestoneRing,
+  RewardEventTimeline,
+  RewardHeroBanner,
+  RewardStatGrid,
+} from "@/components/rewards/reward-graphics";
+import { Badge } from "@/components/ui/badge";
 import { Apple } from "lucide-react";
 
 const MyRewardsPage = () => {
@@ -17,80 +22,71 @@ const MyRewardsPage = () => {
   }
 
   const rewards = data.data;
+  const payouts = rewards.events.filter((e) => e.type === "Payout").length;
 
   return (
     <DashboardPageShell
       title="My Rewards"
-      description="Track your session attendance, apple balance, and payout progress."
+      description="Track your session attendance, apple balance, and progress to the next pay bonus."
       icon={Apple}
       fullWidth
+      decorative
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardTitle className="p-3 text-lg">Apples balance</CardTitle>
-          <CardContent className="text-3xl font-semibold">{rewards.apples}</CardContent>
-        </Card>
-        <Card>
-          <CardTitle className="p-3 text-lg">Sessions attended</CardTitle>
-          <CardContent className="text-3xl font-semibold">
-            {rewards.sessionsAttended}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardTitle className="p-3 text-lg">Current session value</CardTitle>
-          <CardContent className="text-3xl font-semibold">
-            {rewards.currentSessionValue}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardTitle className="p-3 text-lg">Until next bonus</CardTitle>
-          <CardContent className="text-3xl font-semibold">
-            {rewards.sessionsUntilNextBonus}
-          </CardContent>
-        </Card>
-      </div>
+      <div className="space-y-5">
+        <RewardHeroBanner
+          badge="Assistant rewards"
+          title="Your pay progress"
+          subtitle="Apples grow with consistent attendance. When the teacher pays rewards, your balance resets and the payout is logged here."
+        >
+          <Badge className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+            Code {rewards.code}
+          </Badge>
+          <Badge variant="outline" className="rounded-full border-color2/25 px-3 py-1.5">
+            {payouts} payout{payouts === 1 ? "" : "s"} recorded
+          </Badge>
+        </RewardHeroBanner>
 
-      <DashboardCard className="mt-4" padding="sm">
-        <p className="mb-2 text-sm text-muted-foreground">
-          Your code: <span className="font-mono text-foreground">{rewards.code}</span>
-          {" · "}
-          Pay formula: base {rewards.baseSessionValue}, +{rewards.sessionBonusIncrement} every{" "}
-          {rewards.sessionsPerMilestone} sessions
-        </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left">
-              <tr>
-                <th className="p-3">When</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Amount</th>
-                <th className="p-3">Sessions</th>
-                <th className="p-3">Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rewards.events.map((event) => (
-                <tr key={event.id} className="border-t">
-                  <td className="p-3 whitespace-nowrap">
-                    {new Date(event.createdAt).toLocaleString()}
-                  </td>
-                  <td className="p-3">{event.type}</td>
-                  <td className="p-3">{event.amount}</td>
-                  <td className="p-3">{event.sessionsAttendedAfter ?? "—"}</td>
-                  <td className="p-3">{event.reason ?? "—"}</td>
-                </tr>
-              ))}
-              {rewards.events.length === 0 && (
-                <tr>
-                  <td className="p-3 text-muted-foreground" colSpan={5}>
-                    No payments or attendance events yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </DashboardCard>
+        <RewardStatGrid
+          stats={[
+            {
+              label: "Apples balance",
+              value: rewards.apples,
+              hint: "Waiting for payout",
+              icon: "apples",
+            },
+            {
+              label: "Sessions attended",
+              value: rewards.sessionsAttended,
+              hint: "Consistent attendance",
+              icon: "sessions",
+            },
+            {
+              label: "Current session value",
+              value: rewards.currentSessionValue,
+              hint: `Base ${rewards.baseSessionValue}`,
+              icon: "value",
+            },
+            {
+              label: "Until next bonus",
+              value: rewards.sessionsUntilNextBonus,
+              hint: `+${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone}`,
+              icon: "bonus",
+            },
+          ]}
+        />
+
+        <MilestoneRing
+          sessionsAttended={rewards.sessionsAttended}
+          sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
+          sessionsPerMilestone={rewards.sessionsPerMilestone}
+          currentSessionValue={rewards.currentSessionValue}
+        />
+
+        <RewardEventTimeline
+          events={rewards.events}
+          emptyText="No payments or attendance events yet"
+        />
+      </div>
     </DashboardPageShell>
   );
 };

@@ -2,6 +2,7 @@ import {
   AttendByCodeRequest,
   useAttendAssistantByCodeMutation,
 } from "@/api/rewards-api";
+import { ScannerViewfinder } from "@/components/rewards/reward-graphics";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/utils";
 import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, CheckCircle, Loader2, ScanLine, XCircle } from "lucide-react";
+import { Apple, ArrowLeft, CheckCircle, Loader2, ScanLine, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -159,37 +160,50 @@ const AssistantRewardsScannerPage = () => {
   }, [handleCode]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black text-white">
-      <header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-black/90 px-3 py-3">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#06100c] text-white">
+      <header className="relative flex shrink-0 items-center gap-3 overflow-hidden border-b border-emerald-500/20 bg-gradient-to-r from-emerald-950/90 via-black/90 to-black/90 px-3 py-3">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full bg-emerald-500/20 blur-2xl"
+        />
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate("/dashboard/assistants")}
-          className="text-white hover:bg-white/10"
+          className="relative z-10 text-white hover:bg-white/10"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">Assistant Rewards Scanner</p>
-          <p className="truncate text-xs text-white/60">
-            Scan barcode or type assistant code / id
-          </p>
+        <div className="relative z-10 flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 shadow-lg shadow-emerald-500/30">
+            <Apple className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-semibold">Assistant Rewards Scanner</p>
+            <p className="truncate text-xs text-emerald-200/70">
+              Scan barcode or type assistant code / id
+            </p>
+          </div>
         </div>
-        {status === "processing" && <Loader2 className="h-5 w-5 animate-spin" />}
-        {status === "success" && <CheckCircle className="h-5 w-5 text-green-400" />}
-        {status === "error" && <XCircle className="h-5 w-5 text-red-400" />}
+        {status === "processing" && <Loader2 className="relative z-10 h-5 w-5 animate-spin text-emerald-300" />}
+        {status === "success" && <CheckCircle className="relative z-10 h-5 w-5 text-emerald-400" />}
+        {status === "error" && <XCircle className="relative z-10 h-5 w-5 text-red-400" />}
       </header>
 
       <div ref={scannerRef} className="relative min-h-0 flex-1 overflow-hidden bg-black">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-4">
-          <div className="flex items-center gap-2 text-sm">
-            <ScanLine className="h-4 w-4" />
-            <span>{feedback || "Initializing camera..."}</span>
+        <ScannerViewfinder
+          active={status === "scanning" || status === "initializing"}
+          label="Align assistant barcode"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black via-black/70 to-transparent p-4 pt-16">
+          <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-black/50 px-3 py-2 text-sm backdrop-blur-md">
+            <ScanLine className="h-4 w-4 text-emerald-300" />
+            <span className="text-emerald-50/90">{feedback || "Initializing camera..."}</span>
           </div>
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-white/10 bg-black/95 p-4">
+      <div className="shrink-0 border-t border-emerald-500/15 bg-gradient-to-t from-emerald-950/80 to-black/95 p-4">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((values) => handleCode(values.code))}
@@ -200,11 +214,11 @@ const AssistantRewardsScannerPage = () => {
               name="code"
               render={({ field }) => (
                 <FormItem className="flex-1">
-                  <FormLabel className="text-white/80">Assistant code or id</FormLabel>
+                  <FormLabel className="text-emerald-100/80">Assistant code or id</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      className="border-white/20 bg-white/10 text-white"
+                      className="border-emerald-500/25 bg-white/5 text-white placeholder:text-white/40 focus-visible:ring-emerald-500/40"
                       placeholder="e.g. 245891"
                     />
                   </FormControl>
@@ -212,7 +226,11 @@ const AssistantRewardsScannerPage = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={attendMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={attendMutation.isPending}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 hover:opacity-95"
+            >
               Attend session
             </Button>
           </form>

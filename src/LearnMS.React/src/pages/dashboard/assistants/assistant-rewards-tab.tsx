@@ -7,8 +7,13 @@ import {
 } from "@/api/rewards-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
+import {
+  MilestoneRing,
+  RewardEventTimeline,
+  RewardHeroBanner,
+  RewardStatGrid,
+} from "@/components/rewards/reward-graphics";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -21,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/utils";
 import { Assistant } from "@/types/assistants";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Banknote, QrCode, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 
@@ -85,49 +91,34 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardTitle className="p-3 text-lg">Apples</CardTitle>
-          <CardContent className="text-3xl font-semibold">{rewards.apples}</CardContent>
-        </Card>
-        <Card>
-          <CardTitle className="p-3 text-lg">Sessions</CardTitle>
-          <CardContent className="text-3xl font-semibold">
-            {rewards.sessionsAttended}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardTitle className="p-3 text-lg">Next session value</CardTitle>
-          <CardContent className="text-3xl font-semibold">
-            {rewards.currentSessionValue}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardTitle className="p-3 text-lg">Until bonus</CardTitle>
-          <CardContent className="text-3xl font-semibold">
-            {rewards.sessionsUntilNextBonus}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-        Code: <span className="font-mono text-foreground">{rewards.code}</span>
-        {" · "}
-        Base {rewards.baseSessionValue} + {rewards.sessionBonusIncrement} every{" "}
-        {rewards.sessionsPerMilestone} sessions
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={onAttend} disabled={attendMutation.isPending}>
+    <div className="flex flex-col gap-5">
+      <RewardHeroBanner
+        badge="Assistant pay system"
+        title={assistant.email}
+        subtitle={`Code ${rewards.code} · Base ${rewards.baseSessionValue} + ${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone} sessions`}
+      >
+        <Button
+          onClick={onAttend}
+          disabled={attendMutation.isPending}
+          className="gap-2 bg-gradient-to-r from-emerald-600 to-color2 text-white shadow-md shadow-emerald-500/20 hover:opacity-95"
+        >
+          <Sparkles className="size-4" />
           Attend session
         </Button>
-        <Button asChild variant="outline">
-          <Link to="/dashboard/assistant-rewards-scanner">Scan / type code</Link>
+        <Button asChild variant="outline" className="gap-2 border-emerald-500/30">
+          <Link to="/dashboard/assistant-rewards-scanner">
+            <QrCode className="size-4" />
+            Scan / type code
+          </Link>
         </Button>
         <Confirmation
           button={
-            <Button variant="secondary" disabled={payMutation.isPending || rewards.apples <= 0}>
+            <Button
+              variant="secondary"
+              disabled={payMutation.isPending || rewards.apples <= 0}
+              className="gap-2"
+            >
+              <Banknote className="size-4" />
               Pay rewards
             </Button>
           }
@@ -135,78 +126,93 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
           description={`This resets ${rewards.apples} apples to 0 and logs a payout. Sessions attended stay the same.`}
           onConfirm={onPay}
         />
-      </div>
+      </RewardHeroBanner>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onAdjust)}
-          className="grid max-w-xl gap-3 rounded-lg border p-4"
-        >
-          <p className="font-medium">Manual apple adjust</p>
-          <FormField
-            name="amount"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Amount (+/-)</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="reason"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Reason</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" disabled={adjustMutation.isPending}>
-            Apply
-          </Button>
-        </form>
-      </Form>
+      <RewardStatGrid
+        stats={[
+          {
+            label: "Apples balance",
+            value: rewards.apples,
+            hint: "Ready to pay",
+            icon: "apples",
+          },
+          {
+            label: "Sessions",
+            value: rewards.sessionsAttended,
+            hint: "Attended total",
+            icon: "sessions",
+          },
+          {
+            label: "Session value",
+            value: rewards.currentSessionValue,
+            hint: "Next attend award",
+            icon: "value",
+          },
+          {
+            label: "Until bonus",
+            value: rewards.sessionsUntilNextBonus,
+            hint: "Sessions remaining",
+            icon: "bonus",
+          },
+        ]}
+      />
 
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left">
-            <tr>
-              <th className="p-3">When</th>
-              <th className="p-3">Type</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Sessions</th>
-              <th className="p-3">Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rewards.events.map((event) => (
-              <tr key={event.id} className="border-t">
-                <td className="p-3 whitespace-nowrap">
-                  {new Date(event.createdAt).toLocaleString()}
-                </td>
-                <td className="p-3">{event.type}</td>
-                <td className="p-3">{event.amount}</td>
-                <td className="p-3">{event.sessionsAttendedAfter ?? "—"}</td>
-                <td className="p-3">{event.reason ?? "—"}</td>
-              </tr>
-            ))}
-            {rewards.events.length === 0 && (
-              <tr>
-                <td className="p-3 text-muted-foreground" colSpan={5}>
-                  No reward events yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <MilestoneRing
+        sessionsAttended={rewards.sessionsAttended}
+        sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
+        sessionsPerMilestone={rewards.sessionsPerMilestone}
+        currentSessionValue={rewards.currentSessionValue}
+      />
+
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <RewardEventTimeline events={rewards.events} />
+
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onAdjust)}
+            className="relative overflow-hidden rounded-3xl border border-color2/15 bg-card/80 p-5 backdrop-blur-sm"
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-10 size-32 rounded-full bg-emerald-500/10 blur-2xl"
+            />
+            <p className="relative z-10 text-sm font-semibold">Manual apple adjust</p>
+            <p className="relative z-10 mb-4 text-xs text-muted-foreground">
+              Add or remove apples outside of session attendance
+            </p>
+            <div className="relative z-10 grid gap-3">
+              <FormField
+                name="amount"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount (+/-)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="reason"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reason</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Optional note" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={adjustMutation.isPending} className="mt-1">
+                Apply adjustment
+              </Button>
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );
