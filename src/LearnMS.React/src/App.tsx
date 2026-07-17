@@ -121,14 +121,24 @@ function App() {
                 </RequireAuth>
               }
             >
-              <Route path="" element={<StatisticsPage />} />
+              <Route
+                path=""
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ViewStatistics"]}
+                  >
+                    <StatisticsPage />
+                  </RequireAuth>
+                }
+              />
 
               <Route
                 path="important-lectures"
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageLectures"]}
+                    permissions={["ManageLecture"]}
                   >
                     <ImportantLecturesPage />
                   </RequireAuth>
@@ -257,7 +267,18 @@ function App() {
                   </RequireAuth>
                 }
               />
-              <Route path="credit-codes" element={<CreditCodesPage />} />
+              <Route
+                path="credit-codes"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageCreditCodes", "GenerateCreditCodes"]}
+                    requireAnyPermission
+                  >
+                    <CreditCodesPage />
+                  </RequireAuth>
+                }
+              />
               <Route
                 path="files"
                 element={
@@ -315,8 +336,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageStudentApples", "ManageStudents"]}
-                    requireAnyPermission
+                    permissions={["ManageStudentApples"]}
                   >
                     <StudentApplesScannerPage />
                   </RequireAuth>
@@ -343,8 +363,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageStudents", "ManageStudentApples"]}
-                    requireAnyPermission
+                    permissions={["ManageStudents"]}
                   >
                     <StudentsPage />
                   </RequireAuth>
@@ -355,8 +374,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageStudents", "ManageStudentApples"]}
-                    requireAnyPermission
+                    permissions={["ManageStudents"]}
                   >
                     <StudentDetailsPage />
                   </RequireAuth>

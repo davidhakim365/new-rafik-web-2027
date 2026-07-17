@@ -42,36 +42,42 @@ const materialItems: NavItem[] = [
     label: "Statistics",
     icon: LayoutDashboard,
     match: (pathname) => pathname === "/dashboard",
+    permission: Permission.ViewStatistics,
   },
   {
     to: "/dashboard/courses",
     label: "Courses",
     icon: BookOpen,
     match: (pathname) => pathname.startsWith("/dashboard/courses"),
+    permission: Permission.ManageCourses,
   },
   {
     to: "/dashboard/important-lectures",
     label: "Important Lectures",
     icon: Star,
     match: (pathname) => pathname.startsWith("/dashboard/important-lectures"),
+    permission: Permission.ManageLecture,
   },
   {
     to: "/dashboard/credit-codes",
     label: "Credit Codes",
     icon: QrCode,
     match: (pathname) => pathname.startsWith("/dashboard/credit-codes"),
+    anyPermissions: [Permission.ManageCreditCodes, Permission.GenerateCreditCodes],
   },
   {
     to: "/dashboard/files",
     label: "Files",
     icon: FileText,
     match: (pathname) => pathname.startsWith("/dashboard/files"),
+    permission: Permission.ManageFiles,
   },
   {
     to: "/dashboard/questions",
     label: "Questions",
     icon: HelpCircle,
     match: (pathname) => pathname.startsWith("/dashboard/questions"),
+    permission: Permission.ManageFiles,
   },
 ];
 
@@ -81,7 +87,7 @@ const userItems: NavItem[] = [
     label: "Students",
     icon: Users,
     match: (pathname) => pathname.startsWith("/dashboard/students"),
-    anyPermissions: [Permission.ManageStudents, Permission.ManageStudentApples],
+    permission: Permission.ManageStudents,
   },
   {
     to: "/dashboard/granted-access",
@@ -116,7 +122,7 @@ const userItems: NavItem[] = [
     label: "Apple Scanner",
     icon: Apple,
     match: (pathname) => pathname.startsWith("/dashboard/student-apples-scanner"),
-    anyPermissions: [Permission.ManageStudentApples, Permission.ManageStudents],
+    permission: Permission.ManageStudentApples,
   },
   {
     to: "/dashboard/my-profile",
@@ -133,6 +139,22 @@ const userItems: NavItem[] = [
     assistantOnly: true,
   },
 ];
+
+function canSeeNavItem(
+  item: NavItem,
+  opts: {
+    isTeacher: boolean;
+    hasPermission: (p: Permission | string) => boolean;
+    hasAnyPermission: (p: (Permission | string)[]) => boolean;
+  }
+) {
+  if (item.teacherOnly && !opts.isTeacher) return false;
+  if (item.assistantOnly && opts.isTeacher) return false;
+  if (item.anyPermissions?.length) {
+    return opts.hasAnyPermission(item.anyPermissions);
+  }
+  return !item.permission || opts.hasPermission(item.permission);
+}
 
 function NavLinkItem({
   item,
@@ -187,14 +209,11 @@ const DashboardSideBar = ({
   const isMobile = variant === "mobile";
   const isCollapsed = isMobile ? false : collapsed;
 
-  const visibleUserItems = userItems.filter((item) => {
-    if (item.teacherOnly && !isTeacher) return false;
-    if (item.assistantOnly && isTeacher) return false;
-    if (item.anyPermissions?.length) {
-      return hasAnyPermission(item.anyPermissions);
-    }
-    return !item.permission || hasPermission(item.permission);
-  });
+  const filterOpts = { isTeacher, hasPermission, hasAnyPermission };
+  const visibleMaterialItems = materialItems.filter((item) =>
+    canSeeNavItem(item, filterOpts)
+  );
+  const visibleUserItems = userItems.filter((item) => canSeeNavItem(item, filterOpts));
 
   const Wrapper = isMobile ? "div" : "aside";
 
@@ -247,37 +266,41 @@ const DashboardSideBar = ({
         </div>
 
         <nav className="flex-1 space-y-6 overflow-y-auto overscroll-contain">
-          <div className="space-y-1">
-            {!isCollapsed && (
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Materials
-              </p>
-            )}
-            {materialItems.map((item) => (
-              <NavLinkItem
-                key={item.to}
-                item={item}
-                collapsed={isCollapsed}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </div>
+          {visibleMaterialItems.length > 0 && (
+            <div className="space-y-1">
+              {!isCollapsed && (
+                <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Materials
+                </p>
+              )}
+              {visibleMaterialItems.map((item) => (
+                <NavLinkItem
+                  key={item.to}
+                  item={item}
+                  collapsed={isCollapsed}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
+          )}
 
-          <div className="space-y-1">
-            {!isCollapsed && (
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Users
-              </p>
-            )}
-            {visibleUserItems.map((item) => (
-              <NavLinkItem
-                key={item.to}
-                item={item}
-                collapsed={isCollapsed}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </div>
+          {visibleUserItems.length > 0 && (
+            <div className="space-y-1">
+              {!isCollapsed && (
+                <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Users
+                </p>
+              )}
+              {visibleUserItems.map((item) => (
+                <NavLinkItem
+                  key={item.to}
+                  item={item}
+                  collapsed={isCollapsed}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
+          )}
         </nav>
 
         <Button

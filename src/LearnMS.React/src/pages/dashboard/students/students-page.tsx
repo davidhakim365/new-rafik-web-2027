@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { useGetAllStudents } from "@/generated/api";
 import { StudentLevel } from "@/generated/model";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
+import { Permission } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { studentsColumns } from "@/pages/dashboard/students/columns";
 import { useModalStore } from "@/store/use-modal-store";
@@ -23,6 +25,8 @@ import { Link, useSearchParams } from "react-router-dom";
 
 const StudentsPage = () => {
   const { openModal } = useModalStore();
+  const { hasPermission } = useDashboardPermissions();
+  const canScanApples = hasPermission(Permission.ManageStudentApples);
   const { download, isDownloading } = useDownloadFile();
   const [searchParams, setSearchParams] = useSearchParams({});
 
@@ -59,16 +63,18 @@ const StudentsPage = () => {
       icon={Users}
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button
-            asChild
-            variant="outline"
-            className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
-          >
-            <Link to="/dashboard/student-apples-scanner">
-              <Apple className="size-4" />
-              Apple Scanner
-            </Link>
-          </Button>
+          {canScanApples && (
+            <Button
+              asChild
+              variant="outline"
+              className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+            >
+              <Link to="/dashboard/student-apples-scanner">
+                <Apple className="size-4" />
+                Apple Scanner
+              </Link>
+            </Button>
+          )}
           <Button
             onClick={() => openModal("add-student-modal")}
             className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
