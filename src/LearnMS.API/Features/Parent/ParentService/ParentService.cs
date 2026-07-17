@@ -173,6 +173,20 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             .Select(e => e.StudentScore!.Value / e.TotalScore!.Value * 100m)
             .ToList();
 
+        var appleTransactions = await db.Set<StudentAppleTransaction>()
+            .AsNoTracking()
+            .Where(x => x.StudentId == student.Id)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(50)
+            .Select(x => new ParentAppleTransactionItem
+            {
+                Id = x.Id,
+                Amount = x.Amount,
+                Reason = x.Reason,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+
         return new ParentProgressResult
         {
             Student = ToSummary(student),
@@ -194,7 +208,8 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             },
             Attendance = attendance,
             QuizGrades = quizGrades,
-            ExamGrades = examGrades
+            ExamGrades = examGrades,
+            AppleTransactions = appleTransactions
         };
     }
 
@@ -204,7 +219,8 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
         FullName = student.FullName,
         StudentCode = student.StudentCode,
         Level = student.Level,
-        SchoolName = student.SchoolName
+        SchoolName = student.SchoolName,
+        Apples = student.Apples
     };
 
     private string CreateParentToken(Guid studentId)

@@ -29,6 +29,7 @@ public sealed record ParentStudentSummary
     [Required] public required string StudentCode { get; init; }
     [Required] public required StudentLevel Level { get; init; }
     [Required] public required string SchoolName { get; init; }
+    [Required] public required int Apples { get; init; }
 }
 
 public sealed record ParentLoginResult

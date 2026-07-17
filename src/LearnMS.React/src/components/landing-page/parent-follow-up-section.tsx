@@ -6,6 +6,7 @@ import {
   ClipboardList,
   GraduationCap,
   BarChart3,
+  Apple,
   Users,
 } from "lucide-react";
 import { Heading } from "@/components/ui/heading";
@@ -18,6 +19,7 @@ const features = [
   { icon: CalendarCheck, key: "attendance" },
   { icon: ClipboardList, key: "quizzes" },
   { icon: GraduationCap, key: "exams" },
+  { icon: Apple, key: "apples" },
   { icon: BarChart3, key: "stats" },
 ] as const;
 
@@ -47,7 +49,7 @@ function ParentFollowUpSection() {
 
         <PhysicsDivider />
 
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {features.map(({ icon: Icon, key }, i) => (
             <div
               key={key}

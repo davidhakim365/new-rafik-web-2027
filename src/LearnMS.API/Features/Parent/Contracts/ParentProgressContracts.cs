@@ -9,6 +9,7 @@ public sealed record ParentProgressResult
     [Required] public required IReadOnlyList<ParentAttendanceItem> Attendance { get; init; }
     [Required] public required IReadOnlyList<ParentQuizGradeItem> QuizGrades { get; init; }
     [Required] public required IReadOnlyList<ParentExamGradeItem> ExamGrades { get; init; }
+    [Required] public required IReadOnlyList<ParentAppleTransactionItem> AppleTransactions { get; init; }
 }
 
 public sealed record ParentStatistics
@@ -50,4 +51,12 @@ public sealed record ParentExamGradeItem
     public decimal? StudentScore { get; init; }
     public decimal? TotalScore { get; init; }
     public DateTime? SubmittedAt { get; init; }
+}
+
+public sealed record ParentAppleTransactionItem
+{
+    [Required] public required Guid Id { get; init; }
+    [Required] public required int Amount { get; init; }
+    public string? Reason { get; init; }
+    [Required] public required DateTime CreatedAt { get; init; }
 }

@@ -184,7 +184,7 @@
     "section": {
       "badge": "For Parents",
       "title": "Follow Your Child's Progress",
-      "description": "Track attendance, quiz grades, exam results, and overall statistics — securely, using your child's student ID and phone numbers.",
+      "description": "Track attendance, quiz grades, exam results, apple rewards, and overall statistics — securely, using your child's student ID and phone numbers.",
       "cta": "Parent Sign In",
       "items": {
         "attendance": {
@@ -202,6 +202,10 @@
         "stats": {
           "title": "Statistics",
           "description": "Get a clear overview of attendance rate and average scores."
+        },
+        "apples": {
+          "title": "Apple Rewards",
+          "description": "Follow your child's apple balance and recent reward updates."
         }
       }
     },
@@ -224,6 +228,9 @@
       "badge": "Parent follow-up",
       "logout": "Sign out",
       "studentId": "Student ID",
+      "appleBalance": "Apple balance",
+      "applesUnit": "apples",
+      "appleUpdate": "Apple update",
       "loadError": "Could not load progress. Please sign in again.",
       "attended": "Attended",
       "absent": "Absent",
@@ -235,17 +242,21 @@
         "quizzes": "Quizzes",
         "exams": "Exams",
         "avgExam": "Avg. exam",
-        "overall": "Overall"
+        "overall": "Overall",
+        "apples": "Apples",
+        "applesHint": "Reward balance"
       },
       "tabs": {
         "attendance": "Attendance",
         "quizzes": "Quizzes",
-        "exams": "Exams"
+        "exams": "Exams",
+        "apples": "Apples"
       },
       "empty": {
         "attendance": "No session records yet.",
         "quizzes": "No quiz grades yet.",
-        "exams": "No exam grades yet."
+        "exams": "No exam grades yet.",
+        "apples": "No apple rewards yet."
       }
     }
   },
