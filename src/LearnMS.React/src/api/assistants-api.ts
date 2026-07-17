@@ -1,6 +1,7 @@
 import { ApiResponse, api } from "@/api";
 import { Assistant, AssistantIncome } from "@/types/assistants";
 import { PageList } from "@/types/page-list";
+import { getGetProfileQueryKey } from "@/generated/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
@@ -23,6 +24,12 @@ export const usePermissionsQuery = () => {
 };
 
 export const UpdateAssistantRequest = z.object({
+  fullName: z
+    .string()
+    .min(2)
+    .optional()
+    .or(z.literal(""))
+    .transform((val) => (val ? val : undefined)),
   password: z
     .string()
     .optional()
@@ -31,6 +38,13 @@ export const UpdateAssistantRequest = z.object({
     .string()
     .optional()
     .transform((val) => (val ? val : undefined)),
+  profilePicture: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal(""))
+    .transform((val) => (val ? val : undefined)),
+  clearProfilePicture: z.boolean().optional(),
   permissions: z.array(z.string().min(1)),
 });
 
@@ -47,15 +61,19 @@ export const useUpdateAssistantMutation = () => {
       api
         .patch(`/api/administration/assistants/${id}`, data)
         .then((res) => res.data),
-    onSuccess: () => {
+    onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ["assistants"] });
+      qc.invalidateQueries({ queryKey: ["assistant", { id: vars.id }] });
+      qc.invalidateQueries({ queryKey: getGetProfileQueryKey() });
     },
   });
 };
 
 export const CreateAssistantRequest = z.object({
+  fullName: z.string().min(2),
   email: z.string().email().min(1),
-  password: z.string().min(1),
+  password: z.string().min(8),
+  profilePicture: z.string().url().optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
 });
 
 export type CreateAssistantRequest = z.infer<typeof CreateAssistantRequest>;

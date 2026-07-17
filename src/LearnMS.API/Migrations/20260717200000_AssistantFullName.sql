@@ -1,0 +1,1 @@
+ALTER TABLE "Assistants" ADD COLUMN IF NOT EXISTS "FullName" text NOT NULL DEFAULT '';

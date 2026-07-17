@@ -13,7 +13,9 @@ public sealed record GetAssistantResult
 {
 
     public required Guid Id { get; init; }
+    public required string FullName { get; init; }
     public required string Email { get; init; }
+    public string? ProfilePicture { get; init; }
     public required string Code { get; init; }
     public required int Apples { get; init; }
     public required int SessionsAttended { get; init; }
@@ -26,7 +28,9 @@ public sealed record GetAssistantResponse
 {
 
     public required Guid Id { get; init; }
+    public required string FullName { get; init; }
     public required string Email { get; init; }
+    public string? ProfilePicture { get; init; }
     public required string Code { get; init; }
     public required int Apples { get; init; }
     public required int SessionsAttended { get; init; }

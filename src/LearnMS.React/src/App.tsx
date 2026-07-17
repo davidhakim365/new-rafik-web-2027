@@ -21,6 +21,7 @@ import LessonDetailsPage from "@/pages/dashboard/lessons/lesson-details-page";
 import QuestionsPage from "@/pages/dashboard/questions/questions-page";
 import QuizPage from "@/pages/dashboard/quizzes/quiz-page";
 import AssistantRewardsScannerPage from "@/pages/dashboard/rewards/assistant-rewards-scanner-page";
+import MyProfilePage from "@/pages/dashboard/rewards/my-profile-page";
 import MyRewardsPage from "@/pages/dashboard/rewards/my-rewards-page";
 import StudentApplesScannerPage from "@/pages/dashboard/rewards/student-apples-scanner-page";
 import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
@@ -318,6 +319,14 @@ function App() {
                     requireAnyPermission
                   >
                     <StudentApplesScannerPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="my-profile"
+                element={
+                  <RequireAuth roles={["Assistant"]}>
+                    <MyProfilePage />
                   </RequireAuth>
                 }
               />

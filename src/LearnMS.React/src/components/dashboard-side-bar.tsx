@@ -18,6 +18,7 @@ import {
   QrCode,
   Shield,
   Star,
+  UserRound,
   Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -116,6 +117,13 @@ const userItems: NavItem[] = [
     icon: Apple,
     match: (pathname) => pathname.startsWith("/dashboard/student-apples-scanner"),
     anyPermissions: [Permission.ManageStudentApples, Permission.ManageStudents],
+  },
+  {
+    to: "/dashboard/my-profile",
+    label: "My Profile",
+    icon: UserRound,
+    match: (pathname) => pathname.startsWith("/dashboard/my-profile"),
+    assistantOnly: true,
   },
   {
     to: "/dashboard/my-rewards",

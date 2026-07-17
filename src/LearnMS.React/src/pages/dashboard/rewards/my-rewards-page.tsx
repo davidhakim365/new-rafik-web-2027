@@ -7,8 +7,18 @@ import {
   RewardHeroBanner,
   RewardStatGrid,
 } from "@/components/rewards/reward-graphics";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Apple } from "lucide-react";
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 const MyRewardsPage = () => {
   const { data, isLoading } = useMyRewardsQuery();
@@ -22,6 +32,7 @@ const MyRewardsPage = () => {
   }
 
   const rewards = data.data;
+  const displayName = rewards.fullName?.trim() || rewards.email;
   const payouts = rewards.events.filter((e) => e.type === "Payout").length;
 
   return (
@@ -35,9 +46,15 @@ const MyRewardsPage = () => {
       <div className="space-y-5">
         <RewardHeroBanner
           badge="Assistant rewards"
-          title="Your pay progress"
+          title={displayName}
           subtitle="Apples grow with consistent attendance. When the teacher pays rewards, your balance resets and the payout is logged here."
         >
+          <Avatar className="size-12 border-2 border-emerald-400/40 shadow-md shadow-emerald-500/20">
+            <AvatarImage src={rewards.profilePicture ?? undefined} alt={displayName} />
+            <AvatarFallback className="bg-emerald-600 text-white">
+              {initials(displayName)}
+            </AvatarFallback>
+          </Avatar>
           <Badge className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
             Code {rewards.code}
           </Badge>

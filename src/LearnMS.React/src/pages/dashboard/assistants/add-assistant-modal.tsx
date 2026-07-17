@@ -2,6 +2,7 @@ import {
   CreateAssistantRequest,
   useCreateAssistantMutation,
 } from "@/api/assistants-api";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,11 +33,13 @@ interface AddAssistantModalProps {
 const AddAssistantModal: React.FC<AddAssistantModalProps> = ({ onClose }) => {
   const createAssistantMutation = useCreateAssistantMutation();
 
-  const form = useForm({
+  const form = useForm<CreateAssistantRequest>({
     resolver: zodResolver(CreateAssistantRequest),
-    values: {
+    defaultValues: {
+      fullName: "",
       email: "",
       password: "",
+      profilePicture: undefined,
     },
   });
 
@@ -54,35 +57,69 @@ const AddAssistantModal: React.FC<AddAssistantModalProps> = ({ onClose }) => {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className='sm:max-w-[425px]'>
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Create Assistant</DialogTitle>
-          <DialogDescription>Create a new Assistant</DialogDescription>
+          <DialogDescription>
+            Add name, login credentials, and an optional profile photo (ImgBB).
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <fieldset
               disabled={createAssistantMutation.isPending}
-              className='flex flex-col gap-2'>
+              className="flex flex-col gap-3"
+            >
               <FormField
-                name='email'
+                name="fullName"
+                control={form.control}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Full name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="e.g. Ahmed Hassan" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
-                name='password'
+                name="email"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="password"
+                control={form.control}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} type="password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="profilePicture"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile photo</FormLabel>
+                    <FormControl>
+                      <ImageUploadField
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -90,7 +127,7 @@ const AddAssistantModal: React.FC<AddAssistantModalProps> = ({ onClose }) => {
               />
 
               <DialogFooter>
-                <Button type='submit'>Submit</Button>
+                <Button type="submit">Submit</Button>
               </DialogFooter>
             </fieldset>
           </form>

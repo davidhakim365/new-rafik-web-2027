@@ -8,7 +8,9 @@ import {
   useUpdateAssistantMutation,
 } from "@/api/assistants-api";
 import Confirmation from "@/components/confirmation";
+import { ImageUploadField } from "@/components/image-upload-field";
 import Loading from "@/components/loading/loading";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { DialogFooter } from "@/components/ui/dialog";
@@ -27,7 +29,7 @@ import { toast } from "@/lib/utils";
 import { AssistantRewardsTab } from "@/pages/dashboard/assistants/assistant-rewards-tab";
 import { assistantIncomesColumns } from "@/pages/dashboard/assistants/columns";
 import { AssistantIncomesDataTable } from "@/pages/dashboard/assistants/data-table";
-import { Assistant } from "@/types/assistants";
+import { Assistant, assistantDisplayName } from "@/types/assistants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PaginationState, RowSelectionState } from "@tanstack/react-table";
 import { useState } from "react";
@@ -35,6 +37,15 @@ import { useForm } from "react-hook-form";
 import { FaMoneyBillAlt, FaMoneyCheckAlt } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import { z } from "zod";
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 const AssistantDetailsPage = () => {
   const { assistantId } = useParams();
@@ -87,11 +98,13 @@ function AssistantDetails({ assistant }: { assistant: Assistant }) {
   );
 
   const PasswordPermissionsSchema = z.object({
+    fullName: z.string().min(2),
     password: z
       .string()
       .optional()
       .transform((val) => (val ? val : undefined)),
     code: z.string().optional(),
+    profilePicture: z.string().optional(),
     ...PermissionsSchema,
   });
 
@@ -106,8 +119,10 @@ function AssistantDetails({ assistant }: { assistant: Assistant }) {
   const form = useForm<z.infer<typeof PasswordPermissionsSchema>>({
     resolver: zodResolver(PasswordPermissionsSchema),
     values: {
+      fullName: assistant.fullName ?? "",
       password: "",
       code: assistant.code ?? "",
+      profilePicture: assistant.profilePicture ?? "",
       ...permissionsValues,
     },
   });
@@ -131,10 +146,15 @@ function AssistantDetails({ assistant }: { assistant: Assistant }) {
   }
 
   const onSubmit = (data: z.infer<typeof PasswordPermissionsSchema>) => {
-    const { password, code, ...perms } = data;
+    const { password, code, fullName, profilePicture, ...perms } = data;
+    const previousPicture = assistant.profilePicture ?? "";
+    const nextPicture = profilePicture ?? "";
     const request = UpdateAssistantRequest.parse({
+      fullName,
       password,
       code,
+      profilePicture: nextPicture || undefined,
+      clearProfilePicture: !nextPicture && !!previousPicture,
       permissions: perms
         ? permissions?.data.items.filter((p) => (perms as any)[p])
         : [],
@@ -157,10 +177,50 @@ function AssistantDetails({ assistant }: { assistant: Assistant }) {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <fieldset
           disabled={updateAssistantMutation.isPending}
-          className="flex flex-col gap-2"
+          className="flex flex-col gap-3"
         >
+          <div className="mb-2 flex items-center gap-3">
+            <Avatar className="size-14 border border-color2/20">
+              <AvatarImage src={assistant.profilePicture ?? undefined} />
+              <AvatarFallback>{initials(assistantDisplayName(assistant))}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold">{assistantDisplayName(assistant)}</p>
+              <p className="text-sm text-muted-foreground">{assistant.email}</p>
+            </div>
+          </div>
+          <FormField
+            name="fullName"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full name</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="profilePicture"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Profile photo (ImgBB)</FormLabel>
+                <FormControl>
+                  <ImageUploadField
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             name="code"
+            control={form.control}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Reward barcode / code</FormLabel>
@@ -173,11 +233,12 @@ function AssistantDetails({ assistant }: { assistant: Assistant }) {
           />
           <FormField
             name="password"
+            control={form.control}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} type="password" placeholder="Leave blank to keep current" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

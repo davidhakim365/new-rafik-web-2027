@@ -49,6 +49,9 @@ public sealed record GetTeacherProfileResult : GetProfileResult
 public sealed record GetAssistantProfileResult : GetProfileResult
 {
     [Required]
+    public required string FullName { get; init; }
+    public string? ProfilePicture { get; init; }
+    [Required]
     public required List<Permission> Permissions { get; init; }
 }
 

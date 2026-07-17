@@ -100,6 +100,8 @@ public sealed class ProfileService : IProfileService
                 Id = account.Id,
                 Email = account.Email,
                 Role = account.User.Role,
+                FullName = assistant.FullName,
+                ProfilePicture = account.ProfilePicture,
                 Permissions = assistant.Permissions.ToList()
             },
             Teacher teacher => new GetTeacherProfileResult

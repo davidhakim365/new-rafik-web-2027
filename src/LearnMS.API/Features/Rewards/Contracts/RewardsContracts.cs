@@ -108,7 +108,9 @@ public sealed record AssistantRewardEventDto
 public sealed record AssistantRewardsResult
 {
     public required Guid Id { get; init; }
+    public required string FullName { get; init; }
     public required string Email { get; init; }
+    public string? ProfilePicture { get; init; }
     public required string Code { get; init; }
     public required int Apples { get; init; }
     public required int SessionsAttended { get; init; }
@@ -124,6 +126,7 @@ public sealed record AssistantRewardsResult
 public sealed record AttendAssistantSessionResult
 {
     public required Guid AssistantId { get; init; }
+    public required string FullName { get; init; }
     public required string Email { get; init; }
     public required string Code { get; init; }
     public required int Apples { get; init; }

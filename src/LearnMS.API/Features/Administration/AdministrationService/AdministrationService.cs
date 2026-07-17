@@ -33,6 +33,11 @@ public sealed class AdministrationService : IAdministrationService
             assistant.Permissions = command.Permissions.ToHashSet();
         }
 
+        if (!string.IsNullOrWhiteSpace(command.FullName))
+        {
+            assistant.FullName = command.FullName.Trim();
+        }
+
         if (!string.IsNullOrWhiteSpace(command.Code))
         {
             var code = command.Code.Trim();
@@ -49,6 +54,15 @@ public sealed class AdministrationService : IAdministrationService
             {
                 x.PasswordHash = passwordHash;
             });
+        }
+
+        if (command.ClearProfilePicture)
+        {
+            assistant.Accounts.ToList().ForEach(x => x.ProfilePicture = null);
+        }
+        else if (!string.IsNullOrWhiteSpace(command.ProfilePicture))
+        {
+            assistant.Accounts.ToList().ForEach(x => x.ProfilePicture = command.ProfilePicture.Trim());
         }
 
         _dbContext.Assistants.Update(assistant);
@@ -95,7 +109,10 @@ public sealed class AdministrationService : IAdministrationService
             Password = command.Password.Trim(),
             PasswordHash = passwordHash,
             ProviderType = ProviderType.Local,
-        }, code);
+            ProfilePicture = string.IsNullOrWhiteSpace(command.ProfilePicture)
+                ? null
+                : command.ProfilePicture.Trim(),
+        }, command.FullName, code);
         assistant.Permissions.Add(Permission.ManageCourses);
         await _dbContext.Assistants.AddAsync(assistant);
         await _dbContext.SaveChangesAsync();
@@ -132,7 +149,9 @@ public sealed class AdministrationService : IAdministrationService
                      select new SingleAssistant
                      {
                          Id = accounts.Id,
+                         FullName = assistants.FullName,
                          Email = accounts.Email,
+                         ProfilePicture = accounts.ProfilePicture,
                          Code = assistants.Code,
                          Apples = assistants.Apples,
                          SessionsAttended = assistants.SessionsAttended,
@@ -201,7 +220,9 @@ public sealed class AdministrationService : IAdministrationService
         return new()
         {
             Id = assistant.Id,
+            FullName = assistant.FullName,
             Email = assistant.Accounts.FirstOrDefault()!.Email,
+            ProfilePicture = assistant.Accounts.FirstOrDefault()!.ProfilePicture,
             Code = assistant.Code,
             Apples = assistant.Apples,
             SessionsAttended = assistant.SessionsAttended,

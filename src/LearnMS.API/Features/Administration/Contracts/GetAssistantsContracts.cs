@@ -18,7 +18,9 @@ public sealed record GetAssistantsResponse
 public sealed record SingleAssistant
 {
     public required Guid Id { get; init; }
+    public required string FullName { get; init; }
     public required string Email { get; init; }
+    public string? ProfilePicture { get; init; }
     public required string Code { get; init; }
     public required int Apples { get; init; }
     public required int SessionsAttended { get; init; }

@@ -74,6 +74,7 @@ public sealed class RewardsService(
         return new AttendAssistantSessionResult
         {
             AssistantId = assistant.Id,
+            FullName = assistant.FullName,
             Email = assistant.Accounts.First().Email,
             Code = assistant.Code,
             Apples = assistant.Apples,
@@ -234,6 +235,7 @@ public sealed class RewardsService(
         return new AttendAssistantSessionResult
         {
             AssistantId = assistant.Id,
+            FullName = assistant.FullName,
             Email = assistant.Accounts.First().Email,
             Code = assistant.Code,
             Apples = assistant.Apples,
@@ -270,7 +272,9 @@ public sealed class RewardsService(
         return new AssistantRewardsResult
         {
             Id = assistant.Id,
+            FullName = assistant.FullName,
             Email = assistant.Accounts.First().Email,
+            ProfilePicture = assistant.Accounts.First().ProfilePicture,
             Code = assistant.Code,
             Apples = assistant.Apples,
             SessionsAttended = assistant.SessionsAttended,

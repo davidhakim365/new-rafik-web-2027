@@ -41,8 +41,10 @@ public sealed class AdministrationController : ControllerBase
     {
         await _assistantsService.ExecuteAsync(new CreateAssistantCommand
         {
+            FullName = request.FullName,
             Email = request.Email,
             Password = request.Password,
+            ProfilePicture = request.ProfilePicture,
         });
 
         return new()
@@ -73,8 +75,11 @@ public sealed class AdministrationController : ControllerBase
         await _assistantsService.ExecuteAsync(new UpdateAssistantCommand
         {
             Id = assistantId,
+            FullName = request.FullName,
             Password = request.Password,
             Code = request.Code,
+            ProfilePicture = request.ProfilePicture,
+            ClearProfilePicture = request.ClearProfilePicture,
             Permissions = request.Permissions
         });
 
@@ -150,7 +155,9 @@ public sealed class AdministrationController : ControllerBase
             Data = new()
             {
                 Id = result.Id,
+                FullName = result.FullName,
                 Email = result.Email,
+                ProfilePicture = result.ProfilePicture,
                 Code = result.Code,
                 Apples = result.Apples,
                 SessionsAttended = result.SessionsAttended,

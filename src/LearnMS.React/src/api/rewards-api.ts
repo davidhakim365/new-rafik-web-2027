@@ -13,7 +13,9 @@ export type AssistantRewardEvent = {
 
 export type AssistantRewards = {
   id: string;
+  fullName: string;
   email: string;
+  profilePicture?: string | null;
   code: string;
   apples: number;
   sessionsAttended: number;
@@ -28,6 +30,7 @@ export type AssistantRewards = {
 
 export type AttendAssistantSessionResult = {
   assistantId: string;
+  fullName: string;
   email: string;
   code: string;
   apples: number;

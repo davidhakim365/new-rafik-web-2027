@@ -10,5 +10,7 @@ import type { Permission } from './permission';
 
 export type GetAssistantProfileResult = GetProfileResult & {
   $type: GetAssistantProfileResultType;
+  fullName: string;
+  profilePicture?: string | null;
   permissions: Permission[];
 };

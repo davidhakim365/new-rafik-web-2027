@@ -92,9 +92,9 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <RewardHeroBanner
+        <RewardHeroBanner
         badge="Assistant pay system"
-        title={assistant.email}
+        title={assistant.fullName?.trim() || assistant.email}
         subtitle={`Code ${rewards.code} · Base ${rewards.baseSessionValue} + ${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone} sessions`}
       >
         <Button

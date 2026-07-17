@@ -19,7 +19,8 @@ import {
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { toast } from "@/lib/utils";
 import { useModalStore } from "@/store/use-modal-store";
-import { Assistant } from "@/types/assistants";
+import { Assistant, assistantDisplayName } from "@/types/assistants";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Apple, Edit2, Plus, QrCode, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -158,6 +159,14 @@ const AssistantsPage = () => {
 };
 
 function AssistantListItem({ assistant }: { assistant: Assistant }) {
+  const name = assistantDisplayName(assistant);
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+
   return (
     <DashboardCard padding="sm" className="relative overflow-hidden">
       <div
@@ -166,12 +175,17 @@ function AssistantListItem({ assistant }: { assistant: Assistant }) {
       />
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-color2 text-white shadow-md shadow-emerald-500/20">
-            <Shield className="h-5 w-5" />
-          </div>
+          <Avatar className="size-11 border border-emerald-500/20 shadow-md shadow-emerald-500/10">
+            <AvatarImage src={assistant.profilePicture ?? undefined} alt={name} />
+            <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-color2 text-white">
+              {initials || <Shield className="h-5 w-5" />}
+            </AvatarFallback>
+          </Avatar>
           <div>
-            <p className="font-semibold text-foreground">{assistant.email}</p>
+            <p className="font-semibold text-foreground">{name}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>{assistant.email}</span>
+              <span>·</span>
               <span>Code {assistant.code || "—"}</span>
               <RewardAppleBadge apples={assistant.apples ?? 0} />
               <span>{assistant.sessionsAttended ?? 0} sessions</span>

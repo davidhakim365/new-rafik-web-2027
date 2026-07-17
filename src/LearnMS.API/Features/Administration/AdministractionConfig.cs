@@ -18,6 +18,7 @@ public sealed class TeacherConfig
 
 public sealed class AssistantConfig
 {
+    public string? FullName { get; init; }
     public required string Email { get; init; }
     public required string Password { get; init; }
 }

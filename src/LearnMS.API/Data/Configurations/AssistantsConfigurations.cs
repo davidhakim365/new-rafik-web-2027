@@ -30,6 +30,7 @@ public sealed class AssistantsConfigurations : IEntityTypeConfiguration<Assistan
                         x => JsonSerializer.Deserialize<HashSet<Permission>>(x, jsonSerializerOptions) ?? new()).Metadata.SetValueComparer(valueComparer);
 
         builder.Property(x => x.Code).IsRequired();
+        builder.Property(x => x.FullName).IsRequired().HasDefaultValue(string.Empty);
         builder.HasIndex(x => x.Code).IsUnique();
     }
 }

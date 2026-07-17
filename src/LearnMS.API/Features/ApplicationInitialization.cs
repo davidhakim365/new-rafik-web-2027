@@ -42,6 +42,9 @@ public static class ApplicationInitialization
             {
                 await administrationService.ExecuteAsync(new CreateAssistantCommand
                 {
+                    FullName = string.IsNullOrWhiteSpace(assistant.FullName)
+                        ? assistant.Email.Split('@')[0]
+                        : assistant.FullName,
                     Email = assistant.Email,
                     Password = assistant.Password
                 });
