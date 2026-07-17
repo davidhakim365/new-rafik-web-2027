@@ -111,6 +111,13 @@ const userItems: NavItem[] = [
     teacherOnly: true,
   },
   {
+    to: "/dashboard/student-apples-scanner",
+    label: "Apple Scanner",
+    icon: Apple,
+    match: (pathname) => pathname.startsWith("/dashboard/student-apples-scanner"),
+    anyPermissions: [Permission.ManageStudentApples, Permission.ManageStudents],
+  },
+  {
     to: "/dashboard/my-rewards",
     label: "My Rewards",
     icon: Apple,

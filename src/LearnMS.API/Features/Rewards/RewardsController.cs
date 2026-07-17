@@ -137,6 +137,48 @@ public sealed class RewardsController(
         };
     }
 
+    [HttpPost("students/lookup")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples, Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "LookupStudentByCode")]
+    public async Task<ApiWrapper.Success<StudentAppleLookupResult>> LookupStudent(
+        [FromBody] LookupStudentByCodeRequest request)
+    {
+        var result = await rewardsService.QueryAsync(new LookupStudentByCodeQuery
+        {
+            Code = request.Code
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = "Student found"
+        };
+    }
+
+    [HttpPost("students/apples-by-code")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples, Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "AddStudentApplesByCode")]
+    public async Task<ApiWrapper.Success<AddStudentApplesResult>> AddStudentApplesByCode(
+        [FromBody] AddStudentApplesByCodeRequest request)
+    {
+        var currentUser = await currentUserService.GetUserAsync()
+            ?? throw new ApiException(AuthErrors.Unauthorized);
+
+        var result = await rewardsService.ExecuteAsync(new AddStudentApplesByCodeCommand
+        {
+            Code = request.Code,
+            Amount = request.Amount,
+            Reason = request.Reason,
+            ActorId = currentUser.Id
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = result.Message
+        };
+    }
+
     private async Task<CurrentUser> EnsureTeacherAsync()
     {
         var currentUser = await currentUserService.GetUserAsync()

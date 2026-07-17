@@ -36,6 +36,19 @@ public sealed record AddStudentApplesCommand
     public Guid? ActorId { get; init; }
 }
 
+public sealed record LookupStudentByCodeQuery
+{
+    public required string Code { get; init; }
+}
+
+public sealed record AddStudentApplesByCodeCommand
+{
+    public required string Code { get; init; }
+    public required int Amount { get; init; }
+    public string? Reason { get; init; }
+    public Guid? ActorId { get; init; }
+}
+
 public sealed record GetAssistantRewardsQuery
 {
     public required Guid AssistantId { get; init; }
@@ -66,6 +79,18 @@ public sealed record PayAssistantRewardsRequest
 
 public sealed record AddStudentApplesRequest
 {
+    public required int Amount { get; init; }
+    public string? Reason { get; init; }
+}
+
+public sealed record LookupStudentByCodeRequest
+{
+    public required string Code { get; init; }
+}
+
+public sealed record AddStudentApplesByCodeRequest
+{
+    public required string Code { get; init; }
     public required int Amount { get; init; }
     public string? Reason { get; init; }
 }
@@ -116,9 +141,20 @@ public sealed record PayAssistantRewardsResult
     public required string Message { get; init; }
 }
 
+public sealed record StudentAppleLookupResult
+{
+    public required Guid StudentId { get; init; }
+    public required string FullName { get; init; }
+    public required string StudentCode { get; init; }
+    public required int Apples { get; init; }
+}
+
 public sealed record AddStudentApplesResult
 {
     public required Guid StudentId { get; init; }
+    public required string FullName { get; init; }
+    public required string StudentCode { get; init; }
     public required int Apples { get; init; }
     public required int AmountAdded { get; init; }
+    public required string Message { get; init; }
 }

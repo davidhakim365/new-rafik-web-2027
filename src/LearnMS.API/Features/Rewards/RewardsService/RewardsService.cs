@@ -136,16 +136,38 @@ public sealed class RewardsService(
         var student = await db.Students.FirstOrDefaultAsync(x => x.Id == command.StudentId)
             ?? throw new ApiException(RewardsErrors.StudentNotFound);
 
-        student.AddApples(command.ActorId, command.Amount, command.Reason, out var transaction);
-        await db.Set<StudentAppleTransaction>().AddAsync(transaction);
-        db.Students.Update(student);
-        await db.SaveChangesAsync();
+        return await ApplyStudentApplesAsync(student, command.Amount, command.Reason, command.ActorId);
+    }
 
-        return new AddStudentApplesResult
+    public async Task<AddStudentApplesResult> ExecuteAsync(AddStudentApplesByCodeCommand command)
+    {
+        if (string.IsNullOrWhiteSpace(command.Code))
+            throw new ApiException(RewardsErrors.CodeRequired);
+        if (command.Amount == 0)
+            throw new ApiException(RewardsErrors.InvalidAmount);
+
+        var code = command.Code.Trim();
+        var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode == code)
+            ?? throw new ApiException(RewardsErrors.StudentNotFound);
+
+        return await ApplyStudentApplesAsync(student, command.Amount, command.Reason, command.ActorId);
+    }
+
+    public async Task<StudentAppleLookupResult> QueryAsync(LookupStudentByCodeQuery query)
+    {
+        if (string.IsNullOrWhiteSpace(query.Code))
+            throw new ApiException(RewardsErrors.CodeRequired);
+
+        var code = query.Code.Trim();
+        var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode == code)
+            ?? throw new ApiException(RewardsErrors.StudentNotFound);
+
+        return new StudentAppleLookupResult
         {
             StudentId = student.Id,
-            Apples = student.Apples,
-            AmountAdded = command.Amount
+            FullName = student.FullName,
+            StudentCode = student.StudentCode,
+            Apples = student.Apples
         };
     }
 
@@ -154,6 +176,31 @@ public sealed class RewardsService(
 
     public Task<AssistantRewardsResult> QueryAsync(GetMyRewardsQuery query)
         => BuildAssistantRewardsAsync(query.AssistantId);
+
+    private async Task<AddStudentApplesResult> ApplyStudentApplesAsync(
+        Student student,
+        int amount,
+        string? reason,
+        Guid? actorId)
+    {
+        student.AddApples(actorId, amount, reason, out var transaction);
+        await db.Set<StudentAppleTransaction>().AddAsync(transaction);
+        db.Students.Update(student);
+        await db.SaveChangesAsync();
+
+        var message =
+            $"{(amount > 0 ? "Added" : "Removed")} {Math.Abs(amount)} apples for {student.FullName}. Balance: {student.Apples}";
+
+        return new AddStudentApplesResult
+        {
+            StudentId = student.Id,
+            FullName = student.FullName,
+            StudentCode = student.StudentCode,
+            Apples = student.Apples,
+            AmountAdded = amount,
+            Message = message
+        };
+    }
 
     private async Task<AttendAssistantSessionResult> AttendSessionAsync(Assistant assistant, Guid? actorId)
     {

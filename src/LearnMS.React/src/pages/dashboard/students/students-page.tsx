@@ -19,7 +19,7 @@ import { useModalStore } from "@/store/use-modal-store";
 import { PaginationState } from "@tanstack/react-table";
 import { Download, Loader2, Plus, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const StudentsPage = () => {
   const { openModal } = useModalStore();
@@ -58,13 +58,22 @@ const StudentsPage = () => {
       description="Search, manage, and export your student roster."
       icon={Users}
       actions={
-        <Button
-          onClick={() => openModal("add-student-modal")}
-          className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Student
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="border-color2/20"
+          >
+            <Link to="/dashboard/student-apples-scanner">Apple Scanner</Link>
+          </Button>
+          <Button
+            onClick={() => openModal("add-student-modal")}
+            className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Student
+          </Button>
+        </div>
       }
       fullWidth
     >

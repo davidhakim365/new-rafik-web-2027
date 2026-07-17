@@ -141,10 +141,26 @@ export const AddStudentApplesRequest = z.object({
 });
 export type AddStudentApplesRequest = z.infer<typeof AddStudentApplesRequest>;
 
+export type StudentAppleLookup = {
+  studentId: string;
+  fullName: string;
+  studentCode: string;
+  apples: number;
+};
+
+export type AddStudentApplesResult = {
+  studentId: string;
+  fullName: string;
+  studentCode: string;
+  apples: number;
+  amountAdded: number;
+  message: string;
+};
+
 export const useAddStudentApplesMutation = () => {
   const qc = useQueryClient();
   return useMutation<
-    ApiResponse<{}>,
+    ApiResponse<AddStudentApplesResult>,
     unknown,
     { studentId: string; data: AddStudentApplesRequest }
   >({
@@ -153,6 +169,36 @@ export const useAddStudentApplesMutation = () => {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["student", { id: vars.studentId }] });
+    },
+  });
+};
+
+export const LookupStudentByCodeRequest = z.object({
+  code: z.string().min(1, { message: "Student code is required" }),
+});
+export type LookupStudentByCodeRequest = z.infer<typeof LookupStudentByCodeRequest>;
+
+export const useLookupStudentByCodeMutation = () => {
+  return useMutation<ApiResponse<StudentAppleLookup>, unknown, LookupStudentByCodeRequest>({
+    mutationFn: (data) =>
+      api.post("/api/rewards/students/lookup", data).then((res) => res.data),
+  });
+};
+
+export const AddStudentApplesByCodeRequest = z.object({
+  code: z.string().min(1),
+  amount: z.coerce.number().refine((v) => v !== 0),
+  reason: z.string().optional(),
+});
+export type AddStudentApplesByCodeRequest = z.infer<typeof AddStudentApplesByCodeRequest>;
+
+export const useAddStudentApplesByCodeMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<ApiResponse<AddStudentApplesResult>, unknown, AddStudentApplesByCodeRequest>({
+    mutationFn: (data) =>
+      api.post("/api/rewards/students/apples-by-code", data).then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["students"] });
     },
   });
 };
