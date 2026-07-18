@@ -118,6 +118,15 @@ const StudentApplesScannerPage = () => {
     [form, lookupMutation, resumeScanning]
   );
 
+  const clearStudent = useCallback(() => {
+    setStudent(null);
+    setStatus("scanning");
+    setFeedback("Ready for next scan...");
+    form.reset({ code: "" });
+    processingRef.current = false;
+    lastCodeRef.current = "";
+  }, [form]);
+
   const addApples = (amount: number) => {
     if (!student) return;
 
@@ -131,16 +140,8 @@ const StudentApplesScannerPage = () => {
         onSuccess: (res) => {
           const data = res.data;
           const message = res.message ?? data?.message ?? "Apples updated";
-          if (data) {
-            setStudent({
-              studentId: data.studentId,
-              fullName: data.fullName,
-              studentCode: data.studentCode,
-              apples: data.apples,
-            });
-            setFeedback(`${data.fullName} · ${data.apples} apples`);
-          }
           toast({ title: "Apples updated", description: message });
+          clearStudent();
         },
         onError: () => {
           toast({
@@ -151,15 +152,6 @@ const StudentApplesScannerPage = () => {
         },
       }
     );
-  };
-
-  const clearStudent = () => {
-    setStudent(null);
-    setStatus("scanning");
-    setFeedback("Ready for next scan...");
-    form.reset({ code: "" });
-    processingRef.current = false;
-    lastCodeRef.current = "";
   };
 
   useEffect(() => {
