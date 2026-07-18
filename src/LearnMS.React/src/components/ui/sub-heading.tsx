@@ -14,7 +14,7 @@ export const SubHeading: React.FC<SubheadingProps> = ({
   return (
     <Tag
       className={cn(
-        "text-2xl md:text-4xl font-medium tracking-tight text-subheading",
+        "font-sans text-2xl font-medium tracking-tight text-subheading md:text-4xl",
         className
       )}
     >

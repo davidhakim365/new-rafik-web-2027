@@ -224,24 +224,24 @@ export function AssessmentTakeForm({
 
   if (!started && isTimed) {
     return (
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-white px-4 py-8">
-        <div className="w-full rounded-2xl border border-amber-200 bg-white p-6 shadow-lg space-y-4 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-background px-4 py-8 dark:from-amber-950/40 dark:to-background">
+        <div className="w-full space-y-4 rounded-2xl border border-amber-200 bg-card p-6 text-center text-card-foreground shadow-lg dark:border-amber-500/30">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
             <AlertTriangle className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-          <p className="text-slate-600">
-            This assessment has a <strong>limited time</strong>
+          <h1 className="font-heading text-2xl font-semibold text-foreground">{title}</h1>
+          <p className="text-muted-foreground">
+            This assessment has a <strong className="text-foreground">limited time</strong>
             {expiryMinutes > 0 ? (
               <>
                 {" "}
-                of <strong>{expiryMinutes} minutes</strong>
+                of <strong className="text-foreground">{expiryMinutes} minutes</strong>
               </>
             ) : null}
             . The timer starts when you tap Start and will auto-submit when time
             runs out.
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Make sure you are ready. You cannot pause once started.
           </p>
           <Button
@@ -265,15 +265,15 @@ export function AssessmentTakeForm({
   }
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col bg-gradient-to-b from-slate-50 to-white px-3 py-4 sm:px-6">
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col bg-gradient-to-b from-muted/40 to-background px-3 py-4 sm:px-6">
       <header className="mb-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+            <h1 className="truncate font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {title}
             </h1>
             {description && (
-              <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                 {description}
               </p>
             )}
@@ -286,7 +286,7 @@ export function AssessmentTakeForm({
               "sticky top-2 z-20 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-lg font-bold shadow-md transition-colors",
               urgent
                 ? "animate-pulse bg-red-600 text-white"
-                : "bg-slate-800 text-white"
+                : "bg-foreground text-background"
             )}
             role="timer"
             aria-live="polite"
@@ -296,32 +296,32 @@ export function AssessmentTakeForm({
           </div>
         )}
 
-        <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-emerald-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Question {index + 1} of {total}
         </p>
       </header>
 
       <Form {...form}>
         <form onSubmit={submitAll} className="flex flex-1 flex-col gap-4">
-          <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80 sm:p-6">
+          <div className="flex-1 rounded-2xl bg-card p-4 text-card-foreground shadow-sm ring-1 ring-border sm:p-6">
             {current.image && (
               <img
                 src={current.image}
                 alt=""
-                className="mb-4 max-h-64 w-full rounded-xl object-contain bg-slate-50"
+                className="mb-4 max-h-64 w-full rounded-xl bg-muted object-contain"
               />
             )}
-            <h2 className="mb-1 text-lg font-medium text-slate-900">
+            <h2 className="mb-1 font-heading text-lg font-medium text-foreground">
               {current.text}
             </h2>
             {current.description && current.description !== current.text && (
-              <p className="mb-4 text-sm text-slate-500">
+              <p className="mb-4 text-sm text-muted-foreground">
                 {current.description}
               </p>
             )}
@@ -344,8 +344,8 @@ export function AssessmentTakeForm({
                               className={cn(
                                 "flex min-h-[52px] w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition active:scale-[0.99]",
                                 selected
-                                  ? "border-emerald-500 bg-emerald-50"
-                                  : "border-slate-200 bg-white hover:border-slate-300"
+                                  ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15"
+                                  : "border-border bg-background hover:border-color2/40"
                               )}
                             >
                               <span
@@ -353,7 +353,7 @@ export function AssessmentTakeForm({
                                   "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
                                   selected
                                     ? "border-emerald-500 bg-emerald-500"
-                                    : "border-slate-300"
+                                    : "border-muted-foreground/40"
                                 )}
                               >
                                 {selected && (
@@ -367,7 +367,7 @@ export function AssessmentTakeForm({
                                   className="h-14 w-14 rounded-lg object-cover"
                                 />
                               )}
-                              <span className="text-base text-slate-800">
+                              <span className="text-base text-foreground">
                                 {c.text || (c.imageUrl ? "Image option" : c.id)}
                               </span>
                             </button>
@@ -398,7 +398,7 @@ export function AssessmentTakeForm({
             />
           </div>
 
-          <div className="sticky bottom-0 -mx-3 flex gap-2 border-t border-slate-200/80 bg-white/95 px-3 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+          <div className="sticky bottom-0 -mx-3 flex gap-2 border-t border-border bg-background/95 px-3 py-3 backdrop-blur sm:-mx-6 sm:px-6">
             <Button
               type="button"
               variant="outline"

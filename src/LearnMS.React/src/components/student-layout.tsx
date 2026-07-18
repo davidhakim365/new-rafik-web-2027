@@ -7,7 +7,7 @@ const StudentLayout = () => {
   const location = useLocation();
 
   return (
-    <div className="flex flex-col w-screen h-screen">
+    <div className="flex h-screen w-screen flex-col bg-background text-foreground">
       <NavBar />
       <ErrorBoundary
         resetKeys={[location.key]}

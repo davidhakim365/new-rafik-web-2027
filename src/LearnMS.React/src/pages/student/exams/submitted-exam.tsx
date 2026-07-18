@@ -47,7 +47,7 @@ const SubmittedExam: React.FC<{
     questions.push(
       <div
         key={q.id}
-        className=" flex flex-col w-full border-white hover:scale-[102%] transition-all duration-300 hover:border-[2px] hover:shadow-lg shadow-white md:flex-row rounded-3xl   bg-white/40"
+        className=" flex flex-col w-full border-border hover:scale-[102%] transition-all duration-300 hover:border-[2px] hover:shadow-lg shadow-color2/10 md:flex-row rounded-3xl   bg-card/85"
       >
         <HoverCard>
           <HoverCardTrigger className="hidden w-fit h-fit md:block rounded-l-3xl overflow-clip">
@@ -80,7 +80,7 @@ const SubmittedExam: React.FC<{
               <div
                 key={id}
                 className={cn(
-                  "p-2 px-10 w-fit flex text-xl border-white border-[3px] items-center justify-center bg-white/40 text-primary/80 rounded-3xl",
+                  "p-2 px-10 w-fit flex text-xl border-border border-[3px] items-center justify-center bg-card/85 text-primary/80 rounded-3xl",
                   exam.$type === "ExamResultOnly" &&
                     q.studentAnswer === id &&
                     "bg-yellow-500 text-white",
@@ -116,7 +116,7 @@ const SubmittedExam: React.FC<{
     questions.push(
       <div
         key={q.id}
-        className=" flex flex-col w-full border-white hover:scale-[102%] transition-all duration-300 hover:border-[2px] hover:shadow-lg shadow-white md:flex-row rounded-3xl   bg-white/40"
+        className=" flex flex-col w-full border-border hover:scale-[102%] transition-all duration-300 hover:border-[2px] hover:shadow-lg shadow-color2/10 md:flex-row rounded-3xl   bg-card/85"
       >
         <HoverCard>
           <HoverCardTrigger className="hidden w-fit h-fit md:block rounded-l-3xl overflow-clip">
@@ -141,7 +141,7 @@ const SubmittedExam: React.FC<{
           <div className="grid items-center justify-center grid-cols-1 gap-2 p-4 md:grid-cols-3 bg-primary/80">
             <div
               className={cn(
-                "p-2 px-10 w-fit flex text-xl border-white border-[3px] items-center justify-center bg-white/40 text-primary/80 rounded-3xl",
+                "p-2 px-10 w-fit flex text-xl border-border border-[3px] items-center justify-center bg-card/85 text-primary/80 rounded-3xl",
                 exam.$type === "ExamResultOnly" && "bg-yellow-500 text-white",
                 exam.$type === "ExamResultWithAnswer" &&
                   (q as any).isCorrect === false &&
@@ -154,7 +154,7 @@ const SubmittedExam: React.FC<{
             {exam.$type === "ExamResultWithAnswer" && (
               <div
                 className={cn(
-                  "p-2 px-10 w-fit flex text-xl border-white border-[3px] items-center justify-center bg-white/40 text-primary/80 rounded-3xl",
+                  "p-2 px-10 w-fit flex text-xl border-border border-[3px] items-center justify-center bg-card/85 text-primary/80 rounded-3xl",
                   "bg-green-500 text-white"
                 )}
               >
@@ -176,7 +176,7 @@ const SubmittedExam: React.FC<{
     isGradedCorrect?: boolean | null;
   }>) {
     questions.push(
-      <div key={q.id} className="w-full rounded-3xl bg-white/40 p-4 text-primary/90">
+      <div key={q.id} className="w-full rounded-3xl bg-card/85 p-4 text-primary/90">
         <p className="text-2xl">{q.text}</p>
         {q.image && (
           <img src={q.image} alt="" className="mt-2 max-h-40 rounded object-contain" />
@@ -200,7 +200,7 @@ const SubmittedExam: React.FC<{
       <div className="flex flex-col items-center w-full h-full gap-4 p-4 text-white rounded-xl bg-primary/60">
         <h1 className="text-6xl text-center">{exam.title}</h1>
         {exam.$type !== "ExamHidden" && (
-          <div className="flex font-bold flex-col my-32 gap-2 items-center justify-center text-primary/80 text-4xl rounded-[50%] w-60 h-60 border-primary/60 border-2 p-4 shadow-xl shadow-white/40 bg-white">
+          <div className="flex font-bold flex-col my-32 gap-2 items-center justify-center text-primary/80 text-4xl rounded-[50%] w-60 h-60 border-primary/60 border-2 p-4 shadow-xl shadow-color2/15 bg-card">
             Result
             <h3>
               {exam.numOfCorrect}/{exam.numOfQuestions}

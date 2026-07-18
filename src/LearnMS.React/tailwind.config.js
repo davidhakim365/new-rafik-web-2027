@@ -18,9 +18,10 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "Signika", "system-ui", "sans-serif"],
-        signika: "Signika",
-        mono: ["JetBrains Mono", "monospace"],
+        sans: ["Outfit", "system-ui", "sans-serif"],
+        heading: ["Space Grotesk", "Outfit", "system-ui", "sans-serif"],
+        signika: ["Space Grotesk", "Outfit", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       typography: {
         DEFAULT: {
@@ -139,12 +140,12 @@ module.exports = {
           5: "hsl(var(--chart-5))",
         },
         color1: {
-          DEFAULT: "#1E4196",
-          hsl: "hsl(var(--color1))",
+          DEFAULT: "hsl(var(--color1))",
+          solid: "#1E4196",
         },
         color2: {
-          DEFAULT: "#2E65EB",
-          hsl: "hsl(var(--color2))",
+          DEFAULT: "hsl(var(--color2))",
+          solid: "#2E65EB",
         },
         heading: "hsl(var(--heading))",
         subheading: "hsl(var(--subheading))",

@@ -14,7 +14,7 @@ export const Heading: React.FC<HeadingProps> = ({
   return (
     <Tag
       className={cn(
-        "md:text-7xl text-4xl font-semibold tracking-tight text-heading",
+        "font-heading text-4xl font-semibold tracking-tight text-heading md:text-7xl",
         className
       )}
     >

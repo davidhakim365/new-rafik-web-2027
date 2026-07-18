@@ -120,7 +120,7 @@ const NavBar: React.FC<NavBarProps> = ({
               <img
                 src="/logo.png"
                 alt="logo"
-                className="flex-shrink-0 w-8 h-8 rounded-lg sm:w-10 sm:h-10 dark:bg-white"
+                className="h-8 w-8 flex-shrink-0 rounded-lg bg-background sm:h-10 sm:w-10"
               />
               <Heading className="text-lg font-bold truncate sm:text-xl md:text-2xl lg:text-3xl">
                 {brand.name}

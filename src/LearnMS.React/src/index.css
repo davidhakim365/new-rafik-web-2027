@@ -1,6 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Signika:wght@300..700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -8,101 +6,102 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 220 30% 98%;
+    --foreground: 224 40% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 224 40% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 224 40% 12%;
+    /* Brand primary (not near-black) so text-primary stays readable */
+    --primary: 224 67% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 25% 94%;
+    --secondary-foreground: 224 40% 16%;
+    --muted: 220 20% 94%;
+    --muted-foreground: 224 12% 40%;
+    --accent: 220 30% 94%;
+    --accent-foreground: 224 40% 16%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 18% 88%;
+    --input: 220 18% 88%;
+    --ring: 224 82% 55%;
+    --radius: 0.65rem;
 
-    --chart-1: 12 76% 61%;
+    --chart-1: 224 82% 55%;
     --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-3: 197 37% 35%;
+    --chart-4: 43 74% 55%;
+    --chart-5: 12 76% 55%;
 
-    /* custom */
-    --heading: 0 0% 14.9%;
-    --subheading: 0 0% 45.1%;
-    --paragraph: 0 0% 45.1%;
-    --hero: 220 30% 98%;
-    --gradesSection: 220 25% 97%;
+    --heading: 224 45% 14%;
+    --subheading: 224 14% 38%;
+    --paragraph: 224 12% 40%;
+    --hero: 220 35% 97%;
+    --gradesSection: 220 28% 97%;
     --featuresSection: 0 0% 100%;
     --aboutSection: 220 30% 96%;
-    --seniorsSection: 220 25% 97%;
-    --memoriesSection: 220 30% 98%;
-    --lecturesSection: 220 25% 97%;
+    --seniorsSection: 220 28% 97%;
+    --memoriesSection: 220 32% 98%;
+    --lecturesSection: 220 28% 97%;
     --footer: 224 40% 8%;
     --color1: 224 67% 35%;
     --color2: 224 82% 55%;
-    --footer-foreground: 220 20% 75%;
-    --coursePage: 0 0% 96.1%;
-    --lecturePage: 0 0% 96.1%;
-    --paymentPage: 0 0% 96.1%;
-    --navbar-foreground: 0 0% 0%;
+    --footer-foreground: 220 20% 78%;
+    --coursePage: 220 25% 97%;
+    --lecturePage: 220 25% 97%;
+    --paymentPage: 220 25% 97%;
+    --navbar-foreground: 224 40% 12%;
     --dashboard: 220 30% 97%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 50%;
+    --background: 224 32% 7%;
+    --foreground: 210 30% 96%;
+    --card: 224 28% 11%;
+    --card-foreground: 210 30% 96%;
+    --popover: 224 28% 11%;
+    --popover-foreground: 210 30% 96%;
+    /* Keep brand blue in dark mode — white primary made UI vanish */
+    --primary: 224 82% 62%;
+    --primary-foreground: 224 45% 8%;
+    --secondary: 224 22% 16%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 224 20% 15%;
+    --muted-foreground: 215 16% 72%;
+    --accent: 224 24% 18%;
+    --accent-foreground: 210 30% 96%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 18% 22%;
+    --input: 224 18% 22%;
+    --ring: 224 82% 62%;
+
+    --chart-1: 224 82% 62%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-4: 280 55% 65%;
+    --chart-5: 340 70% 60%;
 
-    /* custom */
-    --heading: 0 0% 96.1%;
-    --subheading: 0 0% 63.9%;
-    --paragraph: 0 0% 63.9%;
-    --hero: 224 40% 6%;
-    --gradesSection: 224 35% 8%;
-    --featuresSection: 224 40% 7%;
-    --seniorsSection: 224 35% 8%;
-    --memoriesSection: 224 40% 6%;
-    --lecturesSection: 224 35% 8%;
-    --aboutSection: 224 35% 8%;
-    --footer: 224 45% 5%;
-    --footer-foreground: 220 20% 70%;
-    --color1: 224 67% 45%;
-    --color2: 224 82% 60%;
-    --coursePage: 0 0% 9%;
-    --lecturePage: 0 0% 9%;
-    --paymentPage: 0 0% 9%;
-    --navbar-foreground: 0 0% 100%;
-    --dashboard: 224 40% 6%;
+    --heading: 210 30% 97%;
+    --subheading: 215 16% 74%;
+    --paragraph: 215 14% 72%;
+    --hero: 224 34% 8%;
+    --gradesSection: 224 30% 9%;
+    --featuresSection: 224 32% 8%;
+    --seniorsSection: 224 30% 9%;
+    --memoriesSection: 224 32% 8%;
+    --lecturesSection: 224 30% 9%;
+    --aboutSection: 224 30% 9%;
+    --footer: 224 40% 5%;
+    --footer-foreground: 215 18% 74%;
+    --color1: 224 72% 58%;
+    --color2: 224 85% 68%;
+    --coursePage: 224 28% 8%;
+    --lecturePage: 224 28% 8%;
+    --paymentPage: 224 28% 8%;
+    --navbar-foreground: 210 30% 96%;
+    --dashboard: 224 32% 7%;
   }
 }
 
@@ -111,7 +110,68 @@
     @apply box-border max-w-full scroll-smooth border-border outline-ring/50;
   }
 
+  html {
+    @apply antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply p-0 m-0 overflow-x-hidden font-sans antialiased;
+    @apply m-0 overflow-x-hidden bg-background p-0 font-sans text-foreground;
+    font-feature-settings: "ss01" on, "cv11" on;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading tracking-tight text-heading;
+  }
+
+  ::selection {
+    @apply bg-color2/25 text-foreground;
+  }
+
+  /* Native controls follow theme (date pickers, scrollbars, etc.) */
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Inputs inherit readable foreground even when parents use brand text colors */
+  input,
+  textarea,
+  select {
+    @apply text-foreground;
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    @apply caret-color2;
+  }
+}
+
+@layer utilities {
+  /* Surfaces that used translucent white overlays — readable in both themes */
+  .surface-glass {
+    @apply border border-border/80 bg-card/80 text-card-foreground backdrop-blur-md;
+  }
+
+  .surface-glass-soft {
+    @apply border border-border/60 bg-background/70 text-foreground backdrop-blur-sm;
+  }
+}
+
+/* Safety net: common light-only patterns that still appear in older screens */
+@layer components {
+  .dark .prose {
+    @apply prose-invert;
   }
 }

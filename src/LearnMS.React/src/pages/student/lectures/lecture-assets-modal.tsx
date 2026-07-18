@@ -23,7 +23,7 @@ const LectureAssetsModal: React.FC<Props> = ({ onClose, assets }) => {
             {assets.map((asset) => (
               <div
                 key={asset.id}
-                className="p-5 rounded-xl w-52 h-fit bg-white/40"
+                className="p-5 rounded-xl w-52 h-fit bg-card/85"
               >
                 {asset.type === "Image" && (
                   <a href={href(asset)} target="_blank" rel="noreferrer">

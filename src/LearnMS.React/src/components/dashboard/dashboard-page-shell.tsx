@@ -54,7 +54,7 @@ export function DashboardPageShell({
                 </div>
               )}
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl md:text-3xl">
+                <h1 className="font-heading text-xl font-bold tracking-tight text-foreground sm:text-2xl md:text-3xl">
                   {title}
                 </h1>
                 {description && (

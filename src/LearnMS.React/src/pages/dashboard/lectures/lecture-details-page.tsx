@@ -603,7 +603,7 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture }) => {
           <Button
             disabled={isLoading}
             onClick={onPublish}
-            className='bg-white border rounded text-primary border-primary hover:bg-primary hover:text-white'>
+            className='bg-card border rounded text-primary border-primary hover:bg-primary hover:text-primary-foreground'>
             {lecture.isPublished ? "UnPublish" : "Publish"}
           </Button>
         </div>
@@ -866,7 +866,7 @@ function LectureContentForm({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem
-                    className='hover:bg-color2 hover:text-white hover:cursor-pointer'
+                    className='hover:bg-color2 hover:text-primary-foreground hover:cursor-pointer'
                     onClick={() => setIsAddingLecture(true)}>
                     Add Lesson
                   </DropdownMenuItem>
@@ -1168,7 +1168,7 @@ function LectureAssetsFrom({
         {assets.map((asset) => (
           <div
             key={asset.id}
-            className='relative p-5 rounded-xl w-52 h-fit bg-white/40'>
+            className='relative p-5 rounded-xl w-52 h-fit bg-card/85'>
             <Button
               className='absolute top-0 right-0'
               size='icon'
