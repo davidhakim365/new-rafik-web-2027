@@ -9,6 +9,7 @@ import {
   getGetLectureStudentsQueryKey,
   getGetLectureStatisticsQueryKey,
 } from "@/generated/api";
+import { playScanSuccessVoice } from "@/lib/scan-feedback";
 import { toast } from "@/lib/utils";
 import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
 import { useQueryClient } from "@tanstack/react-query";
@@ -89,6 +90,7 @@ const LectureBarcodeScannerPage = () => {
             const message = data.message ?? "Student attended successfully";
             setStatus("success");
             setFeedback(message);
+            playScanSuccessVoice("Barcode scanned successfully");
             toast({ title: "Attended", description: message });
             qc.invalidateQueries({
               queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
