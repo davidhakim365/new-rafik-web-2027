@@ -11,6 +11,7 @@ public interface IRewardsService
     Task<AddStudentApplesResult> ExecuteAsync(AddStudentApplesCommand command);
     Task<AddStudentApplesResult> ExecuteAsync(AddStudentApplesByCodeCommand command);
     Task<StudentAppleLookupResult> QueryAsync(LookupStudentByCodeQuery query);
+    Task<AssistantLookupResult> QueryAsync(LookupAssistantByCodeQuery query);
     Task<AssistantRewardsResult> QueryAsync(GetAssistantRewardsQuery query);
     Task<AssistantRewardsResult> QueryAsync(GetMyRewardsQuery query);
 }

@@ -83,6 +83,29 @@ export const AttendByCodeRequest = z.object({
 });
 export type AttendByCodeRequest = z.infer<typeof AttendByCodeRequest>;
 
+export type AssistantLookup = {
+  assistantId: string;
+  fullName: string;
+  email: string;
+  profilePicture?: string | null;
+  code: string;
+  apples: number;
+  sessionsAttended: number;
+  currentSessionValue: number;
+};
+
+export const LookupAssistantByCodeRequest = z.object({
+  code: z.string().min(1, { message: "Code is required" }),
+});
+export type LookupAssistantByCodeRequest = z.infer<typeof LookupAssistantByCodeRequest>;
+
+export const useLookupAssistantByCodeMutation = () => {
+  return useMutation<ApiResponse<AssistantLookup>, unknown, LookupAssistantByCodeRequest>({
+    mutationFn: (data) =>
+      api.post("/api/rewards/assistants/lookup", data).then((res) => res.data),
+  });
+};
+
 export const useAttendAssistantByCodeMutation = () => {
   const qc = useQueryClient();
   return useMutation<ApiResponse<AttendAssistantSessionResult>, unknown, AttendByCodeRequest>({

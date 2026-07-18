@@ -74,6 +74,25 @@ public sealed class RewardsController(
         };
     }
 
+    [HttpPost("assistants/lookup")]
+    [ApiAuthorize]
+    [SwaggerOperation(OperationId = "LookupAssistantByCode")]
+    public async Task<ApiWrapper.Success<AssistantLookupResult>> LookupAssistant(
+        [FromBody] LookupAssistantByCodeRequest request)
+    {
+        await EnsureTeacherAsync();
+        var result = await rewardsService.QueryAsync(new LookupAssistantByCodeQuery
+        {
+            Code = request.Code
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = "Assistant found"
+        };
+    }
+
     [HttpPost("assistants/attend-by-code")]
     [ApiAuthorize]
     [SwaggerOperation(OperationId = "AttendAssistantByCode")]

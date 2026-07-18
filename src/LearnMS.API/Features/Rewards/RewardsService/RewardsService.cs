@@ -172,6 +172,40 @@ public sealed class RewardsService(
         };
     }
 
+    public async Task<AssistantLookupResult> QueryAsync(LookupAssistantByCodeQuery query)
+    {
+        if (string.IsNullOrWhiteSpace(query.Code))
+            throw new ApiException(RewardsErrors.CodeRequired);
+
+        var code = query.Code.Trim();
+        Assistant? assistant = null;
+
+        if (Guid.TryParse(code, out var assistantId))
+        {
+            assistant = await db.Assistants.Include(x => x.Accounts)
+                .FirstOrDefaultAsync(x => x.Id == assistantId);
+        }
+
+        assistant ??= await db.Assistants.Include(x => x.Accounts)
+            .FirstOrDefaultAsync(x => x.Code == code);
+
+        if (assistant is null)
+            throw new ApiException(RewardsErrors.AssistantNotFound);
+
+        var account = assistant.Accounts.First();
+        return new AssistantLookupResult
+        {
+            AssistantId = assistant.Id,
+            FullName = string.IsNullOrWhiteSpace(assistant.FullName) ? account.Email : assistant.FullName,
+            Email = account.Email,
+            ProfilePicture = account.ProfilePicture,
+            Code = assistant.Code,
+            Apples = assistant.Apples,
+            SessionsAttended = assistant.SessionsAttended,
+            CurrentSessionValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended)
+        };
+    }
+
     public Task<AssistantRewardsResult> QueryAsync(GetAssistantRewardsQuery query)
         => BuildAssistantRewardsAsync(query.AssistantId);
 

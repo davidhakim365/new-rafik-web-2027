@@ -1,6 +1,8 @@
 import {
-  AttendByCodeRequest,
+  LookupAssistantByCodeRequest,
+  AssistantLookup,
   useAttendAssistantByCodeMutation,
+  useLookupAssistantByCodeMutation,
 } from "@/api/rewards-api";
 import { ScannerViewfinder } from "@/components/rewards/reward-graphics";
 import { Button } from "@/components/ui/button";
@@ -29,27 +31,35 @@ const AssistantRewardsScannerPage = () => {
   const processingRef = useRef(false);
   const lastCodeRef = useRef("");
   const lastScanTimeRef = useRef(0);
+
+  const lookupMutation = useLookupAssistantByCodeMutation();
   const attendMutation = useAttendAssistantByCodeMutation();
 
   const [status, setStatus] = useState<
-    "initializing" | "scanning" | "processing" | "success" | "error"
+    "initializing" | "scanning" | "processing" | "found" | "success" | "error"
   >("initializing");
   const [feedback, setFeedback] = useState("");
+  const [assistant, setAssistant] = useState<AssistantLookup | null>(null);
 
-  const form = useForm<AttendByCodeRequest>({
-    resolver: zodResolver(AttendByCodeRequest),
+  const form = useForm<LookupAssistantByCodeRequest>({
+    resolver: zodResolver(LookupAssistantByCodeRequest),
     defaultValues: { code: "" },
   });
 
-  const resumeScanning = useCallback((delay = 1500) => {
-    window.setTimeout(() => {
-      processingRef.current = false;
-      setStatus("scanning");
-      setFeedback("Ready for next scan...");
-    }, delay);
-  }, []);
+  const resumeScanning = useCallback(
+    (delay = 1500) => {
+      window.setTimeout(() => {
+        processingRef.current = false;
+        setStatus((prev) => (prev === "found" ? "found" : "scanning"));
+        if (!assistant) {
+          setFeedback("Ready for next scan...");
+        }
+      }, delay);
+    },
+    [assistant]
+  );
 
-  const handleCode = useCallback(
+  const lookupCode = useCallback(
     (rawCode: string) => {
       const code = rawCode.trim();
       if (!code) return;
@@ -64,25 +74,38 @@ const AssistantRewardsScannerPage = () => {
       lastCodeRef.current = code;
       lastScanTimeRef.current = now;
       setStatus("processing");
-      setFeedback(`Processing: ${code}`);
+      setFeedback(`Looking up: ${code}`);
+      setAssistant(null);
 
-      attendMutation.mutate(
+      lookupMutation.mutate(
         { code },
         {
           onSuccess: (res) => {
-            const message = res.message ?? res.data?.message ?? "Session attended";
-            setStatus("success");
-            setFeedback(message);
-            toast({ title: "Attended", description: message });
-            form.reset({ code: "" });
-            resumeScanning(1200);
+            const found = res.data;
+            if (!found) {
+              setStatus("error");
+              setFeedback("Assistant not found");
+              resumeScanning(2000);
+              return;
+            }
+            setAssistant(found);
+            setStatus("found");
+            setFeedback(
+              `${found.fullName || found.email} · ${found.apples} apples · next +${found.currentSessionValue}`
+            );
+            form.setValue("code", found.code);
+            toast({
+              title: "Assistant found",
+              description: `${found.fullName || found.email} (${found.code})`,
+            });
+            processingRef.current = false;
           },
           onError: () => {
             setStatus("error");
-            setFeedback(`Could not attend assistant: ${code}`);
+            setFeedback(`Assistant not found: ${code}`);
             toast({
               title: "Scan failed",
-              description: "Assistant not found or request failed.",
+              description: "No assistant with that code.",
               variant: "destructive",
             });
             resumeScanning(2000);
@@ -90,8 +113,44 @@ const AssistantRewardsScannerPage = () => {
         }
       );
     },
-    [attendMutation, form, resumeScanning]
+    [form, lookupMutation, resumeScanning]
   );
+
+  const clearAssistant = useCallback(() => {
+    setAssistant(null);
+    setStatus("scanning");
+    setFeedback("Ready for next scan...");
+    form.reset({ code: "" });
+    processingRef.current = false;
+    lastCodeRef.current = "";
+  }, [form]);
+
+  const attendSession = () => {
+    if (!assistant) return;
+
+    attendMutation.mutate(
+      { code: assistant.code },
+      {
+        onSuccess: (res) => {
+          const message = res.message ?? res.data?.message ?? "Session attended";
+          setStatus("success");
+          setFeedback(message);
+          toast({ title: "Attended", description: message });
+          clearAssistant();
+        },
+        onError: () => {
+          setStatus("error");
+          setFeedback("Could not attend this assistant");
+          toast({
+            title: "Attend failed",
+            description: "Please try again.",
+            variant: "destructive",
+          });
+          processingRef.current = false;
+        },
+      }
+    );
+  };
 
   useEffect(() => {
     if (!scannerRef.current) return;
@@ -147,7 +206,7 @@ const AssistantRewardsScannerPage = () => {
 
     const onDetected = (result: QuaggaJSResultObject) => {
       const code = result?.codeResult?.code;
-      if (code) handleCode(code);
+      if (code) lookupCode(code);
     };
 
     Quagga.onDetected(onDetected);
@@ -157,7 +216,7 @@ const AssistantRewardsScannerPage = () => {
       Quagga.offDetected(onDetected);
       Quagga.stop();
     };
-  }, [handleCode]);
+  }, [lookupCode]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#06100c] text-white">
@@ -181,18 +240,22 @@ const AssistantRewardsScannerPage = () => {
           <div className="min-w-0">
             <p className="truncate font-semibold">Assistant Rewards Scanner</p>
             <p className="truncate text-xs text-emerald-200/70">
-              Scan barcode or type assistant code / id
+              Find assistant first, then tap Attend session
             </p>
           </div>
         </div>
-        {status === "processing" && <Loader2 className="relative z-10 h-5 w-5 animate-spin text-emerald-300" />}
-        {status === "success" && <CheckCircle className="relative z-10 h-5 w-5 text-emerald-400" />}
+        {status === "processing" && (
+          <Loader2 className="relative z-10 h-5 w-5 animate-spin text-emerald-300" />
+        )}
+        {(status === "found" || status === "success") && (
+          <CheckCircle className="relative z-10 h-5 w-5 text-emerald-400" />
+        )}
         {status === "error" && <XCircle className="relative z-10 h-5 w-5 text-red-400" />}
       </header>
 
       <div ref={scannerRef} className="relative min-h-0 flex-1 overflow-hidden bg-black">
         <ScannerViewfinder
-          active={status === "scanning" || status === "initializing"}
+          active={!assistant && (status === "scanning" || status === "initializing")}
           label="Align assistant barcode"
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black via-black/70 to-transparent p-4 pt-16">
@@ -203,10 +266,51 @@ const AssistantRewardsScannerPage = () => {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-emerald-500/15 bg-gradient-to-t from-emerald-950/80 to-black/95 p-4">
+      <div className="shrink-0 space-y-4 border-t border-emerald-500/15 bg-gradient-to-t from-emerald-950/80 to-black/95 p-4">
+        {assistant && (
+          <div className="relative overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/20 via-emerald-950/40 to-black/40 p-4 shadow-lg shadow-emerald-500/10">
+            <Apple
+              aria-hidden
+              className="pointer-events-none absolute -right-2 -top-2 size-20 rotate-12 text-emerald-400/15"
+            />
+            <div className="relative z-10 mb-3 flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80">
+                  Assistant found
+                </p>
+                <p className="text-lg font-semibold">{assistant.fullName || assistant.email}</p>
+                <p className="text-sm text-white/70">
+                  Code {assistant.code} · {assistant.apples} apples ·{" "}
+                  {assistant.sessionsAttended} sessions
+                </p>
+                <p className="mt-1 text-sm text-emerald-200">
+                  Next attend awards +{assistant.currentSessionValue} apples
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-white/70 hover:bg-white/10 hover:text-white"
+                onClick={clearAssistant}
+              >
+                Clear
+              </Button>
+            </div>
+            <Button
+              type="button"
+              disabled={attendMutation.isPending}
+              onClick={attendSession}
+              className="relative z-10 w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 hover:opacity-95"
+            >
+              {attendMutation.isPending ? "Attending..." : "Attend session"}
+            </Button>
+          </div>
+        )}
+
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit((values) => handleCode(values.code))}
+            onSubmit={form.handleSubmit((values) => lookupCode(values.code))}
             className="flex flex-col gap-3 sm:flex-row sm:items-end"
           >
             <FormField
@@ -219,7 +323,7 @@ const AssistantRewardsScannerPage = () => {
                     <Input
                       {...field}
                       className="border-emerald-500/25 bg-white/5 text-white placeholder:text-white/40 focus-visible:ring-emerald-500/40"
-                      placeholder="e.g. 245891"
+                      placeholder="Scan or type assistant code"
                     />
                   </FormControl>
                   <FormMessage />
@@ -228,10 +332,10 @@ const AssistantRewardsScannerPage = () => {
             />
             <Button
               type="submit"
-              disabled={attendMutation.isPending}
+              disabled={lookupMutation.isPending}
               className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 hover:opacity-95"
             >
-              Attend session
+              Find assistant
             </Button>
           </form>
         </Form>

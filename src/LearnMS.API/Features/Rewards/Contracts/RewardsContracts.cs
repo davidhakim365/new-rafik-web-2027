@@ -41,6 +41,11 @@ public sealed record LookupStudentByCodeQuery
     public required string Code { get; init; }
 }
 
+public sealed record LookupAssistantByCodeQuery
+{
+    public required string Code { get; init; }
+}
+
 public sealed record AddStudentApplesByCodeCommand
 {
     public required string Code { get; init; }
@@ -84,6 +89,11 @@ public sealed record AddStudentApplesRequest
 }
 
 public sealed record LookupStudentByCodeRequest
+{
+    public required string Code { get; init; }
+}
+
+public sealed record LookupAssistantByCodeRequest
 {
     public required string Code { get; init; }
 }
@@ -150,6 +160,18 @@ public sealed record StudentAppleLookupResult
     public required string FullName { get; init; }
     public required string StudentCode { get; init; }
     public required int Apples { get; init; }
+}
+
+public sealed record AssistantLookupResult
+{
+    public required Guid AssistantId { get; init; }
+    public required string FullName { get; init; }
+    public required string Email { get; init; }
+    public string? ProfilePicture { get; init; }
+    public required string Code { get; init; }
+    public required int Apples { get; init; }
+    public required int SessionsAttended { get; init; }
+    public required int CurrentSessionValue { get; init; }
 }
 
 public sealed record AddStudentApplesResult
