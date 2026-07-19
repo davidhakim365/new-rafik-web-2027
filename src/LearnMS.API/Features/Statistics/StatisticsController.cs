@@ -93,8 +93,34 @@ public class StatisticsController(AppDbContext context) : ControllerBase
             studentsQuery = studentsQuery.Where(s => s.Level == query.Level);
         }
 
-        var studentsWithApples = await studentsQuery.CountAsync(s => s.Apples > 0);
-        var totalApplesOutstanding = await studentsQuery.SumAsync(s => (long)s.Apples);
+        var studentBalances = await studentsQuery
+            .Select(s => new { s.Id, s.FullName, s.StudentCode, s.Apples, s.Level })
+            .ToListAsync();
+
+        var studentsWithApples = studentBalances.Count(s => s.Apples > 0);
+        var totalApplesOutstanding = studentBalances.Sum(s => (long)s.Apples);
+
+        var topStudents = studentBalances
+            .Where(s => s.Apples > 0)
+            .OrderByDescending(s => s.Apples)
+            .ThenBy(s => s.FullName)
+            .Take(10)
+            .Select(s => new StudentAppleLeaderboardItem(
+                s.Id,
+                s.FullName,
+                s.StudentCode,
+                s.Apples,
+                s.Level))
+            .ToList();
+
+        var applesByLevel = studentBalances
+            .GroupBy(s => s.Level)
+            .Select(g => new StudentAppleLevelBucket(
+                g.Key,
+                g.Count(s => s.Apples > 0),
+                g.Sum(s => (long)s.Apples)))
+            .OrderBy(x => x.Level)
+            .ToList();
 
         var transactionsQuery = context.Set<StudentAppleTransaction>().AsNoTracking().AsQueryable();
 
@@ -113,59 +139,35 @@ public class StatisticsController(AppDbContext context) : ControllerBase
 
         if (query.EndDate is not null)
         {
+            // Include the full end day when a date-only range is sent from the UI
             var end = query.EndDate.Value.UtcDateTime;
+            if (end.TimeOfDay == TimeSpan.Zero)
+            {
+                end = end.AddDays(1).AddTicks(-1);
+            }
+
             transactionsQuery = transactionsQuery.Where(t => t.CreatedAt <= end);
         }
 
-        var transactionsInRange = await transactionsQuery.CountAsync();
-        var applesAwardedInRange = await transactionsQuery
-            .Where(t => t.Amount > 0)
-            .SumAsync(t => (long?)t.Amount) ?? 0;
-        var applesDeductedInRange = await transactionsQuery
-            .Where(t => t.Amount < 0)
-            .SumAsync(t => (long?)(-t.Amount)) ?? 0;
+        var transactionRows = await transactionsQuery
+            .Select(t => new { t.CreatedAt, t.Amount })
+            .ToListAsync();
+
+        var transactionsInRange = transactionRows.Count;
+        var applesAwardedInRange = transactionRows.Where(t => t.Amount > 0).Sum(t => (long)t.Amount);
+        var applesDeductedInRange = transactionRows.Where(t => t.Amount < 0).Sum(t => (long)(-t.Amount));
         var netApplesInRange = applesAwardedInRange - applesDeductedInRange;
 
-        var topStudents = await studentsQuery
-            .Where(s => s.Apples > 0)
-            .OrderByDescending(s => s.Apples)
-            .ThenBy(s => s.FullName)
-            .Take(10)
-            .Select(s => new StudentAppleLeaderboardItem(
-                s.Id,
-                s.FullName,
-                s.StudentCode,
-                s.Apples,
-                s.Level))
-            .ToListAsync();
-
-        var dailyRaw = await transactionsQuery
-            .GroupBy(t => t.CreatedAt.Date)
-            .Select(g => new
+        var applesByDay = transactionRows
+            .GroupBy(t => DateOnly.FromDateTime(t.CreatedAt))
+            .Select(g =>
             {
-                Date = g.Key,
-                Awarded = g.Where(t => t.Amount > 0).Sum(t => (long)t.Amount),
-                Deducted = g.Where(t => t.Amount < 0).Sum(t => (long)(-t.Amount)),
+                var awarded = g.Where(t => t.Amount > 0).Sum(t => (long)t.Amount);
+                var deducted = g.Where(t => t.Amount < 0).Sum(t => (long)(-t.Amount));
+                return new StudentAppleDailyBucket(g.Key, awarded, deducted, awarded - deducted);
             })
             .OrderBy(x => x.Date)
-            .ToListAsync();
-
-        var applesByDay = dailyRaw
-            .Select(x => new StudentAppleDailyBucket(
-                DateOnly.FromDateTime(x.Date),
-                x.Awarded,
-                x.Deducted,
-                x.Awarded - x.Deducted))
             .ToList();
-
-        var applesByLevel = await studentsQuery
-            .GroupBy(s => s.Level)
-            .Select(g => new StudentAppleLevelBucket(
-                g.Key,
-                g.Count(s => s.Apples > 0),
-                g.Sum(s => (long)s.Apples)))
-            .OrderBy(x => x.Level)
-            .ToListAsync();
 
         return new ApiWrapper.Success<GetStudentApplesStatisticsResponse>
         {
