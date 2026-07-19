@@ -1,4 +1,5 @@
 import { useCoursesQuery } from "@/api/courses-api";
+import { useStudentApplesStatisticsQuery } from "@/api/rewards-api";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
@@ -30,6 +31,9 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
+  Apple,
+  ArrowDownRight,
+  ArrowUpRight,
   Building2,
   CalendarIcon,
   Globe,
@@ -217,6 +221,7 @@ const StatisticsPageInner = () => {
       </DashboardCard>
 
       <IncomesStatistics lecturePrice={lecturePrice} dateRange={dateRange} />
+      <StudentApplesStatistics dateRange={dateRange} />
       <LecturesStatistics lecturePrice={lecturePrice} dateRange={dateRange} />
       <CoursesStatistics lecturePrice={lecturePrice} />
     </DashboardPageShell>
@@ -311,6 +316,196 @@ function IncomesStatistics({
           {items.map((item) => (
             <StatCard key={item.title} {...item} />
           ))}
+        </div>
+      )}
+    </DashboardCard>
+  );
+}
+
+function formatLevelLabel(level: string) {
+  return level.replace("Level", "Level ");
+}
+
+function StudentApplesStatistics({
+  dateRange,
+}: {
+  dateRange: DateRange | undefined;
+}) {
+  const [level, setLevel] = useState<string>("all");
+
+  const { data, isLoading } = useStudentApplesStatisticsQuery({
+    startDate: toApiDateString(dateRange?.from),
+    endDate: toApiDateString(dateRange?.to),
+    level: level === "all" ? undefined : level,
+  });
+
+  const stats = data?.data;
+  const chartData = useMemo(
+    () =>
+      (stats?.applesByDay ?? []).map((day) => ({
+        date: day.date,
+        Awarded: day.awarded,
+        Deducted: day.deducted,
+        Net: day.net,
+      })),
+    [stats?.applesByDay]
+  );
+
+  const items = [
+    {
+      title: "Students with Apples",
+      value: stats?.studentsWithApples ?? 0,
+      subtitle: "Current balance > 0",
+      icon: Users,
+      accentClass: "bg-emerald-500/10 text-emerald-600",
+    },
+    {
+      title: "Apples Outstanding",
+      value: stats?.totalApplesOutstanding ?? 0,
+      subtitle: "Total apples held by students",
+      icon: Apple,
+      accentClass: "bg-emerald-500/10 text-emerald-600",
+    },
+    {
+      title: "Awarded in Range",
+      value: stats?.applesAwardedInRange ?? 0,
+      subtitle: `${stats?.transactionsInRange ?? 0} transactions`,
+      icon: ArrowUpRight,
+      accentClass: "bg-color2/10 text-color2",
+    },
+    {
+      title: "Deducted in Range",
+      value: stats?.applesDeductedInRange ?? 0,
+      subtitle: "Removed from students",
+      icon: ArrowDownRight,
+      accentClass: "bg-amber-500/10 text-amber-600",
+    },
+    {
+      title: "Net in Range",
+      value: stats?.netApplesInRange ?? 0,
+      subtitle: "Awarded minus deducted",
+      icon: TrendingUp,
+      accentClass: "bg-primary/10 text-primary",
+    },
+  ];
+
+  return (
+    <DashboardCard>
+      <div className="mb-4 flex flex-col gap-3 pb-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold">Student Apple Rewards</h3>
+          <p className="text-sm text-muted-foreground">
+            Outstanding balances plus awards and deductions in the selected date
+            range
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="secondary"
+            className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          >
+            Apple rewards
+          </Badge>
+          <Select value={level} onValueChange={setLevel}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All levels" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All levels</SelectItem>
+              <SelectItem value="Level0">Level 0</SelectItem>
+              <SelectItem value="Level1">Level 1</SelectItem>
+              <SelectItem value="Level2">Level 2</SelectItem>
+              <SelectItem value="Level3">Level 3</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {items.map((item) => (
+              <StatCard key={item.title} {...item} />
+            ))}
+          </div>
+
+          {(stats?.applesByLevel?.length ?? 0) > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {stats!.applesByLevel.map((bucket) => (
+                <div
+                  key={bucket.level}
+                  className="rounded-xl border border-color2/10 bg-muted/30 px-4 py-3"
+                >
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {formatLevelLabel(bucket.level)}
+                  </p>
+                  <p className="mt-1 text-xl font-bold tracking-tight">
+                    {bucket.totalApples}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {bucket.studentsWithApples} students with apples
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {chartData.length > 0 && (
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Awarded" fill="hsl(142, 71%, 45%)" radius={4} />
+                  <Bar dataKey="Deducted" fill="hsl(38, 92%, 50%)" radius={4} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h4 className="font-semibold">Top students by apples</h4>
+              <p className="text-xs text-muted-foreground">Current balance</p>
+            </div>
+            {(stats?.topStudents?.length ?? 0) === 0 ? (
+              <p className="rounded-xl border border-dashed border-color2/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                No students with apples yet
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-color2/10">
+                <ul className="divide-y divide-color2/10">
+                  {stats!.topStudents.map((student, index) => (
+                    <li
+                      key={student.studentId}
+                      className="flex items-center justify-between gap-3 px-4 py-3"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{student.fullName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {student.studentCode} · {formatLevelLabel(student.level)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+                        <Apple className="size-4" />
+                        {student.apples}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </DashboardCard>

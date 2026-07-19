@@ -82,6 +82,106 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         };
     }
 
+    [HttpGet("student-apples")]
+    [SwaggerOperation(OperationId = "GetStudentApplesStatistics")]
+    public async Task<ApiWrapper.Success<GetStudentApplesStatisticsResponse>> GetStudentApplesStatistics(
+        [FromQuery] GetStudentApplesStatisticsQuery query)
+    {
+        var studentsQuery = context.Students.AsNoTracking().AsQueryable();
+        if (query.Level is not null)
+        {
+            studentsQuery = studentsQuery.Where(s => s.Level == query.Level);
+        }
+
+        var studentsWithApples = await studentsQuery.CountAsync(s => s.Apples > 0);
+        var totalApplesOutstanding = await studentsQuery.SumAsync(s => (long)s.Apples);
+
+        var transactionsQuery = context.Set<StudentAppleTransaction>().AsNoTracking().AsQueryable();
+
+        if (query.Level is not null)
+        {
+            var level = query.Level.Value;
+            transactionsQuery = transactionsQuery.Where(t =>
+                context.Students.Any(s => s.Id == t.StudentId && s.Level == level));
+        }
+
+        if (query.StartDate is not null)
+        {
+            var start = query.StartDate.Value.UtcDateTime;
+            transactionsQuery = transactionsQuery.Where(t => t.CreatedAt >= start);
+        }
+
+        if (query.EndDate is not null)
+        {
+            var end = query.EndDate.Value.UtcDateTime;
+            transactionsQuery = transactionsQuery.Where(t => t.CreatedAt <= end);
+        }
+
+        var transactionsInRange = await transactionsQuery.CountAsync();
+        var applesAwardedInRange = await transactionsQuery
+            .Where(t => t.Amount > 0)
+            .SumAsync(t => (long?)t.Amount) ?? 0;
+        var applesDeductedInRange = await transactionsQuery
+            .Where(t => t.Amount < 0)
+            .SumAsync(t => (long?)(-t.Amount)) ?? 0;
+        var netApplesInRange = applesAwardedInRange - applesDeductedInRange;
+
+        var topStudents = await studentsQuery
+            .Where(s => s.Apples > 0)
+            .OrderByDescending(s => s.Apples)
+            .ThenBy(s => s.FullName)
+            .Take(10)
+            .Select(s => new StudentAppleLeaderboardItem(
+                s.Id,
+                s.FullName,
+                s.StudentCode,
+                s.Apples,
+                s.Level))
+            .ToListAsync();
+
+        var dailyRaw = await transactionsQuery
+            .GroupBy(t => t.CreatedAt.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Awarded = g.Where(t => t.Amount > 0).Sum(t => (long)t.Amount),
+                Deducted = g.Where(t => t.Amount < 0).Sum(t => (long)(-t.Amount)),
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        var applesByDay = dailyRaw
+            .Select(x => new StudentAppleDailyBucket(
+                DateOnly.FromDateTime(x.Date),
+                x.Awarded,
+                x.Deducted,
+                x.Awarded - x.Deducted))
+            .ToList();
+
+        var applesByLevel = await studentsQuery
+            .GroupBy(s => s.Level)
+            .Select(g => new StudentAppleLevelBucket(
+                g.Key,
+                g.Count(s => s.Apples > 0),
+                g.Sum(s => (long)s.Apples)))
+            .OrderBy(x => x.Level)
+            .ToListAsync();
+
+        return new ApiWrapper.Success<GetStudentApplesStatisticsResponse>
+        {
+            Data = new GetStudentApplesStatisticsResponse(
+                studentsWithApples,
+                totalApplesOutstanding,
+                transactionsInRange,
+                applesAwardedInRange,
+                applesDeductedInRange,
+                netApplesInRange,
+                topStudents,
+                applesByDay,
+                applesByLevel)
+        };
+    }
+
     [AllowAnonymous]
     [HttpGet("latest-lectures", Name = "GetLatestLectures")]
     [SwaggerOperation(OperationId = "GetLatestLectures")]

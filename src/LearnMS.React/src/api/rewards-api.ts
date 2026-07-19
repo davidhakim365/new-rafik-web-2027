@@ -228,3 +228,50 @@ export const useAddStudentApplesByCodeMutation = () => {
     },
   });
 };
+
+export type StudentAppleLeaderboardItem = {
+  studentId: string;
+  fullName: string;
+  studentCode: string;
+  apples: number;
+  level: string;
+};
+
+export type StudentAppleDailyBucket = {
+  date: string;
+  awarded: number;
+  deducted: number;
+  net: number;
+};
+
+export type StudentAppleLevelBucket = {
+  level: string;
+  studentsWithApples: number;
+  totalApples: number;
+};
+
+export type StudentApplesStatistics = {
+  studentsWithApples: number;
+  totalApplesOutstanding: number;
+  transactionsInRange: number;
+  applesAwardedInRange: number;
+  applesDeductedInRange: number;
+  netApplesInRange: number;
+  topStudents: StudentAppleLeaderboardItem[];
+  applesByDay: StudentAppleDailyBucket[];
+  applesByLevel: StudentAppleLevelBucket[];
+};
+
+export const useStudentApplesStatisticsQuery = (params?: {
+  startDate?: string;
+  endDate?: string;
+  level?: string;
+}) => {
+  return useQuery<ApiResponse<StudentApplesStatistics>>({
+    queryKey: ["statistics", "student-apples", params],
+    queryFn: () =>
+      api
+        .get("/api/statistics/student-apples", { params })
+        .then((res) => res.data),
+  });
+};
