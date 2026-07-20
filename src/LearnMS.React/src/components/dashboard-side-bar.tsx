@@ -125,6 +125,13 @@ const userItems: NavItem[] = [
     permission: Permission.ManageStudentApples,
   },
   {
+    to: "/dashboard/apple-rewards-store",
+    label: "Apple Rewards Store",
+    icon: Gift,
+    match: (pathname) => pathname.startsWith("/dashboard/apple-rewards-store"),
+    permission: Permission.ManageStudentApples,
+  },
+  {
     to: "/dashboard/my-profile",
     label: "My Profile",
     icon: UserRound,

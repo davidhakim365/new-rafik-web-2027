@@ -29,4 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Lecture> Lectures => Set<Lecture>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<CreditCode> CreditCodes => Set<CreditCode>();
+    public DbSet<AppleRewardItem> AppleRewardItems => Set<AppleRewardItem>();
+    public DbSet<AppleStoreSettings> AppleStoreSettings => Set<AppleStoreSettings>();
+    public DbSet<AppleRewardOrder> AppleRewardOrders => Set<AppleRewardOrder>();
 }

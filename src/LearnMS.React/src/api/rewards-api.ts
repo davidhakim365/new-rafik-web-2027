@@ -275,3 +275,215 @@ export const useStudentApplesStatisticsQuery = (params?: {
         .then((res) => res.data),
   });
 };
+
+// --- Apple Rewards Store ---
+
+export type AppleStoreSettings = {
+  isEnabled: boolean;
+  opensAt?: string | null;
+  closesAt?: string | null;
+  isOpen: boolean;
+  updatedAt: string;
+};
+
+export type AppleRewardItem = {
+  id: string;
+  title: string;
+  imageUrl: string;
+  appleCost: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StudentAppleOrder = {
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  itemImageUrl?: string | null;
+  appleCost: number;
+  status: string;
+  createdAt: string;
+  cancelledAt?: string | null;
+};
+
+export type StudentAppleStoreCatalog = {
+  isOpen: boolean;
+  opensAt?: string | null;
+  closesAt?: string | null;
+  apples: number;
+  applesSpentOnActiveOrders: number;
+  items: AppleRewardItem[];
+  myOrders: StudentAppleOrder[];
+};
+
+export type AppleStoreAdminOverview = {
+  activeOrders: number;
+  cancelledOrders: number;
+  totalOrders: number;
+  applesSpentActive: number;
+  uniqueStudents: number;
+  items: Array<{
+    itemId: string;
+    title: string;
+    imageUrl?: string | null;
+    appleCost: number;
+    activeOrders: number;
+    cancelledOrders: number;
+    totalOrders: number;
+    applesSpentActive: number;
+  }>;
+};
+
+export type AppleStoreAdminOrder = {
+  orderId: string;
+  studentId: string;
+  studentFullName: string;
+  studentCode: string;
+  level: string;
+  itemId: string;
+  itemTitle: string;
+  appleCost: number;
+  status: string;
+  createdAt: string;
+  cancelledAt?: string | null;
+};
+
+export type AppleStoreAdminOrders = {
+  items: AppleStoreAdminOrder[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+export const useAppleStoreSettingsQuery = () =>
+  useQuery<ApiResponse<AppleStoreSettings>>({
+    queryKey: ["apple-store", "settings"],
+    queryFn: () => api.get("/api/rewards/store/settings").then((res) => res.data),
+  });
+
+export const useUpdateAppleStoreSettingsMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      isEnabled: boolean;
+      opensAt?: string | null;
+      closesAt?: string | null;
+    }) => api.put("/api/rewards/store/settings", data).then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["apple-store"] });
+    },
+  });
+};
+
+export const useAppleStoreItemsQuery = (includeInactive = true) =>
+  useQuery<ApiResponse<AppleRewardItem[]>>({
+    queryKey: ["apple-store", "items", includeInactive],
+    queryFn: () =>
+      api
+        .get("/api/rewards/store/items", { params: { includeInactive } })
+        .then((res) => res.data),
+  });
+
+export const useCreateAppleStoreItemMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      title: string;
+      imageUrl: string;
+      appleCost: number;
+      sortOrder?: number;
+      isActive?: boolean;
+    }) => api.post("/api/rewards/store/items", data).then((res) => res.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apple-store"] }),
+  });
+};
+
+export const useUpdateAppleStoreItemMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      data,
+    }: {
+      itemId: string;
+      data: {
+        title: string;
+        imageUrl: string;
+        appleCost: number;
+        sortOrder: number;
+        isActive: boolean;
+      };
+    }) =>
+      api.put(`/api/rewards/store/items/${itemId}`, data).then((res) => res.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apple-store"] }),
+  });
+};
+
+export const useDeleteAppleStoreItemMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) =>
+      api.delete(`/api/rewards/store/items/${itemId}`).then((res) => res.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apple-store"] }),
+  });
+};
+
+export const useAppleStoreOverviewQuery = () =>
+  useQuery<ApiResponse<AppleStoreAdminOverview>>({
+    queryKey: ["apple-store", "overview"],
+    queryFn: () =>
+      api.get("/api/rewards/store/admin/overview").then((res) => res.data),
+  });
+
+export const useAppleStoreOrdersQuery = (params: {
+  itemId?: string;
+  level?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) =>
+  useQuery<ApiResponse<AppleStoreAdminOrders>>({
+    queryKey: ["apple-store", "orders", params],
+    queryFn: () =>
+      api
+        .get("/api/rewards/store/admin/orders", { params })
+        .then((res) => res.data),
+  });
+
+export const useAppleStoreStatusQuery = (enabled = true) =>
+  useQuery<ApiResponse<{ isOpen: boolean; opensAt?: string | null; closesAt?: string | null }>>({
+    queryKey: ["apple-store", "status"],
+    enabled,
+    queryFn: () => api.get("/api/rewards/store/status").then((res) => res.data),
+    refetchInterval: 60_000,
+  });
+
+export const useAppleStoreCatalogQuery = (enabled = true) =>
+  useQuery<ApiResponse<StudentAppleStoreCatalog>>({
+    queryKey: ["apple-store", "catalog"],
+    enabled,
+    queryFn: () => api.get("/api/rewards/store/catalog").then((res) => res.data),
+  });
+
+export const useRedeemAppleStoreItemMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) =>
+      api.post("/api/rewards/store/orders", { itemId }).then((res) => res.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apple-store"] }),
+  });
+};
+
+export const useCancelAppleStoreOrderMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) =>
+      api
+        .post(`/api/rewards/store/orders/${orderId}/cancel`)
+        .then((res) => res.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["apple-store"] }),
+  });
+};

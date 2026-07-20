@@ -36,6 +36,7 @@ public static class FeaturesDependencyInjection
         services.Configure<RewardSystemConfig>(cfg.GetSection(RewardSystemConfig.Section));
         services.AddScoped<IAdministrationService, AdministrationService>();
         services.AddScoped<IRewardsService, RewardsService>();
+        services.AddScoped<IAppleStoreService, AppleStoreService>();
         services.AddScoped<IQuestionsService, QuestionsService>();
 
         services.AddAssets();

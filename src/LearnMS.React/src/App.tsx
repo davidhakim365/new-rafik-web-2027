@@ -24,6 +24,7 @@ import AssistantRewardsScannerPage from "@/pages/dashboard/rewards/assistant-rew
 import MyProfilePage from "@/pages/dashboard/rewards/my-profile-page";
 import MyRewardsPage from "@/pages/dashboard/rewards/my-rewards-page";
 import StudentApplesScannerPage from "@/pages/dashboard/rewards/student-apples-scanner-page";
+import AppleRewardsStorePage from "@/pages/dashboard/rewards/apple-rewards-store-page";
 import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
 import StudentDetailsPage from "@/pages/dashboard/students/student-details-page";
 import StudentsPage from "@/pages/dashboard/students/students-page";
@@ -35,6 +36,7 @@ import StudentLecturePage from "@/pages/student/lectures/student-lecture-page";
 import StudentLessonPage from "@/pages/student/lessons/student-lesson-page";
 import StudentPayments from "@/pages/student/payment/student-payments";
 import StudentQuizPage from "@/pages/student/quizzes/student-quiz-page";
+import StudentAppleRewardsPage from "@/pages/student/rewards/student-apple-rewards-page";
 import ParentLoginPage from "@/pages/parent/parent-login-page";
 import ParentDashboardPage from "@/pages/parent/parent-dashboard-page";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
@@ -112,6 +114,7 @@ function App() {
                 element={<StudentQuizPage />}
               />
               <Route path="payments" element={<StudentPayments />} />
+              <Route path="apple-rewards" element={<StudentAppleRewardsPage />} />
             </Route>
             <Route
               path="/dashboard"
@@ -339,6 +342,17 @@ function App() {
                     permissions={["ManageStudentApples"]}
                   >
                     <StudentApplesScannerPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="apple-rewards-store"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageStudentApples"]}
+                  >
+                    <AppleRewardsStorePage />
                   </RequireAuth>
                 }
               />

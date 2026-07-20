@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Menu as MenuIcon, X as XIcon, User, LogOut } from "lucide-react";
 import { useScroll, motion, AnimatePresence } from "framer-motion";
 import { cn, getFirstCharacters } from "@/lib/utils";
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useLogoutMutation } from "@/api/auth-api";
+import { useAppleStoreStatusQuery } from "@/api/rewards-api";
 import { useGetProfile } from "@/generated/api";
 import { useModalStore } from "@/store/use-modal-store";
 import { Link } from "react-router-dom";
@@ -43,8 +44,11 @@ const NavBar: React.FC<NavBarProps> = ({
   const [selectedTab, setSelectedTab] = useState<number | null>(null);
   const { pathname } = useLocation();
 
+  const isStudent =
+    !!profile?.data && profile.data.$type === "GetStudentProfileResult";
+  const { data: storeStatus } = useAppleStoreStatusQuery(isStudent);
+
   const coursesHref = (() => {
-    const isStudent = profile?.data && profile.data.$type === "GetStudentProfileResult";
     if (!isStudent) return "/sign-in-sign-up";
     const level = (profile!.data as GetStudentProfileResult).level;
     if (level) {
@@ -56,13 +60,19 @@ const NavBar: React.FC<NavBarProps> = ({
     return "/courses";
   })();
 
-
-  const links = propLinks || [
-    { href: "/", label: t("navbar.links.home") },
-    { href: coursesHref, label: t("navbar.links.courses") },
-    { href: "/payments", label: t("navbar.links.payments") },
-    { href: "/parent", label: t("navbar.links.parent") },
-  ];
+  const links = useMemo(() => {
+    if (propLinks) return propLinks;
+    const base = [
+      { href: "/", label: t("navbar.links.home") },
+      { href: coursesHref, label: t("navbar.links.courses") },
+      { href: "/payments", label: t("navbar.links.payments") },
+      { href: "/parent", label: t("navbar.links.parent") },
+    ];
+    if (isStudent && storeStatus?.data?.isOpen) {
+      base.splice(3, 0, { href: "/apple-rewards", label: "Apple Rewards" });
+    }
+    return base;
+  }, [propLinks, t, coursesHref, isStudent, storeStatus?.data?.isOpen]);
 
   useEffect(() => {
     const unsubscribe = scrollYProgress.on("change", (latest) => {
