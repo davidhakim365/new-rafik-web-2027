@@ -282,28 +282,12 @@ public sealed class AppleStoreService(AppDbContext db) : IAppleStoreService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 200);
 
-        var query = BuildOrdersQuery(itemId, level, status, search);
-
-        var totalCount = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(x => x.CreatedAt)
+        var studentRows = await BuildStudentRowsAsync(itemId, level, status, search);
+        var totalCount = studentRows.Count;
+        var items = studentRows
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new AppleStoreAdminOrderItem
-            {
-                OrderId = x.Id,
-                StudentId = x.StudentId,
-                StudentFullName = x.Student!.FullName,
-                StudentCode = x.Student.StudentCode,
-                Level = x.Student.Level,
-                ItemId = x.ItemId,
-                ItemTitle = x.ItemTitleSnapshot,
-                AppleCost = x.AppleCostSnapshot,
-                Status = x.Status.ToString(),
-                CreatedAt = x.CreatedAt,
-                CancelledAt = x.CancelledAt
-            })
-            .ToListAsync();
+            .ToList();
 
         return new AppleStoreAdminOrdersResult
         {
@@ -319,36 +303,98 @@ public sealed class AppleStoreService(AppDbContext db) : IAppleStoreService
         StudentLevel? level,
         AppleRewardOrderStatus? status)
     {
+        var studentRows = await BuildStudentRowsAsync(itemId, level, status, null);
         const int chunk = 100;
-        var skip = 0;
 
-        while (true)
+        for (var skip = 0; skip < studentRows.Count; skip += chunk)
         {
-            var rows = await BuildOrdersQuery(itemId, level, status, null)
-                .OrderByDescending(x => x.CreatedAt)
+            var rows = studentRows
                 .Skip(skip)
                 .Take(chunk)
                 .Select(x => new AppleStoreOrderExportRow
                 {
-                    StudentName = x.Student!.FullName,
-                    StudentCode = x.Student.StudentCode,
-                    Level = x.Student.Level.ToString(),
-                    ItemTitle = x.ItemTitleSnapshot,
-                    Apples = x.AppleCostSnapshot,
-                    Status = x.Status.ToString(),
-                    ChosenAt = x.CreatedAt
+                    StudentName = x.StudentFullName,
+                    StudentCode = x.StudentCode,
+                    Level = x.Level.ToString(),
+                    Items = x.ItemsSummary,
+                    ItemsCount = x.ItemsCount,
+                    TotalApples = x.TotalApples,
+                    Status = status?.ToString() ?? "All",
+                    LatestChosenAt = x.LatestChosenAt
                 })
-                .ToListAsync();
+                .ToList();
 
             if (rows.Count == 0)
                 yield break;
 
             yield return rows;
-            if (rows.Count < chunk)
-                yield break;
-
-            skip += chunk;
         }
+    }
+
+    private async Task<List<AppleStoreAdminStudentRow>> BuildStudentRowsAsync(
+        Guid? itemId,
+        StudentLevel? level,
+        AppleRewardOrderStatus? status,
+        string? search)
+    {
+        // Load all orders matching level/status/search (not yet filtered by item),
+        // then group by student so each row lists every chosen item together.
+        var orders = await BuildOrdersQuery(itemId: null, level, status, search)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new
+            {
+                x.StudentId,
+                StudentFullName = x.Student!.FullName,
+                StudentCode = x.Student.StudentCode,
+                Level = x.Student.Level,
+                x.ItemId,
+                ItemTitle = x.ItemTitleSnapshot,
+                AppleCost = x.AppleCostSnapshot,
+                ChosenAt = x.CreatedAt
+            })
+            .ToListAsync();
+
+        if (itemId is not null)
+        {
+            var studentIdsWithItem = orders
+                .Where(o => o.ItemId == itemId)
+                .Select(o => o.StudentId)
+                .ToHashSet();
+            orders = orders.Where(o => studentIdsWithItem.Contains(o.StudentId)).ToList();
+        }
+
+        return orders
+            .GroupBy(o => o.StudentId)
+            .Select(g =>
+            {
+                var first = g.First();
+                var chosen = g
+                    .OrderByDescending(o => o.ChosenAt)
+                    .Select(o => new AppleStoreAdminStudentChosenItem
+                    {
+                        ItemId = o.ItemId,
+                        ItemTitle = o.ItemTitle,
+                        AppleCost = o.AppleCost,
+                        ChosenAt = o.ChosenAt
+                    })
+                    .ToList();
+
+                return new AppleStoreAdminStudentRow
+                {
+                    StudentId = g.Key,
+                    StudentFullName = first.StudentFullName,
+                    StudentCode = first.StudentCode,
+                    Level = first.Level,
+                    Items = chosen,
+                    ItemsSummary = string.Join(", ", chosen.Select(i => i.ItemTitle)),
+                    ItemsCount = chosen.Count,
+                    TotalApples = chosen.Sum(i => i.AppleCost),
+                    LatestChosenAt = chosen.Max(i => i.ChosenAt)
+                };
+            })
+            .OrderByDescending(x => x.LatestChosenAt)
+            .ThenBy(x => x.StudentFullName)
+            .ToList();
     }
 
     private IQueryable<AppleRewardOrder> BuildOrdersQuery(

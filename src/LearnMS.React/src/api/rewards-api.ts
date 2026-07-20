@@ -337,17 +337,20 @@ export type AppleStoreAdminOverview = {
 };
 
 export type AppleStoreAdminOrder = {
-  orderId: string;
   studentId: string;
   studentFullName: string;
   studentCode: string;
   level: string;
-  itemId: string;
-  itemTitle: string;
-  appleCost: number;
-  status: string;
-  createdAt: string;
-  cancelledAt?: string | null;
+  items: Array<{
+    itemId: string;
+    itemTitle: string;
+    appleCost: number;
+    chosenAt: string;
+  }>;
+  itemsSummary: string;
+  itemsCount: number;
+  totalApples: number;
+  latestChosenAt: string;
 };
 
 export type AppleStoreAdminOrders = {

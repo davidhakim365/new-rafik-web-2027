@@ -350,7 +350,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageStudentApples"]}
+                    permissions={["ManageAppleRewardsStore"]}
                   >
                     <AppleRewardsStorePage />
                   </RequireAuth>

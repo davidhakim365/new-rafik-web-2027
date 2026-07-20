@@ -14,7 +14,8 @@ export type Permission =
   | "ViewStatistics"
   | "ManageGrantedAccess"
   | "ManageExpirationTime"
-  | "ManageStudentApples";
+  | "ManageStudentApples"
+  | "ManageAppleRewardsStore";
 
 export type Profile = {
   id: string;

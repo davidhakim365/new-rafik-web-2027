@@ -129,7 +129,7 @@ const userItems: NavItem[] = [
     label: "Apple Rewards Store",
     icon: Gift,
     match: (pathname) => pathname.startsWith("/dashboard/apple-rewards-store"),
-    permission: Permission.ManageStudentApples,
+    permission: Permission.ManageAppleRewardsStore,
   },
   {
     to: "/dashboard/my-profile",

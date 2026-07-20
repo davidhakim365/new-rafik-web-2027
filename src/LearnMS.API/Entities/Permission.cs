@@ -16,5 +16,6 @@ public enum Permission
     ViewStatistics,
     ManageGrantedAccess,
     ManageExpirationTime,
-    ManageStudentApples
+    ManageStudentApples,
+    ManageAppleRewardsStore
 }

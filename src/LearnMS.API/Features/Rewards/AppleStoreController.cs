@@ -17,7 +17,7 @@ public sealed class AppleStoreController(
     ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpGet("settings")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "GetAppleStoreSettings")]
     public async Task<ApiWrapper.Success<AppleStoreSettingsResult>> GetSettings()
     {
@@ -26,7 +26,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpPut("settings")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "UpdateAppleStoreSettings")]
     public async Task<ApiWrapper.Success<AppleStoreSettingsResult>> UpdateSettings(
         [FromBody] UpsertAppleStoreSettingsRequest request)
@@ -36,7 +36,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpGet("items")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "ListAppleStoreItems")]
     public async Task<ApiWrapper.Success<List<AppleRewardItemResult>>> ListItems(
         [FromQuery] bool includeInactive = true)
@@ -46,7 +46,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpPost("items")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "CreateAppleStoreItem")]
     public async Task<ApiWrapper.Success<AppleRewardItemResult>> CreateItem(
         [FromBody] CreateAppleRewardItemRequest request)
@@ -56,7 +56,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpPut("items/{itemId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "UpdateAppleStoreItem")]
     public async Task<ApiWrapper.Success<AppleRewardItemResult>> UpdateItem(
         Guid itemId,
@@ -67,7 +67,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpDelete("items/{itemId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "DeleteAppleStoreItem")]
     public async Task<ApiWrapper.Success<object?>> DeleteItem(Guid itemId)
     {
@@ -76,7 +76,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpGet("admin/overview")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "GetAppleStoreAdminOverview")]
     public async Task<ApiWrapper.Success<AppleStoreAdminOverviewResult>> GetOverview()
     {
@@ -85,7 +85,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpGet("admin/orders")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "GetAppleStoreAdminOrders")]
     public async Task<ApiWrapper.Success<AppleStoreAdminOrdersResult>> GetOrders(
         [FromQuery] Guid? itemId,
@@ -100,7 +100,7 @@ public sealed class AppleStoreController(
     }
 
     [HttpGet("admin/orders/export")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudentApples])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageAppleRewardsStore])]
     [SwaggerOperation(OperationId = "ExportAppleStoreOrders")]
     public async Task<IActionResult> ExportOrders(
         [FromQuery] Guid? itemId,

@@ -21,4 +21,5 @@ export const Permission = {
   ManageGrantedAccess: 'ManageGrantedAccess',
   ManageExpirationTime: 'ManageExpirationTime',
   ManageStudentApples: 'ManageStudentApples',
+  ManageAppleRewardsStore: 'ManageAppleRewardsStore',
 } as const;

@@ -119,24 +119,30 @@ public sealed class AppleStoreAdminOverviewResult
     public required List<AppleStoreItemStat> Items { get; set; }
 }
 
-public sealed class AppleStoreAdminOrderItem
+public sealed class AppleStoreAdminStudentChosenItem
 {
-    public Guid OrderId { get; set; }
+    public Guid ItemId { get; set; }
+    public required string ItemTitle { get; set; }
+    public int AppleCost { get; set; }
+    public DateTime ChosenAt { get; set; }
+}
+
+public sealed class AppleStoreAdminStudentRow
+{
     public Guid StudentId { get; set; }
     public required string StudentFullName { get; set; }
     public required string StudentCode { get; set; }
     public StudentLevel Level { get; set; }
-    public Guid ItemId { get; set; }
-    public required string ItemTitle { get; set; }
-    public int AppleCost { get; set; }
-    public required string Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? CancelledAt { get; set; }
+    public required List<AppleStoreAdminStudentChosenItem> Items { get; set; }
+    public required string ItemsSummary { get; set; }
+    public int ItemsCount { get; set; }
+    public int TotalApples { get; set; }
+    public DateTime LatestChosenAt { get; set; }
 }
 
 public sealed class AppleStoreAdminOrdersResult
 {
-    public required List<AppleStoreAdminOrderItem> Items { get; set; }
+    public required List<AppleStoreAdminStudentRow> Items { get; set; }
     public int TotalCount { get; set; }
     public int Page { get; set; }
     public int PageSize { get; set; }
@@ -147,8 +153,9 @@ public sealed class AppleStoreOrderExportRow
     public required string StudentName { get; set; }
     public required string StudentCode { get; set; }
     public required string Level { get; set; }
-    public required string ItemTitle { get; set; }
-    public int Apples { get; set; }
+    public required string Items { get; set; }
+    public int ItemsCount { get; set; }
+    public int TotalApples { get; set; }
     public required string Status { get; set; }
-    public DateTime ChosenAt { get; set; }
+    public DateTime LatestChosenAt { get; set; }
 }

@@ -641,37 +641,44 @@ function StudentsTab() {
                     <th className="px-3 py-2 font-medium">Student</th>
                     <th className="px-3 py-2 font-medium">Code</th>
                     <th className="px-3 py-2 font-medium">Level</th>
-                    <th className="px-3 py-2 font-medium">Item</th>
-                    <th className="px-3 py-2 font-medium">Apples</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Chosen at</th>
+                    <th className="px-3 py-2 font-medium">Items</th>
+                    <th className="px-3 py-2 font-medium">Count</th>
+                    <th className="px-3 py-2 font-medium">Total apples</th>
+                    <th className="px-3 py-2 font-medium">Latest choice</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-color2/10">
-                  {orders.map((order) => (
-                    <tr key={order.orderId}>
+                  {orders.map((row) => (
+                    <tr key={row.studentId}>
                       <td className="px-3 py-2.5 font-medium">
-                        {order.studentFullName}
+                        {row.studentFullName}
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground">
-                        {order.studentCode}
+                        {row.studentCode}
                       </td>
                       <td className="px-3 py-2.5">
-                        {String(order.level).replace("Level", "Level ")}
+                        {String(row.level).replace("Level", "Level ")}
                       </td>
-                      <td className="px-3 py-2.5">{order.itemTitle}</td>
-                      <td className="px-3 py-2.5">{order.appleCost}</td>
                       <td className="px-3 py-2.5">
-                        <Badge
-                          variant={
-                            order.status === "Active" ? "secondary" : "outline"
-                          }
-                        >
-                          {order.status}
-                        </Badge>
+                        <div className="flex max-w-md flex-wrap gap-1.5">
+                          {row.items.map((item, idx) => (
+                            <Badge
+                              key={`${row.studentId}-${item.itemId}-${idx}`}
+                              variant="secondary"
+                              className="font-normal"
+                            >
+                              {item.itemTitle}
+                              <span className="ml-1 text-muted-foreground">
+                                ({item.appleCost})
+                              </span>
+                            </Badge>
+                          ))}
+                        </div>
                       </td>
+                      <td className="px-3 py-2.5">{row.itemsCount}</td>
+                      <td className="px-3 py-2.5 font-medium">{row.totalApples}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">
-                        {format(new Date(order.createdAt), "MMM d, yyyy HH:mm")}
+                        {format(new Date(row.latestChosenAt), "MMM d, yyyy HH:mm")}
                       </td>
                     </tr>
                   ))}
