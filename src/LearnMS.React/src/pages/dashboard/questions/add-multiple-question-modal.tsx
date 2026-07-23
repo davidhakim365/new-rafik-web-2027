@@ -19,7 +19,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadToImgBb } from "@/lib/imgbb-upload";
 import { toast } from "@/lib/utils";
-import { QuestionChoiceDraft } from "@/types/assessment";
+import {
+  createDefaultMultipleChoices,
+  createEmptyChoice,
+  QuestionChoiceDraft,
+} from "@/types/assessment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Delete, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
@@ -33,10 +37,9 @@ interface AddMultipleQuestionModalProps {
 const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
   onClose,
 }) => {
-  const [choices, setChoices] = useState<QuestionChoiceDraft[]>([
-    { id: crypto.randomUUID(), text: "" },
-    { id: crypto.randomUUID(), text: "" },
-  ]);
+  const [choices, setChoices] = useState<QuestionChoiceDraft[]>(() =>
+    createDefaultMultipleChoices()
+  );
   const [uploading, setUploading] = useState(false);
   const addQuestionMutation = useAddQuestionMutation();
 
@@ -175,7 +178,7 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                         onClick={() =>
                           setChoices((opts) => [
                             ...opts,
-                            { id: crypto.randomUUID(), text: "" },
+                            createEmptyChoice(opts.length),
                           ])
                         }
                       >
@@ -199,7 +202,7 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                               <div className="flex items-center gap-2">
                                 <Input
                                   value={choice.text ?? ""}
-                                  placeholder="Choice text"
+                                  placeholder={`e.g. ${String.fromCharCode(97 + index)}) answer text`}
                                   onChange={(e) => {
                                     setChoices((opts) => {
                                       const next = [...opts];

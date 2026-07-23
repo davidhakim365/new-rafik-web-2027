@@ -44,25 +44,42 @@ export function draftToPayload(d: DraftQuestion): InlineQuestionPayload {
   };
 }
 
+/** Letter label for choice index: 0 -> a), 1 -> b), ... */
+export function choiceLetterLabel(index: number): string {
+  return `${String.fromCharCode(97 + index)})`;
+}
+
+/** Default four choices: a), b), c), d) — ready to fill in. */
+export function createDefaultMultipleChoices(
+  count = 4
+): QuestionChoiceDraft[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: crypto.randomUUID(),
+    text: `${choiceLetterLabel(i)} `,
+  }));
+}
+
+export function createEmptyChoice(index: number): QuestionChoiceDraft {
+  return {
+    id: crypto.randomUUID(),
+    text: `${choiceLetterLabel(index)} `,
+  };
+}
+
 export function createEmptyDraft(
   type: DraftQuestion["questionType"] = "MultipleChoice"
 ): DraftQuestion {
-  const c1 = crypto.randomUUID();
-  const c2 = crypto.randomUUID();
+  const multipleChoices =
+    type === "MultipleChoice" ? createDefaultMultipleChoices() : undefined;
   return {
     localId: crypto.randomUUID(),
     questionType: type,
     inputMode: "photo",
     text: "",
     description: "",
-    multipleChoices:
-      type === "MultipleChoice"
-        ? [
-            { id: c1, text: "" },
-            { id: c2, text: "" },
-          ]
-        : undefined,
-    multipleCorrect: type === "MultipleChoice" ? c1 : undefined,
+    multipleChoices,
+    multipleCorrect:
+      type === "MultipleChoice" ? multipleChoices![0].id : undefined,
     valueCorrect: type === "ValueTolerance" ? 0 : undefined,
     valueTolerance: type === "ValueTolerance" ? 0 : undefined,
   };

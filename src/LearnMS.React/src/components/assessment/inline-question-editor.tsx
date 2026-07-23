@@ -12,7 +12,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { uploadToImgBb } from "@/lib/imgbb-upload";
 import { toast } from "@/lib/utils";
-import { DraftQuestion, QuestionChoiceDraft } from "@/types/assessment";
+import {
+  createDefaultMultipleChoices,
+  createEmptyChoice,
+  DraftQuestion,
+  QuestionChoiceDraft,
+} from "@/types/assessment";
 import { ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -56,13 +61,9 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
               const type = v as DraftQuestion["questionType"];
               const patch: Partial<DraftQuestion> = { questionType: type };
               if (type === "MultipleChoice" && !draft.multipleChoices?.length) {
-                const c1 = crypto.randomUUID();
-                const c2 = crypto.randomUUID();
-                patch.multipleChoices = [
-                  { id: c1, text: "" },
-                  { id: c2, text: "" },
-                ];
-                patch.multipleCorrect = c1;
+                const choices = createDefaultMultipleChoices();
+                patch.multipleChoices = choices;
+                patch.multipleCorrect = choices[0].id;
               }
               if (type === "ValueTolerance") {
                 patch.valueCorrect = draft.valueCorrect ?? 0;
@@ -162,14 +163,15 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
               type="button"
               size="sm"
               variant="outline"
-              onClick={() =>
+              onClick={() => {
+                const existing = draft.multipleChoices ?? [];
                 onChange({
                   multipleChoices: [
-                    ...(draft.multipleChoices ?? []),
-                    { id: crypto.randomUUID(), text: "" },
+                    ...existing,
+                    createEmptyChoice(existing.length),
                   ],
-                })
-              }
+                });
+              }}
             >
               <Plus className="h-4 w-4 mr-1" /> Add choice
             </Button>
@@ -192,7 +194,7 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
                 </div>
                 <div className="flex-1 space-y-2">
                   <Input
-                    placeholder={`Choice ${idx + 1} text`}
+                    placeholder={`e.g. ${String.fromCharCode(97 + idx)}) answer text`}
                     value={c.text ?? ""}
                     onChange={(e) => setChoice(c.id, { text: e.target.value })}
                   />
