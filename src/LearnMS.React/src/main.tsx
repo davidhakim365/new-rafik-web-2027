@@ -1,5 +1,7 @@
 import { Toaster as Sonner } from "@/components/ui/sonner.tsx";
 import { Toaster } from "@/components/ui/toaster.tsx";
+import { ThemeProvider } from "@/components/theme-provider";
+import { initNativeShell } from "@/lib/init-native-shell";
 import {
   QueryCache,
   QueryClient,
@@ -10,10 +12,11 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import ModalProvider from "./components/modals/modal-provider.tsx";
-import { ThemeProvider } from "@/components/theme-provider";
 import "./i18n";
 
 import "./index.css";
+
+void initNativeShell();
 
 const queryClient = new QueryClient({
   defaultOptions: {

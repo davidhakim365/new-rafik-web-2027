@@ -1,5 +1,6 @@
 import { ApiResponse } from "@/api";
 import { ApiError } from "@/lib/axiosCustomInstant";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 import { toast } from "@/components/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -85,7 +86,9 @@ export type ParentProgressResult = {
   appleTransactions: ParentAppleTransactionItem[];
 };
 
-const parentApi = axios.create();
+const parentApi = axios.create({
+  baseURL: getApiBaseUrl() || undefined,
+});
 
 parentApi.interceptors.response.use(
   (response) => response,

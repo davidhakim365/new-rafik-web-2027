@@ -1,7 +1,10 @@
+import { getApiBaseUrl } from "@/lib/api-base-url";
 import { toast } from "@/lib/utils";
 import Axios, { AxiosError, AxiosRequestConfig } from "axios";
 
-export const AXIOS_INSTANCE = Axios.create(); // use your own URL here or environment variable
+export const AXIOS_INSTANCE = Axios.create({
+  baseURL: getApiBaseUrl() || undefined,
+});
 
 AXIOS_INSTANCE.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");

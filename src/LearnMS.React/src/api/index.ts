@@ -1,4 +1,5 @@
 import { toast } from "@/components/ui/use-toast";
+import { getApiBaseUrl } from "@/lib/api-base-url";
 import { ApiError } from "@/lib/axiosCustomInstant";
 import axios from "axios";
 
@@ -7,7 +8,9 @@ export class ApiResponse<TData> {
   constructor(public message: string, public data: TData) {}
 }
 
-export const api = axios.create();
+export const api = axios.create({
+  baseURL: getApiBaseUrl() || undefined,
+});
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");

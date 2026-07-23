@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { resolveApiUrl } from "@/lib/api-base-url";
 import { Asset } from "@/types/assets";
 import React from "react";
 import { FaFile, FaFilePdf, FaImage } from "react-icons/fa";
@@ -10,7 +11,8 @@ interface Props {
 }
 
 const LectureAssetsModal: React.FC<Props> = ({ onClose, assets }) => {
-  const href = (asset: Asset) => asset.url || `/api/assets/${asset.id}`;
+  const href = (asset: Asset) =>
+    resolveApiUrl(asset.url || `/api/assets/${asset.id}`);
 
   return (
     <Dialog open onOpenChange={onClose}>
