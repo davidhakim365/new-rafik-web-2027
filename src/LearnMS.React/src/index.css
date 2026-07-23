@@ -156,6 +156,21 @@
   .dark select {
     @apply caret-color2;
   }
+
+  /* Soft lockdown for students — allow typing in form fields */
+  html.student-security-lock,
+  html.student-security-lock body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html.student-security-lock input,
+  html.student-security-lock textarea,
+  html.student-security-lock select,
+  html.student-security-lock [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @layer utilities {
