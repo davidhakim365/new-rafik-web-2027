@@ -22,7 +22,7 @@ export const DashboardLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-dashboard pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] lg:flex-row">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-dashboard lg:flex-row">
       <PhysicsGrid className="opacity-50" />
       <GlowOrb
         className="pointer-events-none absolute right-0 top-0 h-96 w-96 opacity-25 blur-3xl"

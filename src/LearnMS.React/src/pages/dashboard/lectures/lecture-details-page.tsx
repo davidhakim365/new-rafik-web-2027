@@ -27,7 +27,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { toast } from "@/components/ui/use-toast";
-import { resolveApiUrl } from "@/lib/api-base-url";
 import { Lesson } from "@/types/lessons";
 import { Quiz } from "@/types/quiz";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1131,7 +1130,7 @@ function LectureAssetsFrom({
   }, [oldAssetIds]);
 
   const assetHref = (asset: (typeof assets)[number]) =>
-    resolveApiUrl(asset.url || `/api/assets/${asset.id}`);
+    asset.url || `/api/assets/${asset.id}`;
 
   return (
     <div className='w-full h-full'>

@@ -1,8 +1,11 @@
 # React + TypeScript + Vite
 
-## Mobile (iOS & Android)
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-This app can be packaged with Capacitor. See **[MOBILE.md](./MOBILE.md)** for `VITE_API_URL`, build/sync, and opening Android Studio / Xcode.
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 ## Expanding the ESLint configuration
 

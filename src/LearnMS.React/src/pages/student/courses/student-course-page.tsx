@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlasticButton } from "@/components/ui/plastic-button";
 import { toast } from "@/components/ui/use-toast";
-import { resolveApiUrl } from "@/lib/api-base-url";
 import {
   useGetStudentCourseDetails,
   getGetStudentCourseDetailsQueryKey,
@@ -950,7 +949,7 @@ function AttachmentsSection({
   };
 
   const handleAssetClick = (asset: StudentAssetDto) => {
-    const href = resolveApiUrl(asset.url || `/api/assets/${asset.id}`);
+    const href = asset.url || `/api/assets/${asset.id}`;
     window.open(href, "_blank", "noopener,noreferrer");
   };
 

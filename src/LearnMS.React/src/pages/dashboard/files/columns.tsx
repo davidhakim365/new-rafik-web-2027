@@ -1,12 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { resolveApiUrl } from "@/lib/api-base-url";
 import { Asset } from "@/types/assets";
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { FaFile, FaFileImage, FaFilePdf } from "react-icons/fa";
 
-const assetHref = (asset: Asset) =>
-  resolveApiUrl(asset.url || `/api/assets/${asset.id}`);
+const assetHref = (asset: Asset) => asset.url || `/api/assets/${asset.id}`;
 
 // Define the columns
 export const assetsColumns: ColumnDef<Asset>[] = [
