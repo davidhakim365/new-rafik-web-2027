@@ -25,6 +25,7 @@ export type AssistantRewards = {
   baseSessionValue: number;
   sessionsPerMilestone: number;
   sessionBonusIncrement: number;
+  maxSessionValue: number;
   events: AssistantRewardEvent[];
 };
 

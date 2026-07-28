@@ -118,18 +118,26 @@ export function MilestoneRing({
   sessionsUntilNextBonus,
   sessionsPerMilestone,
   currentSessionValue,
+  maxSessionValue,
   className,
 }: {
   sessionsAttended: number;
   sessionsUntilNextBonus: number;
   sessionsPerMilestone: number;
   currentSessionValue: number;
+  maxSessionValue?: number;
   className?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const milestone = Math.max(1, sessionsPerMilestone);
-  const progressInCycle = milestone - (sessionsUntilNextBonus % milestone || milestone);
-  const pct = Math.min(100, Math.round((progressInCycle / milestone) * 100));
+  const atMax =
+    maxSessionValue != null && currentSessionValue >= maxSessionValue;
+  const progressInCycle = atMax
+    ? milestone
+    : milestone - (sessionsUntilNextBonus % milestone || milestone);
+  const pct = atMax
+    ? 100
+    : Math.min(100, Math.round((progressInCycle / milestone) * 100));
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (pct / 100) * circumference;
@@ -180,7 +188,7 @@ export function MilestoneRing({
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold tracking-tight">{pct}%</span>
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              to bonus
+              {atMax ? "max" : "to bonus"}
             </span>
           </div>
         </div>
@@ -188,8 +196,9 @@ export function MilestoneRing({
         <div className="w-full space-y-3 text-center sm:text-start">
           <p className="text-sm font-medium text-muted-foreground">Milestone progress</p>
           <p className="text-lg font-semibold">
-            {sessionsUntilNextBonus} session{sessionsUntilNextBonus === 1 ? "" : "s"} until value
-            increases
+            {atMax
+              ? `Session value is capped at ${maxSessionValue}`
+              : `${sessionsUntilNextBonus} session${sessionsUntilNextBonus === 1 ? "" : "s"} until value increases`}
           </p>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <motion.div
@@ -204,7 +213,11 @@ export function MilestoneRing({
             <span>·</span>
             <span>Next session worth {currentSessionValue}</span>
             <span>·</span>
-            <span>Every {milestone} sessions</span>
+            <span>
+              {atMax
+                ? `Max ${maxSessionValue}`
+                : `Every ${milestone} sessions`}
+            </span>
           </div>
         </div>
       </div>

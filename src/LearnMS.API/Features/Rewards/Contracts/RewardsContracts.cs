@@ -130,6 +130,7 @@ public sealed record AssistantRewardsResult
     public required int BaseSessionValue { get; init; }
     public required int SessionsPerMilestone { get; init; }
     public required int SessionBonusIncrement { get; init; }
+    public required int MaxSessionValue { get; init; }
     public required List<AssistantRewardEventDto> Events { get; init; }
 }
 

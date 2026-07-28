@@ -258,12 +258,26 @@ public sealed class RewardsService(
 
         var nextValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended);
         var untilBonus = RewardSessionCalculator.SessionsUntilNextBonus(Config, assistant.SessionsAttended);
-        var message =
-            $"Added {sessionValue} apples for session attendance. {untilBonus} session(s) until value increases to {nextValue + Config.SessionBonusIncrement}.";
+        var atMax = RewardSessionCalculator.IsAtMaxSessionValue(Config, assistant.SessionsAttended);
+        var projectedNextBonus = Math.Min(
+            nextValue + Config.SessionBonusIncrement,
+            Math.Max(Config.BaseSessionValue, Config.MaxSessionValue));
 
-        if (untilBonus == Config.SessionsPerMilestone && assistant.SessionsAttended % Math.Max(1, Config.SessionsPerMilestone) == 0)
+        string message;
+        if (atMax)
+        {
+            message =
+                $"Added {sessionValue} apples for session attendance. Session value is at the maximum of {Config.MaxSessionValue}.";
+        }
+        else if (untilBonus == Config.SessionsPerMilestone &&
+                 assistant.SessionsAttended % Math.Max(1, Config.SessionsPerMilestone) == 0)
         {
             message = $"Added {sessionValue} apples. Session value increased! Next session worth {nextValue} apples.";
+        }
+        else
+        {
+            message =
+                $"Added {sessionValue} apples for session attendance. {untilBonus} session(s) until value increases to {projectedNextBonus}.";
         }
 
         return new AttendAssistantSessionResult
@@ -318,6 +332,7 @@ public sealed class RewardsService(
             BaseSessionValue = Config.BaseSessionValue,
             SessionsPerMilestone = Config.SessionsPerMilestone,
             SessionBonusIncrement = Config.SessionBonusIncrement,
+            MaxSessionValue = Config.MaxSessionValue,
             Events = events
         };
     }

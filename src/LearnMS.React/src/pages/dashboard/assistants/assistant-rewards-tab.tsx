@@ -95,7 +95,7 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
         <RewardHeroBanner
         badge="Assistant pay system"
         title={assistant.fullName?.trim() || assistant.email}
-        subtitle={`Code ${rewards.code} · Base ${rewards.baseSessionValue} + ${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone} sessions`}
+        subtitle={`Code ${rewards.code} · Base ${rewards.baseSessionValue} + ${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone} sessions · Max ${rewards.maxSessionValue}`}
       >
         <Button
           onClick={onAttend}
@@ -151,7 +151,10 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
           {
             label: "Until bonus",
             value: rewards.sessionsUntilNextBonus,
-            hint: "Sessions remaining",
+            hint:
+              rewards.currentSessionValue >= rewards.maxSessionValue
+                ? `Capped at ${rewards.maxSessionValue}`
+                : "Sessions remaining",
             icon: "bonus",
           },
         ]}
@@ -162,6 +165,7 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
         sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
         sessionsPerMilestone={rewards.sessionsPerMilestone}
         currentSessionValue={rewards.currentSessionValue}
+        maxSessionValue={rewards.maxSessionValue}
       />
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">

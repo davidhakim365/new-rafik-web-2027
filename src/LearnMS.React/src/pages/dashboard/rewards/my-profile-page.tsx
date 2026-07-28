@@ -140,13 +140,16 @@ const MyProfilePage = () => {
                   {
                     label: "Session value",
                     value: rewards.currentSessionValue,
-                    hint: `Base ${rewards.baseSessionValue}`,
+                    hint: `Base ${rewards.baseSessionValue} · Max ${rewards.maxSessionValue}`,
                     icon: "value",
                   },
                   {
                     label: "Until next bonus",
                     value: rewards.sessionsUntilNextBonus,
-                    hint: `+${rewards.sessionBonusIncrement} / ${rewards.sessionsPerMilestone}`,
+                    hint:
+                      rewards.currentSessionValue >= rewards.maxSessionValue
+                        ? `Capped at ${rewards.maxSessionValue}`
+                        : `+${rewards.sessionBonusIncrement} / ${rewards.sessionsPerMilestone}`,
                     icon: "bonus",
                   },
                 ]}
@@ -157,6 +160,7 @@ const MyProfilePage = () => {
                 sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
                 sessionsPerMilestone={rewards.sessionsPerMilestone}
                 currentSessionValue={rewards.currentSessionValue}
+                maxSessionValue={rewards.maxSessionValue}
               />
 
               <div className="grid grid-cols-2 gap-3">

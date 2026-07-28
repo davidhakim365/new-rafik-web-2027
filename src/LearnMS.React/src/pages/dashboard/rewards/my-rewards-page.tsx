@@ -80,13 +80,16 @@ const MyRewardsPage = () => {
             {
               label: "Current session value",
               value: rewards.currentSessionValue,
-              hint: `Base ${rewards.baseSessionValue}`,
+              hint: `Base ${rewards.baseSessionValue} · Max ${rewards.maxSessionValue}`,
               icon: "value",
             },
             {
               label: "Until next bonus",
               value: rewards.sessionsUntilNextBonus,
-              hint: `+${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone}`,
+              hint:
+                rewards.currentSessionValue >= rewards.maxSessionValue
+                  ? `Capped at ${rewards.maxSessionValue}`
+                  : `+${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone}`,
               icon: "bonus",
             },
           ]}
@@ -97,6 +100,7 @@ const MyRewardsPage = () => {
           sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
           sessionsPerMilestone={rewards.sessionsPerMilestone}
           currentSessionValue={rewards.currentSessionValue}
+          maxSessionValue={rewards.maxSessionValue}
         />
 
         <RewardEventTimeline
