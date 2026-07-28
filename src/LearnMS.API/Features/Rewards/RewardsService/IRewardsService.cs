@@ -14,4 +14,6 @@ public interface IRewardsService
     Task<AssistantLookupResult> QueryAsync(LookupAssistantByCodeQuery query);
     Task<AssistantRewardsResult> QueryAsync(GetAssistantRewardsQuery query);
     Task<AssistantRewardsResult> QueryAsync(GetMyRewardsQuery query);
+    Task<RewardSystemSettingsResult> GetSystemSettingsAsync();
+    Task<RewardSystemSettingsResult> UpdateSystemSettingsAsync(UpsertRewardSystemSettingsRequest request);
 }

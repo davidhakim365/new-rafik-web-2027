@@ -17,6 +17,7 @@ import {
   Apple,
   QrCode,
   Shield,
+  SlidersHorizontal,
   Star,
   UserRound,
   Users,
@@ -115,6 +116,13 @@ const userItems: NavItem[] = [
     label: "Reward Scanner",
     icon: QrCode,
     match: (pathname) => pathname.startsWith("/dashboard/assistant-rewards-scanner"),
+    teacherOnly: true,
+  },
+  {
+    to: "/dashboard/reward-system-settings",
+    label: "Reward Settings",
+    icon: SlidersHorizontal,
+    match: (pathname) => pathname.startsWith("/dashboard/reward-system-settings"),
     teacherOnly: true,
   },
   {

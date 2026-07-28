@@ -198,6 +198,27 @@ public sealed class RewardsController(
         };
     }
 
+    [HttpGet("system-settings")]
+    [ApiAuthorize]
+    [SwaggerOperation(OperationId = "GetRewardSystemSettings")]
+    public async Task<ApiWrapper.Success<RewardSystemSettingsResult>> GetSystemSettings()
+    {
+        await EnsureTeacherAsync();
+        var data = await rewardsService.GetSystemSettingsAsync();
+        return new() { Data = data, Message = "Retrieved reward system settings" };
+    }
+
+    [HttpPut("system-settings")]
+    [ApiAuthorize]
+    [SwaggerOperation(OperationId = "UpdateRewardSystemSettings")]
+    public async Task<ApiWrapper.Success<RewardSystemSettingsResult>> UpdateSystemSettings(
+        [FromBody] UpsertRewardSystemSettingsRequest request)
+    {
+        await EnsureTeacherAsync();
+        var data = await rewardsService.UpdateSystemSettingsAsync(request);
+        return new() { Data = data, Message = "Reward system settings updated" };
+    }
+
     private async Task<CurrentUser> EnsureTeacherAsync()
     {
         var currentUser = await currentUserService.GetUserAsync()

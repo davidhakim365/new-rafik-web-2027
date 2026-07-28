@@ -11,8 +11,6 @@ public sealed class RewardsService(
     AppDbContext db,
     IOptions<RewardSystemConfig> rewardOptions) : IRewardsService
 {
-    private RewardSystemConfig Config => rewardOptions.Value;
-
     public async Task<AttendAssistantSessionResult> ExecuteAsync(AttendAssistantSessionCommand command)
     {
         var assistant = await db.Assistants.Include(x => x.Accounts)
@@ -70,7 +68,8 @@ public sealed class RewardsService(
         db.Assistants.Update(assistant);
         await db.SaveChangesAsync();
 
-        var currentValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended);
+        var config = await GetConfigAsync();
+        var currentValue = RewardSessionCalculator.CalculateSessionValue(config, assistant.SessionsAttended);
         return new AttendAssistantSessionResult
         {
             AssistantId = assistant.Id,
@@ -81,7 +80,7 @@ public sealed class RewardsService(
             ApplesAdded = command.Amount,
             SessionsAttended = assistant.SessionsAttended,
             CurrentSessionValue = currentValue,
-            SessionsUntilNextBonus = RewardSessionCalculator.SessionsUntilNextBonus(Config, assistant.SessionsAttended),
+            SessionsUntilNextBonus = RewardSessionCalculator.SessionsUntilNextBonus(config, assistant.SessionsAttended),
             Message = $"{(command.Amount > 0 ? "Added" : "Subtracted")} {Math.Abs(command.Amount)} apples"
         };
     }
@@ -192,6 +191,7 @@ public sealed class RewardsService(
         if (assistant is null)
             throw new ApiException(RewardsErrors.AssistantNotFound);
 
+        var config = await GetConfigAsync();
         var account = assistant.Accounts.First();
         return new AssistantLookupResult
         {
@@ -202,7 +202,7 @@ public sealed class RewardsService(
             Code = assistant.Code,
             Apples = assistant.Apples,
             SessionsAttended = assistant.SessionsAttended,
-            CurrentSessionValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended)
+            CurrentSessionValue = RewardSessionCalculator.CalculateSessionValue(config, assistant.SessionsAttended)
         };
     }
 
@@ -211,6 +211,28 @@ public sealed class RewardsService(
 
     public Task<AssistantRewardsResult> QueryAsync(GetMyRewardsQuery query)
         => BuildAssistantRewardsAsync(query.AssistantId);
+
+    public async Task<RewardSystemSettingsResult> GetSystemSettingsAsync()
+    {
+        var settings = await GetOrCreateSettingsAsync();
+        return MapSettings(settings);
+    }
+
+    public async Task<RewardSystemSettingsResult> UpdateSystemSettingsAsync(UpsertRewardSystemSettingsRequest request)
+    {
+        ValidateSystemSettings(request);
+
+        var settings = await GetOrCreateSettingsAsync();
+        settings.BaseSessionValue = request.BaseSessionValue;
+        settings.SessionsPerMilestone = request.SessionsPerMilestone;
+        settings.SessionBonusIncrement = request.SessionBonusIncrement;
+        settings.MaxSessionValue = request.MaxSessionValue;
+        settings.UpdatedAt = DateTime.UtcNow;
+
+        db.RewardSystemSettings.Update(settings);
+        await db.SaveChangesAsync();
+        return MapSettings(settings);
+    }
 
     private async Task<AddStudentApplesResult> ApplyStudentApplesAsync(
         Student student,
@@ -239,7 +261,8 @@ public sealed class RewardsService(
 
     private async Task<AttendAssistantSessionResult> AttendSessionAsync(Assistant assistant, Guid? actorId)
     {
-        var sessionValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended);
+        var config = await GetConfigAsync();
+        var sessionValue = RewardSessionCalculator.CalculateSessionValue(config, assistant.SessionsAttended);
         assistant.Apples += sessionValue;
         assistant.SessionsAttended += 1;
 
@@ -256,21 +279,21 @@ public sealed class RewardsService(
         db.Assistants.Update(assistant);
         await db.SaveChangesAsync();
 
-        var nextValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended);
-        var untilBonus = RewardSessionCalculator.SessionsUntilNextBonus(Config, assistant.SessionsAttended);
-        var atMax = RewardSessionCalculator.IsAtMaxSessionValue(Config, assistant.SessionsAttended);
+        var nextValue = RewardSessionCalculator.CalculateSessionValue(config, assistant.SessionsAttended);
+        var untilBonus = RewardSessionCalculator.SessionsUntilNextBonus(config, assistant.SessionsAttended);
+        var atMax = RewardSessionCalculator.IsAtMaxSessionValue(config, assistant.SessionsAttended);
         var projectedNextBonus = Math.Min(
-            nextValue + Config.SessionBonusIncrement,
-            Math.Max(Config.BaseSessionValue, Config.MaxSessionValue));
+            nextValue + config.SessionBonusIncrement,
+            Math.Max(config.BaseSessionValue, config.MaxSessionValue));
 
         string message;
         if (atMax)
         {
             message =
-                $"Added {sessionValue} apples for session attendance. Session value is at the maximum of {Config.MaxSessionValue}.";
+                $"Added {sessionValue} apples for session attendance. Session value is at the maximum of {config.MaxSessionValue}.";
         }
-        else if (untilBonus == Config.SessionsPerMilestone &&
-                 assistant.SessionsAttended % Math.Max(1, Config.SessionsPerMilestone) == 0)
+        else if (untilBonus == config.SessionsPerMilestone &&
+                 assistant.SessionsAttended % Math.Max(1, config.SessionsPerMilestone) == 0)
         {
             message = $"Added {sessionValue} apples. Session value increased! Next session worth {nextValue} apples.";
         }
@@ -316,7 +339,8 @@ public sealed class RewardsService(
             })
             .ToListAsync();
 
-        var currentValue = RewardSessionCalculator.CalculateSessionValue(Config, assistant.SessionsAttended);
+        var config = await GetConfigAsync();
+        var currentValue = RewardSessionCalculator.CalculateSessionValue(config, assistant.SessionsAttended);
         return new AssistantRewardsResult
         {
             Id = assistant.Id,
@@ -328,12 +352,67 @@ public sealed class RewardsService(
             SessionsAttended = assistant.SessionsAttended,
             CurrentSessionValue = currentValue,
             NextSessionValue = currentValue,
-            SessionsUntilNextBonus = RewardSessionCalculator.SessionsUntilNextBonus(Config, assistant.SessionsAttended),
-            BaseSessionValue = Config.BaseSessionValue,
-            SessionsPerMilestone = Config.SessionsPerMilestone,
-            SessionBonusIncrement = Config.SessionBonusIncrement,
-            MaxSessionValue = Config.MaxSessionValue,
+            SessionsUntilNextBonus = RewardSessionCalculator.SessionsUntilNextBonus(config, assistant.SessionsAttended),
+            BaseSessionValue = config.BaseSessionValue,
+            SessionsPerMilestone = config.SessionsPerMilestone,
+            SessionBonusIncrement = config.SessionBonusIncrement,
+            MaxSessionValue = config.MaxSessionValue,
             Events = events
         };
     }
+
+    private async Task<RewardSystemConfig> GetConfigAsync()
+    {
+        var settings = await GetOrCreateSettingsAsync();
+        return new RewardSystemConfig
+        {
+            BaseSessionValue = settings.BaseSessionValue,
+            SessionsPerMilestone = settings.SessionsPerMilestone,
+            SessionBonusIncrement = settings.SessionBonusIncrement,
+            MaxSessionValue = settings.MaxSessionValue
+        };
+    }
+
+    private async Task<RewardSystemSettings> GetOrCreateSettingsAsync()
+    {
+        var settings = await db.RewardSystemSettings
+            .FirstOrDefaultAsync(x => x.Id == RewardSystemSettings.SingletonId);
+
+        if (settings is not null)
+            return settings;
+
+        var defaults = rewardOptions.Value;
+        settings = new RewardSystemSettings
+        {
+            Id = RewardSystemSettings.SingletonId,
+            BaseSessionValue = defaults.BaseSessionValue,
+            SessionsPerMilestone = defaults.SessionsPerMilestone,
+            SessionBonusIncrement = defaults.SessionBonusIncrement,
+            MaxSessionValue = defaults.MaxSessionValue,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await db.RewardSystemSettings.AddAsync(settings);
+        await db.SaveChangesAsync();
+        return settings;
+    }
+
+    private static void ValidateSystemSettings(UpsertRewardSystemSettingsRequest request)
+    {
+        if (request.BaseSessionValue <= 0 ||
+            request.SessionsPerMilestone <= 0 ||
+            request.SessionBonusIncrement <= 0 ||
+            request.MaxSessionValue < request.BaseSessionValue)
+        {
+            throw new ApiException(RewardsErrors.InvalidRewardSystemSettings);
+        }
+    }
+
+    private static RewardSystemSettingsResult MapSettings(RewardSystemSettings settings) => new()
+    {
+        BaseSessionValue = settings.BaseSessionValue,
+        SessionsPerMilestone = settings.SessionsPerMilestone,
+        SessionBonusIncrement = settings.SessionBonusIncrement,
+        MaxSessionValue = settings.MaxSessionValue,
+        UpdatedAt = settings.UpdatedAt
+    };
 }

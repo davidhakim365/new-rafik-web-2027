@@ -184,3 +184,20 @@ public sealed record AddStudentApplesResult
     public required int AmountAdded { get; init; }
     public required string Message { get; init; }
 }
+
+public sealed record UpsertRewardSystemSettingsRequest
+{
+    public required int BaseSessionValue { get; init; }
+    public required int SessionsPerMilestone { get; init; }
+    public required int SessionBonusIncrement { get; init; }
+    public required int MaxSessionValue { get; init; }
+}
+
+public sealed record RewardSystemSettingsResult
+{
+    public required int BaseSessionValue { get; init; }
+    public required int SessionsPerMilestone { get; init; }
+    public required int SessionBonusIncrement { get; init; }
+    public required int MaxSessionValue { get; init; }
+    public required DateTime UpdatedAt { get; init; }
+}

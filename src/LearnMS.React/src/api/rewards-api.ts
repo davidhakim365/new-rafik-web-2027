@@ -29,6 +29,14 @@ export type AssistantRewards = {
   events: AssistantRewardEvent[];
 };
 
+export type RewardSystemSettings = {
+  baseSessionValue: number;
+  sessionsPerMilestone: number;
+  sessionBonusIncrement: number;
+  maxSessionValue: number;
+  updatedAt: string;
+};
+
 export type AttendAssistantSessionResult = {
   assistantId: string;
   fullName: string;
@@ -52,6 +60,28 @@ export const useMyRewardsQuery = () => {
   return useQuery<ApiResponse<AssistantRewards>>({
     queryKey: ["rewards", "me"],
     queryFn: () => api.get("/api/rewards/me").then((res) => res.data),
+  });
+};
+
+export const useRewardSystemSettingsQuery = () => {
+  return useQuery<ApiResponse<RewardSystemSettings>>({
+    queryKey: ["rewards", "system-settings"],
+    queryFn: () => api.get("/api/rewards/system-settings").then((res) => res.data),
+  });
+};
+
+export const useUpdateRewardSystemSettingsMutation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      baseSessionValue: number;
+      sessionsPerMilestone: number;
+      sessionBonusIncrement: number;
+      maxSessionValue: number;
+    }) => api.put("/api/rewards/system-settings", data).then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rewards"] });
+    },
   });
 };
 

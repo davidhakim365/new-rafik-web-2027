@@ -39,4 +39,10 @@ public static class RewardsErrors
 
     public static readonly ApiError InvalidStoreWindow =
         new("rewards/invalid-store-window", "Closes at must be after opens at", StatusCodes.Status400BadRequest);
+
+    public static readonly ApiError InvalidRewardSystemSettings =
+        new(
+            "rewards/invalid-system-settings",
+            "Base pay, sessions per bonus, and bonus amount must be positive. Max value must be at least the base pay.",
+            StatusCodes.Status400BadRequest);
 }

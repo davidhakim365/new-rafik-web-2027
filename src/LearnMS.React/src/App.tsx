@@ -23,6 +23,7 @@ import QuizPage from "@/pages/dashboard/quizzes/quiz-page";
 import AssistantRewardsScannerPage from "@/pages/dashboard/rewards/assistant-rewards-scanner-page";
 import MyProfilePage from "@/pages/dashboard/rewards/my-profile-page";
 import MyRewardsPage from "@/pages/dashboard/rewards/my-rewards-page";
+import RewardSystemSettingsPage from "@/pages/dashboard/rewards/reward-system-settings-page";
 import StudentApplesScannerPage from "@/pages/dashboard/rewards/student-apples-scanner-page";
 import AppleRewardsStorePage from "@/pages/dashboard/rewards/apple-rewards-store-page";
 import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
@@ -331,6 +332,14 @@ function App() {
                 element={
                   <RequireAuth roles={["Teacher"]}>
                     <AssistantRewardsScannerPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="reward-system-settings"
+                element={
+                  <RequireAuth roles={["Teacher"]}>
+                    <RewardSystemSettingsPage />
                   </RequireAuth>
                 }
               />
