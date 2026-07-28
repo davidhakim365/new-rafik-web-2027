@@ -17,6 +17,7 @@ COPY --from=frontend /src/dist/ /app/ClientApp
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
+ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
 COPY --from=backend /app .
 
 ENTRYPOINT ["dotnet", "LearnMS.API.dll"]
