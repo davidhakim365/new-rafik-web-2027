@@ -237,7 +237,8 @@
       "lectureDate": "تاريخ المحاضرة",
       "attendedAt": "تاريخ الحضور",
       "offlineQuiz": "كويز السنتر",
-      "homework": "واجب",
+      "homework": "واجب مقالي",
+      "chooseHomework": "واجب الاختيار",
       "onlineQuiz": "كويز أونلاين",
       "stats": {
         "attendance": "الحضور",
@@ -526,6 +527,8 @@
   "lectures": {
     "lectureContent": "محتوى المحاضرة",
     "homeworkVideo": "فيديو الواجب",
+    "chooseHomework": "واجب الاختيار",
+    "enterStudentIdInForm": "أدخل رقم الطالب هذا في النموذج",
     "confirmPurchase": "تأكيد الشراء",
     "confirmPurchaseDescription": "هل أنت متأكد من أنك تريد شراء هذه المحاضرة؟",
     "buyFor": "اشتري مقابل {{price}} جم ({{days}} يوم)",

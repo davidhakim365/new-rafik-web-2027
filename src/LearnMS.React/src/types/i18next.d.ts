@@ -348,6 +348,8 @@ declare module "i18next" {
         lectures: {
           lectureContent: string;
           homeworkVideo: string;
+          chooseHomework: string;
+          enterStudentIdInForm: string;
           confirmPurchase: string;
           confirmPurchaseDescription: string;
           buyFor: string;

@@ -9,6 +9,7 @@ using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Profile;
 using LearnMS.API.Features.Students;
 using LearnMS.API.ThirdParties;
+using LearnMS.API.ThirdParties.GoogleForms;
 using LearnMS.API.ThirdParties.VdoCipher;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -21,18 +22,21 @@ public sealed class CoursesService : ICoursesService
     private readonly VdoService _vdoService;
     private readonly IOptions<StorageConfig> _storageCfg;
     private readonly StorageService _storageService;
+    private readonly IGoogleFormsService _googleFormsService;
 
     public CoursesService(
         AppDbContext contextContext,
         VdoService vdoService,
         IOptions<StorageConfig> storageCfg,
-        StorageService storageService
+        StorageService storageService,
+        IGoogleFormsService googleFormsService
     )
     {
         _context = contextContext;
         _vdoService = vdoService;
         _storageCfg = storageCfg;
         _storageService = storageService;
+        _googleFormsService = googleFormsService;
     }
 
     public async Task ExecuteAsync(CreateLectureCommand command)
@@ -70,8 +74,41 @@ public sealed class CoursesService : ICoursesService
                 ? null
                 : command.HomeworkVideoUrl.Trim();
 
+        if (command.ChooseHomeworkFormId is not null)
+        {
+            var incoming = command.ChooseHomeworkFormId.Trim();
+            if (string.IsNullOrWhiteSpace(incoming))
+            {
+                lecture.ChooseHomeworkFormId = null;
+                lecture.ChooseHomeworkFormUrl = null;
+            }
+            else
+            {
+                var parsedId = GoogleFormsService.TryParseFormId(incoming);
+                if (
+                    parsedId is not null
+                    && string.Equals(
+                        lecture.ChooseHomeworkFormId,
+                        parsedId,
+                        StringComparison.Ordinal
+                    )
+                    && !string.IsNullOrWhiteSpace(lecture.ChooseHomeworkFormUrl)
+                )
+                {
+                    // Unchanged form — skip Google round-trip on every save.
+                }
+                else
+                {
+                    await ApplyChooseHomeworkFormAsync(lecture, incoming);
+                }
+            }
+        }
+
         if (command.HomeworkFullMark is not null)
             lecture.HomeworkFullMark = command.HomeworkFullMark;
+
+        if (command.ChooseHomeworkFullMark is not null)
+            lecture.ChooseHomeworkFullMark = command.ChooseHomeworkFullMark;
 
         if (command.QuizFullMark is not null)
             lecture.QuizFullMark = command.QuizFullMark;
@@ -118,6 +155,140 @@ public sealed class CoursesService : ICoursesService
         _context.Update(lecture);
 
         await _context.SaveChangesAsync();
+    }
+
+    private async Task ApplyChooseHomeworkFormAsync(Lecture lecture, string rawFormId)
+    {
+        if (string.IsNullOrWhiteSpace(rawFormId))
+        {
+            lecture.ChooseHomeworkFormId = null;
+            lecture.ChooseHomeworkFormUrl = null;
+            return;
+        }
+
+        var formId = GoogleFormsService.TryParseFormId(rawFormId)
+            ?? throw new ApiException(LecturesErrors.InvalidChooseHomeworkFormId);
+
+        var form = await _googleFormsService.GetFormAsync(formId);
+        if (string.IsNullOrWhiteSpace(form.StudentIdQuestionId))
+            throw new ApiException(LecturesErrors.ChooseHomeworkStudentIdQuestionMissing);
+
+        lecture.ChooseHomeworkFormId = form.FormId;
+        lecture.ChooseHomeworkFormUrl = string.IsNullOrWhiteSpace(form.ResponderUri)
+            ? null
+            : form.ResponderUri.Trim();
+    }
+
+    public async Task<SyncChooseHomeworkScoresResult> ExecuteAsync(SyncChooseHomeworkScoresCommand command)
+    {
+        var lecture =
+            await _context
+                .Set<Lecture>()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.LectureId && x.CourseId == command.CourseId
+                ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        if (string.IsNullOrWhiteSpace(lecture.ChooseHomeworkFormId))
+            throw new ApiException(LecturesErrors.ChooseHomeworkFormRequired);
+
+        var form = await _googleFormsService.GetFormAsync(lecture.ChooseHomeworkFormId);
+        if (string.IsNullOrWhiteSpace(form.StudentIdQuestionId))
+            throw new ApiException(LecturesErrors.ChooseHomeworkStudentIdQuestionMissing);
+
+        if (
+            !string.IsNullOrWhiteSpace(form.ResponderUri)
+            && !string.Equals(
+                lecture.ChooseHomeworkFormUrl,
+                form.ResponderUri,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            lecture.ChooseHomeworkFormUrl = form.ResponderUri;
+            _context.Update(lecture);
+        }
+
+        var responses = await _googleFormsService.ListResponseScoresAsync(
+            lecture.ChooseHomeworkFormId,
+            form.StudentIdQuestionId
+        );
+
+        var courseLevel = await _context
+            .Lectures.Where(l => l.Id == lecture.Id)
+            .Select(l => l.Course.Level)
+            .FirstAsync();
+
+        var studentsByCode = await _context
+            .Students.Where(s => s.Level == courseLevel)
+            .Select(s => new { s.Id, s.StudentCode })
+            .ToListAsync();
+
+        var codeLookup = studentsByCode
+            .GroupBy(s => s.StudentCode.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+        var existing = await _context
+            .Set<LectureChooseHomework>()
+            .Where(x => x.LectureId == lecture.Id)
+            .ToListAsync();
+
+        var existingByStudent = existing.ToDictionary(x => x.StudentId);
+
+        var unmatched = new List<string>();
+        var matched = 0;
+        var updated = 0;
+
+        foreach (var response in responses)
+        {
+            var code = response.StudentCode.Trim();
+            if (!codeLookup.TryGetValue(code, out var studentId))
+            {
+                unmatched.Add(code);
+                continue;
+            }
+
+            matched++;
+            var score = response.TotalScore;
+            if (lecture.ChooseHomeworkFullMark is > 0 && score > lecture.ChooseHomeworkFullMark.Value)
+                score = lecture.ChooseHomeworkFullMark.Value;
+            if (score < 0)
+                score = 0;
+
+            if (existingByStudent.TryGetValue(studentId, out var row))
+            {
+                if (row.Score != score)
+                {
+                    row.Score = score;
+                    _context.Update(row);
+                    updated++;
+                }
+            }
+            else
+            {
+                await _context.AddAsync(
+                    new LectureChooseHomework
+                    {
+                        LectureId = lecture.Id,
+                        StudentId = studentId,
+                        Score = score
+                    }
+                );
+                updated++;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new SyncChooseHomeworkScoresResult
+        {
+            Matched = matched,
+            Updated = updated,
+            SkippedNoScore = 0,
+            UnmatchedCodes = unmatched
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList()
+        };
     }
 
     public async Task ExecuteAsync(CreateLessonCommand command)
@@ -1553,7 +1724,10 @@ public sealed class CoursesService : ICoursesService
             Description = lecture.Description,
             ImageUrl = lecture.ImageUrl,
             HomeworkVideoUrl = lecture.HomeworkVideoUrl,
+            ChooseHomeworkFormId = lecture.ChooseHomeworkFormId,
+            ChooseHomeworkFormUrl = lecture.ChooseHomeworkFormUrl,
             HomeworkFullMark = lecture.HomeworkFullMark,
+            ChooseHomeworkFullMark = lecture.ChooseHomeworkFullMark,
             QuizFullMark = lecture.QuizFullMark,
             IsPublished = lecture.IsPublished,
             Price = lecture.Price,
@@ -1681,6 +1855,7 @@ public sealed class CoursesService : ICoursesService
             ExpiresAt = expiresAt,
             ImageUrl = lecture.ImageUrl!,
             HomeworkVideoUrl = lecture.HomeworkVideoUrl,
+            ChooseHomeworkFormUrl = lecture.ChooseHomeworkFormUrl,
             Price = lecture.Price!.Value,
             ExpirationDays = lecture.ExpirationDays!.Value,
             RenewalPrice = lecture.RenewalPrice!.Value,
@@ -1848,6 +2023,7 @@ public sealed class CoursesService : ICoursesService
             .Where(x => x.Level == lecture.Course.Level)
             .Include(x => x.Accounts)
             .Include(x => x.LectureHomeworks.Where(x => x.LectureId == query.LectureId).Take(1))
+            .Include(x => x.LectureChooseHomeworks.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.LectureQuizzes.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.AttendedLessons.Where(x => x.LectureId == query.LectureId))
             .Include(x => x.LectureAttendances.Where(x => x.LectureId == query.LectureId).Take(1))
@@ -1895,6 +2071,7 @@ public sealed class CoursesService : ICoursesService
                     FullName = student.FullName,
                     StudentCode = student.StudentCode,
                     HomeworkScore = student.LectureHomeworks.SingleOrDefault()?.Score,
+                    ChooseHomeworkScore = student.LectureChooseHomeworks.SingleOrDefault()?.Score,
                     QuizScore = student.LectureQuizzes.SingleOrDefault()?.Score,
                     StudentQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfCorrect),
                     TotalQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfQuestions),
@@ -2286,6 +2463,7 @@ public sealed class CoursesService : ICoursesService
             .Where(x => x.Level == lecture.Course.Level)
             .Include(x => x.Accounts)
             .Include(x => x.LectureHomeworks.Where(x => x.LectureId == query.LectureId).Take(1))
+            .Include(x => x.LectureChooseHomeworks.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.LectureQuizzes.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.AttendedLessons.Where(x => x.LectureId == query.LectureId))
             .Include(x => x.LectureAttendances.Where(x => x.LectureId == query.LectureId).Take(1))
@@ -2318,6 +2496,7 @@ public sealed class CoursesService : ICoursesService
                         StudentCode = student.StudentCode,
                         CourseTitle = lecture.Course.Title,
                         HomeworkScore = student.LectureHomeworks.SingleOrDefault()?.Score,
+                        ChooseHomeworkScore = student.LectureChooseHomeworks.SingleOrDefault()?.Score,
                         QuizScore = student.LectureQuizzes.SingleOrDefault()?.Score,
                         StudentQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfCorrect),
                         TotalQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfQuestions),

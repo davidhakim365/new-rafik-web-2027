@@ -9,7 +9,9 @@ export type UpdateLectureBody = {
   description?: string;
   expirationDays?: number;
   homeworkVideoUrl?: string | null;
+  chooseHomeworkFormId?: string | null;
   homeworkFullMark?: number | null;
+  chooseHomeworkFullMark?: number | null;
   quizFullMark?: number | null;
   imageUrl?: string;
   price?: number;

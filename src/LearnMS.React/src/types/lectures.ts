@@ -28,5 +28,6 @@ export type SingleLectureStudent = {
   email: string;
   attended: boolean;
   homeworkScore?: number;
+  chooseHomeworkScore?: number;
   quizScore?: number;
 };

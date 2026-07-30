@@ -279,6 +279,10 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
             .Where(h => h.StudentId == query.StudentId)
             .Select(h => (decimal?)h.Score)
             .FirstOrDefault(), // Homework score for the student
+        ChooseHomeworkScore = l.LectureChooseHomeworks
+            .Where(h => h.StudentId == query.StudentId)
+            .Select(h => (decimal?)h.Score)
+            .FirstOrDefault(),
         QuizScore = l.LectureQuizzes
             .Where(q => q.StudentId == query.StudentId)
             .Select(q => (decimal?)q.Score)

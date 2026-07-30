@@ -11,6 +11,7 @@ export interface SingleLectureStudent {
   enrolled: boolean;
   fullName: string;
   homeworkScore: number;
+  chooseHomeworkScore?: number | null;
   id: string;
   quizScore: number;
   studentCode: string;

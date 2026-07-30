@@ -12,7 +12,10 @@ export type GetLectureDashboardResult = GetLectureResult & {
   description: string;
   expirationDays: number;
   homeworkVideoUrl?: string | null;
+  chooseHomeworkFormId?: string | null;
+  chooseHomeworkFormUrl?: string | null;
   homeworkFullMark?: number | null;
+  chooseHomeworkFullMark?: number | null;
   quizFullMark?: number | null;
   imageUrl: string;
   isPublished: boolean;

@@ -16,6 +16,7 @@ public sealed record ExportSingleLectureStudentResult
     [Required] public required string FullName { get; init; }
     [Required] public required string Email { get; init; }
     [Required] public decimal? HomeworkScore { get; init; }
+    [Required] public decimal? ChooseHomeworkScore { get; init; }
     [Required] public decimal? QuizScore { get; init; }
     [Required] public decimal? StudentQuizzesScore { get; init; }
     [Required] public string? CourseTitle { get; init; } 

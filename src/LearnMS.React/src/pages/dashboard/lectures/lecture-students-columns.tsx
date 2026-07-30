@@ -249,10 +249,12 @@ export function createLectureStudentsColumns(
   centerId?: string | null,
   options?: {
     homeworkFullMark?: number | null;
+    chooseHomeworkFullMark?: number | null;
     quizFullMark?: number | null;
   }
 ): ColumnDef<SingleLectureStudent & SingleLectureStudentWithCenter>[] {
   const homeworkFullMark = options?.homeworkFullMark;
+  const chooseHomeworkFullMark = options?.chooseHomeworkFullMark;
   const quizFullMark = options?.quizFullMark;
 
   return [
@@ -396,8 +398,8 @@ export function createLectureStudentsColumns(
     {
       accessorKey: "homeworkScore",
       header: homeworkFullMark
-        ? `Homework ( / ${homeworkFullMark})`
-        : "Homework Score",
+        ? `Essay Homework ( / ${homeworkFullMark})`
+        : "Essay Homework",
       cell: ({ row }) => (
         <ScoreCell
           kind="homework"
@@ -406,6 +408,22 @@ export function createLectureStudentsColumns(
           studentId={row.original.id}
         />
       ),
+    },
+    {
+      accessorKey: "chooseHomeworkScore",
+      header: chooseHomeworkFullMark
+        ? `Choose Homework ( / ${chooseHomeworkFullMark})`
+        : "Choose Homework",
+      cell: ({ row }) => {
+        const score = row.original.chooseHomeworkScore;
+        if (score == null) return <div>—</div>;
+        return (
+          <div className="font-medium">
+            {score}
+            {chooseHomeworkFullMark ? ` / ${chooseHomeworkFullMark}` : ""}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "quizScore",

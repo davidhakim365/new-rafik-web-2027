@@ -39,7 +39,16 @@ Homework Video :
     /// <summary>YouTube URL for lecture homework video (embedded for students).</summary>
     public string? HomeworkVideoUrl { get; set; }
 
-    /// <summary>Full mark for offline homework scores. Must be set before scoring.</summary>
+    /// <summary>Google Form ID used to sync Choose Homework quiz scores.</summary>
+    public string? ChooseHomeworkFormId { get; set; }
+
+    /// <summary>Public Google Form responder URL embedded for students.</summary>
+    public string? ChooseHomeworkFormUrl { get; set; }
+
+    /// <summary>Full mark for Choose Homework scores synced from Google Forms.</summary>
+    public decimal? ChooseHomeworkFullMark { get; set; }
+
+    /// <summary>Full mark for offline essay homework scores. Must be set before scoring.</summary>
     public decimal? HomeworkFullMark { get; set; }
 
     /// <summary>Full mark for offline quiz scores. Must be set before scoring.</summary>
@@ -54,6 +63,7 @@ Homework Video :
     public List<Student> EnrolledStudents { get; } = [];
     public List<LectureEnrollment> LectureEnrollments { get; } = [];
     public List<LectureHomework> LectureHomeworks { get; } = [];
+    public List<LectureChooseHomework> LectureChooseHomeworks { get; } = [];
     public List<LectureQuiz> LectureQuizzes { get; } = [];
 
     public List<LectureAttendance> LectureAttendances { get; } = [];

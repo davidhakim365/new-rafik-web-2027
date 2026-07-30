@@ -72,6 +72,10 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
                     .Where(h => h.StudentId == studentId)
                     .Select(h => (decimal?)h.Score)
                     .FirstOrDefault(),
+                ChooseHomeworkScore = l.LectureChooseHomeworks
+                    .Where(h => h.StudentId == studentId)
+                    .Select(h => (decimal?)h.Score)
+                    .FirstOrDefault(),
                 OfflineQuizScore = l.LectureQuizzes
                     .Where(q => q.StudentId == studentId)
                     .Select(q => (decimal?)q.Score)
@@ -129,6 +133,7 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             .Where(l =>
                 l.OfflineQuizScore != null ||
                 l.HomeworkScore != null ||
+                l.ChooseHomeworkScore != null ||
                 l.HasOnlineQuiz)
             .Select(l => new ParentQuizGradeItem
             {
@@ -137,6 +142,7 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
                 CourseTitle = l.CourseTitle,
                 OfflineQuizScore = l.OfflineQuizScore,
                 HomeworkScore = l.HomeworkScore,
+                ChooseHomeworkScore = l.ChooseHomeworkScore,
                 OnlineCorrect = l.HasOnlineQuiz ? l.OnlineCorrect : null,
                 OnlineTotal = l.HasOnlineQuiz ? l.OnlineTotal : null
             })

@@ -158,7 +158,9 @@ public sealed class LecturesController : ControllerBase
                 CourseId = courseId,
                 ImageUrl = request.ImageUrl,
                 HomeworkVideoUrl = request.HomeworkVideoUrl,
+                ChooseHomeworkFormId = request.ChooseHomeworkFormId,
                 HomeworkFullMark = request.HomeworkFullMark,
+                ChooseHomeworkFullMark = request.ChooseHomeworkFullMark,
                 QuizFullMark = request.QuizFullMark,
                 Id = lectureId,
                 Title = request.Title,
@@ -220,7 +222,31 @@ public sealed class LecturesController : ControllerBase
             }
         );
 
-        return new ApiWrapper.Success<object?> { Message = "Homework score changed successfully" };
+        return new ApiWrapper.Success<object?> { Message = "Essay homework score changed successfully" };
+    }
+
+
+    [HttpPost("{lectureId:guid}/choose-homework/sync")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "SyncChooseHomeworkScores")]
+    public async Task<ApiWrapper.Success<SyncChooseHomeworkScoresResult>> SyncChooseHomeworkScores(
+        Guid lectureId,
+        Guid courseId
+    )
+    {
+        var result = await _coursesService.ExecuteAsync(
+            new SyncChooseHomeworkScoresCommand
+            {
+                CourseId = courseId,
+                LectureId = lectureId
+            }
+        );
+
+        return new ApiWrapper.Success<SyncChooseHomeworkScoresResult>
+        {
+            Data = result,
+            Message = "Choose homework scores synced successfully"
+        };
     }
 
 

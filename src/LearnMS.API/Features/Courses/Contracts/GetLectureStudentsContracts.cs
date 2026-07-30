@@ -19,6 +19,7 @@ public sealed record SingleLectureStudent
     [Required] public required string FullName { get; set; }
     [Required] public required string Email { get; set; }
     [Required] public decimal? HomeworkScore { get; set; }
+    [Required] public decimal? ChooseHomeworkScore { get; set; }
     [Required] public decimal? QuizScore { get; set; }
     [Required] public decimal? StudentQuizzesScore { get; set; }
     [Required] public decimal? TotalQuizzesScore { get; set; }

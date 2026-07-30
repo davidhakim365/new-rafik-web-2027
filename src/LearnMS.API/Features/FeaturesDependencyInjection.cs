@@ -39,6 +39,8 @@ public static class FeaturesDependencyInjection
         services.AddScoped<IAppleStoreService, AppleStoreService>();
         services.AddScoped<IQuestionsService, QuestionsService>();
 
+        services.AddHostedService<ChooseHomeworkSyncHostedService>();
+
         services.AddAssets();
 
         return services;

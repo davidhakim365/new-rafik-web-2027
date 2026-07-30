@@ -573,7 +573,7 @@ function LecturesStatistics({
       accentClass: "bg-emerald-500/10 text-emerald-600",
     },
     {
-      title: "Avg. Homework Score",
+      title: "Avg. Essay Homework",
       value: `${(lectureStatistics?.data?.averageHomeworksScore ?? 0).toFixed(1)}%`,
       subtitle: "Class average",
       icon: GraduationCap,
@@ -871,7 +871,7 @@ function CoursesStatistics({ lecturePrice }: { lecturePrice: number }) {
             </DashboardCard>
 
             <DashboardCard padding="sm" spotlight={false}>
-              <h4 className="mb-3 text-base font-semibold">Homework Scores</h4>
+              <h4 className="mb-3 text-base font-semibold">Essay Homework Scores</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={homeworkScoresData}>
                     <CartesianGrid

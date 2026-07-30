@@ -10,6 +10,7 @@ using LearnMS.API.Security;
 using LearnMS.API.Security.JwtBearer;
 using LearnMS.API.Security.PasswordHasher;
 using LearnMS.API.ThirdParties.VdoCipher;
+using LearnMS.API.ThirdParties.GoogleForms;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,7 @@ public static class ApplicationDependencyInjection
         RegisterAuth(services, cfg);
         RegisterCommonServices(services, cfg);
         services.RegisterVdoService(cfg);
+        services.RegisterGoogleFormsService(cfg);
         services.RegisterFeaturesServices(cfg);
         RegisterSpaClient(services);
         services.AddStorageService(cfg);

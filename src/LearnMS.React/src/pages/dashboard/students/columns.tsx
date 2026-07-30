@@ -358,10 +358,18 @@ export const studentLecturesColumns: ColumnDef<SingleStudentLecture>[] = [
   },
   {
     accessorKey: "homeworkScore",
-    header: "Homework",
+    header: "Essay Homework",
     cell({ row }) {
       const score = row.original.homeworkScore;
       return score === 1 || score == null ? "-" : score;
+    },
+  },
+  {
+    accessorKey: "chooseHomeworkScore",
+    header: "Choose Homework",
+    cell({ row }) {
+      const score = row.original.chooseHomeworkScore;
+      return score == null ? "-" : score;
     },
   },
   {

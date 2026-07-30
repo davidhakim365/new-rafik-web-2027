@@ -82,6 +82,12 @@ const StudentLecturePage = () => {
               />
             </div>
           )}
+          {lecture.chooseHomeworkFormUrl && (
+            <ChooseHomeworkSection
+              formUrl={lecture.chooseHomeworkFormUrl}
+              isRTL={isRTL}
+            />
+          )}
           <h2
             dir={isRTL ? "rtl" : "ltr"}
             className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl lg:text-4xl text-foreground"
@@ -117,6 +123,66 @@ const StudentLecturePage = () => {
 };
 
 export default StudentLecturePage;
+
+function chooseHomeworkEmbedUrl(formUrl: string) {
+  try {
+    const url = new URL(formUrl);
+    url.searchParams.set("embedded", "true");
+    return url.toString();
+  } catch {
+    const sep = formUrl.includes("?") ? "&" : "?";
+    return `${formUrl}${sep}embedded=true`;
+  }
+}
+
+function ChooseHomeworkSection({
+  formUrl,
+  isRTL,
+}: {
+  formUrl: string;
+  isRTL: boolean;
+}) {
+  const { t } = useTranslation();
+  const { data: profile } = useGetProfile();
+  const studentCode =
+    profile?.data?.$type === "GetStudentProfileResult"
+      ? profile.data.studentCode
+      : undefined;
+  const embedUrl = chooseHomeworkEmbedUrl(formUrl);
+
+  return (
+    <div className="space-y-3">
+      <h2
+        dir={isRTL ? "rtl" : "ltr"}
+        className="text-xl font-bold sm:text-2xl text-foreground"
+      >
+        {t("lectures.chooseHomework")}
+      </h2>
+      {studentCode && (
+        <div
+          dir={isRTL ? "rtl" : "ltr"}
+          className="rounded-lg border border-color2/20 bg-muted/40 px-3 py-2 text-sm"
+        >
+          <span className="text-muted-foreground">
+            {t("lectures.enterStudentIdInForm")}:{" "}
+          </span>
+          <span className="font-mono font-semibold text-foreground">
+            {studentCode}
+          </span>
+        </div>
+      )}
+      <div className="overflow-hidden rounded-xl border border-color2/20 bg-background">
+        <iframe
+          title={t("lectures.chooseHomework")}
+          src={embedUrl}
+          className="h-[70vh] min-h-[480px] w-full border-0"
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media"
+        />
+      </div>
+    </div>
+  );
+}
 
 function LectureHeader({
   lecture,

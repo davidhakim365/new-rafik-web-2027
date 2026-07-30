@@ -41,7 +41,10 @@ public record GetLectureDashboardResult : GetLectureResult
     [Required]
     public string? ImageUrl { get; set; }
     public string? HomeworkVideoUrl { get; set; }
+    public string? ChooseHomeworkFormId { get; set; }
+    public string? ChooseHomeworkFormUrl { get; set; }
     public decimal? HomeworkFullMark { get; set; }
+    public decimal? ChooseHomeworkFullMark { get; set; }
     public decimal? QuizFullMark { get; set; }
     [Required]
     public decimal? Price { get; set; }
@@ -102,6 +105,7 @@ public sealed record GetStudentLectureResult : GetLectureResult
     [Required]
     public required string ImageUrl { get; set; }
     public string? HomeworkVideoUrl { get; set; }
+    public string? ChooseHomeworkFormUrl { get; set; }
     [Required]
     public required decimal Price { get; set; }
     [Required]

@@ -31,6 +31,7 @@ public class Student : User
     public List<Lecture> PurchasedLectures { get; } = [];
     public List<LectureEnrollment> LectureEnrollments { get; } = [];
     public List<LectureHomework> LectureHomeworks { get; } = [];
+    public List<LectureChooseHomework> LectureChooseHomeworks { get; } = [];
     public List<LectureQuiz> LectureQuizzes { get; } = [];
     public List<LectureAttendance> LectureAttendances { get; } = [];
     public List<Exam> PurchasedExams { get; } = [];

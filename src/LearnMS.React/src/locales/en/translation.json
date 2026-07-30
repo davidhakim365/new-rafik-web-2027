@@ -237,7 +237,8 @@
       "lectureDate": "Lecture date",
       "attendedAt": "Attended on",
       "offlineQuiz": "Center quiz",
-      "homework": "Homework",
+      "homework": "Essay Homework",
+      "chooseHomework": "Choose Homework",
       "onlineQuiz": "Online quiz",
       "stats": {
         "attendance": "Attendance",
@@ -528,6 +529,8 @@
   "lectures": {
     "lectureContent": "Lecture Content",
     "homeworkVideo": "Homework Video",
+    "chooseHomework": "Choose Homework",
+    "enterStudentIdInForm": "Enter this Student ID in the form",
     "confirmPurchase": "Confirm Purchase",
     "confirmPurchaseDescription": "Are you sure you want to buy this lecture?",
     "buyFor": "Buy for {{price}} LE ({{days}} days)",

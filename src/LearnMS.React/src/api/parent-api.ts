@@ -57,6 +57,7 @@ export type ParentQuizGradeItem = {
   courseTitle: string;
   offlineQuizScore: number | null;
   homeworkScore: number | null;
+  chooseHomeworkScore: number | null;
   onlineCorrect: number | null;
   onlineTotal: number | null;
 };

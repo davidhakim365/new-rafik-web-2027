@@ -355,6 +355,10 @@ const ParentDashboardPage = () => {
                         value={scoreText(item.homeworkScore)}
                       />
                       <GradeChip
+                        label={t("parent.dashboard.chooseHomework")}
+                        value={scoreText(item.chooseHomeworkScore)}
+                      />
+                      <GradeChip
                         label={t("parent.dashboard.onlineQuiz")}
                         value={scoreText(item.onlineCorrect, item.onlineTotal)}
                         className="col-span-2"

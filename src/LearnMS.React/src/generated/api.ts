@@ -2218,8 +2218,14 @@ if(updateLectureBody.imageUrl !== undefined) {
 if(updateLectureBody.homeworkVideoUrl !== undefined) {
  formData.append('homeworkVideoUrl', updateLectureBody.homeworkVideoUrl ?? '')
  }
+if(updateLectureBody.chooseHomeworkFormId !== undefined) {
+ formData.append('chooseHomeworkFormId', updateLectureBody.chooseHomeworkFormId ?? '')
+ }
 if(updateLectureBody.homeworkFullMark !== undefined && updateLectureBody.homeworkFullMark !== null) {
  formData.append('homeworkFullMark', updateLectureBody.homeworkFullMark.toString())
+ }
+if(updateLectureBody.chooseHomeworkFullMark !== undefined && updateLectureBody.chooseHomeworkFullMark !== null) {
+ formData.append('chooseHomeworkFullMark', updateLectureBody.chooseHomeworkFullMark.toString())
  }
 if(updateLectureBody.quizFullMark !== undefined && updateLectureBody.quizFullMark !== null) {
  formData.append('quizFullMark', updateLectureBody.quizFullMark.toString())

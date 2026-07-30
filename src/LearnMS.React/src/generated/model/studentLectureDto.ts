@@ -17,6 +17,7 @@ export type StudentLectureDto = StudentCourseItemDto & {
   expirationDays?: number | null;
   expiresAt?: string | null;
   homeworkVideoUrl?: string | null;
+  chooseHomeworkFormUrl?: string | null;
   imageUrl?: string | null;
   items: StudentLectureDtoItemsItem[];
   price: number;

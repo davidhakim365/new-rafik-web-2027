@@ -1,4 +1,4 @@
-import { useUpdateLectureAssetsMutation } from "@/api/lectures-api";
+import { useSyncChooseHomeworkScoresMutation, useUpdateLectureAssetsMutation } from "@/api/lectures-api";
 import {
   getLectureStatisticsParams,
   readSelectedCenterId,
@@ -197,9 +197,15 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     () =>
       createLectureStudentsColumns(selectedCenterId, {
         homeworkFullMark: lecture.homeworkFullMark,
+        chooseHomeworkFullMark: lecture.chooseHomeworkFullMark,
         quizFullMark: lecture.quizFullMark,
       }),
-    [selectedCenterId, lecture.homeworkFullMark, lecture.quizFullMark]
+    [
+      selectedCenterId,
+      lecture.homeworkFullMark,
+      lecture.chooseHomeworkFullMark,
+      lecture.quizFullMark,
+    ]
   );
 
   const { data: gradeTotalData } = useGetLectureStudents(
@@ -330,6 +336,8 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
         }
       />
 
+      <ChooseHomeworkSyncButton lecture={lecture} />
+
       {!selectedCenterId && (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           Select an attendance center before scanning barcodes or marking students
@@ -412,11 +420,15 @@ function LectureFullMarksForm({
   isSaving: boolean;
   onSave: (data: {
     homeworkFullMark?: number;
+    chooseHomeworkFullMark?: number;
     quizFullMark?: number;
   }) => void;
 }) {
   const [homeworkFullMark, setHomeworkFullMark] = useState(
     lecture.homeworkFullMark?.toString() ?? ""
+  );
+  const [chooseHomeworkFullMark, setChooseHomeworkFullMark] = useState(
+    lecture.chooseHomeworkFullMark?.toString() ?? ""
   );
   const [quizFullMark, setQuizFullMark] = useState(
     lecture.quizFullMark?.toString() ?? ""
@@ -424,14 +436,21 @@ function LectureFullMarksForm({
 
   useEffect(() => {
     setHomeworkFullMark(lecture.homeworkFullMark?.toString() ?? "");
+    setChooseHomeworkFullMark(lecture.chooseHomeworkFullMark?.toString() ?? "");
     setQuizFullMark(lecture.quizFullMark?.toString() ?? "");
-  }, [lecture.homeworkFullMark, lecture.quizFullMark]);
+  }, [
+    lecture.homeworkFullMark,
+    lecture.chooseHomeworkFullMark,
+    lecture.quizFullMark,
+  ]);
 
   const hw = Number(homeworkFullMark);
+  const choose = Number(chooseHomeworkFullMark);
   const qz = Number(quizFullMark);
   const hwValid = Number.isFinite(hw) && hw > 0;
+  const chooseValid = Number.isFinite(choose) && choose > 0;
   const qzValid = Number.isFinite(qz) && qz > 0;
-  const canSave = hwValid || qzValid;
+  const canSave = hwValid || chooseValid || qzValid;
 
   return (
     <div className="rounded-xl border border-color2/20 bg-color2/5 p-3 sm:p-4">
@@ -440,14 +459,14 @@ function LectureFullMarksForm({
           Offline score full marks
         </h3>
         <p className="text-xs text-muted-foreground">
-          Set full marks first, then enter each student score (out of these
-          totals).
+          Set full marks first. Essay scores are entered manually; Choose scores
+          sync from Google Forms.
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
-            Homework full mark
+            Essay Homework full mark
           </label>
           <Input
             type="number"
@@ -456,6 +475,20 @@ function LectureFullMarksForm({
             placeholder="e.g. 20"
             value={homeworkFullMark}
             onChange={(e) => setHomeworkFullMark(e.target.value)}
+            className="w-full sm:w-40"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Choose Homework full mark
+          </label>
+          <Input
+            type="number"
+            min={0.01}
+            step="any"
+            placeholder="e.g. 10"
+            value={chooseHomeworkFullMark}
+            onChange={(e) => setChooseHomeworkFullMark(e.target.value)}
             className="w-full sm:w-40"
           />
         </div>
@@ -479,9 +512,11 @@ function LectureFullMarksForm({
           onClick={() => {
             const data: {
               homeworkFullMark?: number;
+              chooseHomeworkFullMark?: number;
               quizFullMark?: number;
             } = {};
             if (hwValid) data.homeworkFullMark = hw;
+            if (chooseValid) data.chooseHomeworkFullMark = choose;
             if (qzValid) data.quizFullMark = qz;
             onSave(data);
           }}
@@ -496,9 +531,77 @@ function LectureFullMarksForm({
       </div>
       {(!lecture.homeworkFullMark || !lecture.quizFullMark) && (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-          Score fields unlock after their full mark is saved.
+          Essay and quiz score fields unlock after their full mark is saved.
         </p>
       )}
+    </div>
+  );
+}
+
+function ChooseHomeworkSyncButton({
+  lecture,
+}: {
+  lecture: GetLectureDashboardResult;
+}) {
+  const syncMutation = useSyncChooseHomeworkScoresMutation();
+
+  if (!lecture.chooseHomeworkFormId) {
+    return (
+      <p className="rounded-lg border border-color2/20 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        Set a Choose Homework Google Form on the Details tab to sync scores.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-color2/20 bg-color2/5 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground">
+          Choose Homework sync
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Pull quiz scores from Google Forms matched by Student ID. Also runs
+          automatically every 15 minutes.
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full sm:w-auto"
+        disabled={syncMutation.isPending}
+        onClick={() =>
+          syncMutation.mutate(
+            { courseId: lecture.courseId, lectureId: lecture.id },
+            {
+              onSuccess: (res) => {
+                const data = res.data;
+                toast({
+                  title: "Choose Homework synced",
+                  description: data
+                    ? `Matched ${data.matched}, updated ${data.updated}${
+                        data.unmatchedCodes?.length
+                          ? `, unmatched: ${data.unmatchedCodes.slice(0, 5).join(", ")}`
+                          : ""
+                      }`
+                    : res.message,
+                });
+              },
+              onError: (error) => {
+                toast({
+                  title: "Sync failed",
+                  description: error.message,
+                  variant: "destructive",
+                });
+              },
+            }
+          )
+        }
+      >
+        {syncMutation.isPending ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : null}
+        Sync Choose Homework
+      </Button>
     </div>
   );
 }
@@ -642,6 +745,7 @@ const UpdateLectureRequest = z.object({
     )
     .optional()
     .or(z.literal("")),
+  chooseHomeworkFormId: z.string().trim().optional().or(z.literal("")),
 });
 
 type UpdateLectureRequest = z.infer<typeof UpdateLectureRequest>;
@@ -653,6 +757,7 @@ function LectureDetailsForm({
   expirationDays,
   imageUrl,
   homeworkVideoUrl,
+  chooseHomeworkFormId,
   renewalPrice,
   courseId,
   price,
@@ -669,6 +774,13 @@ function LectureDetailsForm({
           description: data.message,
         });
       },
+      onError: (error: Error) => {
+        toast({
+          title: "Update failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
     },
   });
 
@@ -681,6 +793,7 @@ function LectureDetailsForm({
       price,
       imageUrl,
       homeworkVideoUrl: homeworkVideoUrl ?? "",
+      chooseHomeworkFormId: chooseHomeworkFormId ?? "",
     },
     values: {
       description,
@@ -690,6 +803,7 @@ function LectureDetailsForm({
       price,
       imageUrl,
       homeworkVideoUrl: homeworkVideoUrl ?? "",
+      chooseHomeworkFormId: chooseHomeworkFormId ?? "",
     },
   });
 
@@ -778,6 +892,31 @@ function LectureDetailsForm({
                     value={field.value ?? ""}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='chooseHomeworkFormId'
+            render={({ field }) => (
+              <FormItem className='p-3 bg-color2/15 border-2 border-color2/30 rounded'>
+                <FormLabel className='text-primary'>
+                  Choose Homework (Google Form)
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    className='text-primary'
+                    placeholder='https://docs.google.com/forms/d/{formId}/edit'
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <p className='text-xs text-muted-foreground'>
+                  Paste the form edit URL or form ID (not the public /d/e/ link).
+                  Form must be a quiz with a required question titled &quot;Student
+                  ID&quot;, and shared with the Google service account.
+                </p>
                 <FormMessage />
               </FormItem>
             )}

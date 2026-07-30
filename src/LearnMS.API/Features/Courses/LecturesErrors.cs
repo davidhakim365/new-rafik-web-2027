@@ -11,7 +11,7 @@ public static class LecturesErrors
     public static readonly ApiError InvalidPdfLink = new ApiError("lecture/invalid-pdf-link", "Each PDF requires a title and a valid Google Drive link", StatusCodes.Status400BadRequest);
     public static readonly ApiError HomeworkFullMarkRequired = new ApiError(
         "lecture/homework-full-mark-required",
-        "Set the homework full mark before entering scores",
+        "Set the essay homework full mark before entering scores",
         StatusCodes.Status400BadRequest);
     public static readonly ApiError QuizFullMarkRequired = new ApiError(
         "lecture/quiz-full-mark-required",
@@ -19,10 +19,22 @@ public static class LecturesErrors
         StatusCodes.Status400BadRequest);
     public static readonly ApiError InvalidHomeworkScore = new ApiError(
         "lecture/invalid-homework-score",
-        "Homework score must be between 0 and the full mark",
+        "Essay homework score must be between 0 and the full mark",
         StatusCodes.Status400BadRequest);
     public static readonly ApiError InvalidQuizScore = new ApiError(
         "lecture/invalid-quiz-score",
         "Quiz score must be between 0 and the full mark",
+        StatusCodes.Status400BadRequest);
+    public static readonly ApiError ChooseHomeworkFormRequired = new ApiError(
+        "lecture/choose-homework-form-required",
+        "Set a Choose Homework Google Form before syncing scores",
+        StatusCodes.Status400BadRequest);
+    public static readonly ApiError InvalidChooseHomeworkFormId = new ApiError(
+        "lecture/invalid-choose-homework-form-id",
+        "Paste the Google Form edit URL (docs.google.com/forms/d/{id}/edit) or the form ID — not the public /d/e/ view link",
+        StatusCodes.Status400BadRequest);
+    public static readonly ApiError ChooseHomeworkStudentIdQuestionMissing = new ApiError(
+        "lecture/choose-homework-student-id-question-missing",
+        "The Google Form must include a required question titled exactly \"Student ID\"",
         StatusCodes.Status400BadRequest);
 }

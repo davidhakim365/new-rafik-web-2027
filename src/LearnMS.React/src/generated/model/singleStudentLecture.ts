@@ -12,6 +12,7 @@ export interface SingleStudentLecture {
   enrollmentStatus?: string | null;
   expiresAt?: string | null;
   homeworkScore?: number | null;
+  chooseHomeworkScore?: number | null;
   id: string;
   quizScore?: number | null;
   studentQuizzesScore?: number | null;

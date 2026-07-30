@@ -57,6 +57,7 @@ export const UpdateLectureRequest = z.object({
     .min(0, { message: "Expiration days must be greater than 0" }),
   imageUrl: z.string(),
   homeworkVideoUrl: z.string().optional().or(z.literal("")),
+  chooseHomeworkFormId: z.string().optional().or(z.literal("")),
 });
 
 export type UpdateLectureRequest = z.infer<typeof UpdateLectureRequest>;
@@ -245,6 +246,37 @@ export const useChangeQuizScoreMutation = () => {
           data
         )
         .then((res) => res.data),
+  });
+};
+
+export type SyncChooseHomeworkScoresResult = {
+  matched: number;
+  updated: number;
+  skippedNoScore: number;
+  unmatchedCodes: string[];
+};
+
+export const useSyncChooseHomeworkScoresMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<SyncChooseHomeworkScoresResult>,
+    Error,
+    { lectureId: string; courseId: string }
+  >({
+    mutationFn: ({ lectureId, courseId }) =>
+      api
+        .post(
+          `/api/courses/${courseId}/lectures/${lectureId}/choose-homework/sync`
+        )
+        .then((res) => res.data),
+    onSuccess: (_, { lectureId, courseId }) => {
+      qc.invalidateQueries({
+        queryKey: ["lecture-students", { id: lectureId, courseId }],
+      });
+      qc.invalidateQueries({
+        queryKey: getGetLectureQueryKey(courseId, lectureId),
+      });
+    },
   });
 };
 

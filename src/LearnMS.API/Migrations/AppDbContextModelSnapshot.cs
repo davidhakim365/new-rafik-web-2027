@@ -317,6 +317,15 @@ namespace LearnMS.API.Migrations
                     b.Property<string>("HomeworkVideoUrl")
                         .HasColumnType("text");
 
+                    b.Property<string>("ChooseHomeworkFormId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ChooseHomeworkFormUrl")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("ChooseHomeworkFullMark")
+                        .HasColumnType("numeric");
+
                     b.Property<decimal?>("HomeworkFullMark")
                         .HasColumnType("numeric");
 
@@ -412,6 +421,22 @@ namespace LearnMS.API.Migrations
                     b.HasKey("LectureId", "StudentId");
 
                     b.ToTable("LectureHomework");
+                });
+
+            modelBuilder.Entity("LearnMS.API.Entities.LectureChooseHomework", b =>
+                {
+                    b.Property<Guid>("LectureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Score")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("LectureId", "StudentId");
+
+                    b.ToTable("LectureChooseHomework");
                 });
 
             modelBuilder.Entity("LearnMS.API.Entities.LectureQuiz", b =>
@@ -944,6 +969,25 @@ namespace LearnMS.API.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("LearnMS.API.Entities.LectureChooseHomework", b =>
+                {
+                    b.HasOne("LearnMS.API.Entities.Lecture", "Lecture")
+                        .WithMany("LectureChooseHomeworks")
+                        .HasForeignKey("LectureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LearnMS.API.Entities.Student", "Student")
+                        .WithMany("LectureChooseHomeworks")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lecture");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("LearnMS.API.Entities.LectureQuiz", b =>
                 {
                     b.HasOne("LearnMS.API.Entities.Lecture", "Lecture")
@@ -1121,6 +1165,8 @@ namespace LearnMS.API.Migrations
 
                     b.Navigation("LectureHomeworks");
 
+                    b.Navigation("LectureChooseHomeworks");
+
                     b.Navigation("LectureQuizzes");
 
                     b.Navigation("Lessons");
@@ -1167,6 +1213,8 @@ namespace LearnMS.API.Migrations
                     b.Navigation("LectureEnrollments");
 
                     b.Navigation("LectureHomeworks");
+
+                    b.Navigation("LectureChooseHomeworks");
 
                     b.Navigation("LectureQuizzes");
 
