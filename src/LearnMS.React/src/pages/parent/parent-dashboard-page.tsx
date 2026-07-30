@@ -348,15 +348,24 @@ const ParentDashboardPage = () => {
                     <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-[14rem]">
                       <GradeChip
                         label={t("parent.dashboard.offlineQuiz")}
-                        value={scoreText(item.offlineQuizScore)}
+                        value={scoreText(
+                          item.offlineQuizScore,
+                          item.offlineQuizFullMark
+                        )}
                       />
                       <GradeChip
                         label={t("parent.dashboard.homework")}
-                        value={scoreText(item.homeworkScore)}
+                        value={scoreText(
+                          item.homeworkScore,
+                          item.homeworkFullMark
+                        )}
                       />
                       <GradeChip
                         label={t("parent.dashboard.chooseHomework")}
-                        value={scoreText(item.chooseHomeworkScore)}
+                        value={scoreText(
+                          item.chooseHomeworkScore,
+                          item.chooseHomeworkFullMark
+                        )}
                       />
                       <GradeChip
                         label={t("parent.dashboard.onlineQuiz")}

@@ -192,7 +192,7 @@
           "description": "See which sessions your child attended and which were missed."
         },
         "quizzes": {
-          "title": "Quiz Grades",
+          "title": "Homework & Quizzes",
           "description": "Review homework and quiz scores across lectures."
         },
         "exams": {
@@ -242,7 +242,7 @@
       "onlineQuiz": "Online quiz",
       "stats": {
         "attendance": "Attendance",
-        "quizzes": "Quizzes",
+        "quizzes": "Homework & Quizzes",
         "exams": "Exams",
         "avgExam": "Avg. exam",
         "overall": "Overall",
@@ -251,13 +251,13 @@
       },
       "tabs": {
         "attendance": "Attendance",
-        "quizzes": "Quizzes",
+        "quizzes": "Homework & Quizzes",
         "exams": "Exams",
         "apples": "Apples"
       },
       "empty": {
         "attendance": "No session records yet.",
-        "quizzes": "No quiz grades yet.",
+        "quizzes": "No homework or quiz grades yet.",
         "exams": "No exam grades yet.",
         "apples": "No apple rewards yet."
       }
