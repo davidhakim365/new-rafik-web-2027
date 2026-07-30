@@ -42,16 +42,24 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
             return AuthenticateResult.NoResult();
         }
 
+        // No credentials = unauthenticated, not a failed login attempt.
+        // Returning Fail() here spams logs on every SPA/static asset request.
         if (!Request.Headers.TryGetValue("Authorization", out var headerValue))
         {
-            return AuthenticateResult.Fail("Authorization header was not found.");
+            return AuthenticateResult.NoResult();
         }
 
-        var authorizationHeader = headerValue.FirstOrDefault() ??
-            throw new ApiException(AuthErrors.Unauthorized);
+        var authorizationHeader = headerValue.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            return AuthenticateResult.NoResult();
+        }
 
         var token = authorizationHeader.Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
-        if (string.IsNullOrEmpty(token)) return AuthenticateResult.Fail("Authorization header was not found.");
+        if (string.IsNullOrEmpty(token))
+        {
+            return AuthenticateResult.NoResult();
+        }
 
         var validToken = await new JwtSecurityTokenHandler().ValidateTokenAsync(token, new TokenValidationParameters
         {
