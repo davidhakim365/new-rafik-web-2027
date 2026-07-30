@@ -234,6 +234,8 @@
       "loadError": "Could not load progress. Please sign in again.",
       "attended": "Attended",
       "absent": "Absent",
+      "lectureDate": "Lecture date",
+      "attendedAt": "Attended on",
       "offlineQuiz": "Center quiz",
       "homework": "Homework",
       "onlineQuiz": "Online quiz",

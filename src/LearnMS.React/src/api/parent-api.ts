@@ -46,6 +46,7 @@ export type ParentAttendanceItem = {
   lectureId: string;
   lectureTitle: string;
   courseTitle: string;
+  lectureCreatedAt: string;
   attended: boolean;
   attendedAt: string | null;
 };

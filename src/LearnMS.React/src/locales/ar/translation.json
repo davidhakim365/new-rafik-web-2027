@@ -234,6 +234,8 @@
       "loadError": "تعذر تحميل التقدم. يرجى تسجيل الدخول مرة أخرى.",
       "attended": "حضر",
       "absent": "غاب",
+      "lectureDate": "تاريخ المحاضرة",
+      "attendedAt": "تاريخ الحضور",
       "offlineQuiz": "كويز السنتر",
       "homework": "واجب",
       "onlineQuiz": "كويز أونلاين",

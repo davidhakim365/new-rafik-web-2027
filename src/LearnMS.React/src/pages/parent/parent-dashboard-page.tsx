@@ -48,6 +48,21 @@ function formatDate(value: string | null | undefined, locale: string) {
   }
 }
 
+function formatDateTime(value: string | null | undefined, locale: string) {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleString(locale === "ar" ? "ar-EG" : "en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+}
+
 function scoreText(
   score: number | null | undefined,
   total?: number | null,
@@ -282,6 +297,12 @@ const ParentDashboardPage = () => {
                         <BookOpen className="size-3.5 shrink-0" />
                         <span className="truncate">{item.courseTitle}</span>
                       </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("parent.dashboard.lectureDate")}:{" "}
+                        <span className="font-medium text-foreground">
+                          {formatDateTime(item.lectureCreatedAt, i18n.language)}
+                        </span>
+                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge
@@ -299,6 +320,7 @@ const ParentDashboardPage = () => {
                       </Badge>
                       {item.attendedAt && (
                         <span className="text-xs text-muted-foreground">
+                          {t("parent.dashboard.attendedAt")}:{" "}
                           {formatDate(item.attendedAt, i18n.language)}
                         </span>
                       )}

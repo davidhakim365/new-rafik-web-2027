@@ -60,6 +60,7 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             {
                 l.Id,
                 l.Title,
+                l.CreatedAt,
                 CourseTitle = l.Course.Title ?? "Course",
                 AttendedAt = l.LectureAttendances
                     .Where(a => a.StudentId == studentId && a.AttendedAt != null)
@@ -84,7 +85,8 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
                 HasOnlineQuiz = l.Quizzes.Any(q =>
                     q.QuizSubmissions.Any(sub => sub.StudentId == studentId)),
             })
-            .OrderBy(l => l.CourseTitle)
+            .OrderByDescending(l => l.CreatedAt)
+            .ThenBy(l => l.CourseTitle)
             .ThenBy(l => l.Title)
             .ToListAsync();
 
@@ -118,6 +120,7 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             LectureId = l.Id,
             LectureTitle = l.Title,
             CourseTitle = l.CourseTitle,
+            LectureCreatedAt = l.CreatedAt,
             Attended = l.AttendedAt != null || l.LessonAttended,
             AttendedAt = l.AttendedAt
         }).ToList();
