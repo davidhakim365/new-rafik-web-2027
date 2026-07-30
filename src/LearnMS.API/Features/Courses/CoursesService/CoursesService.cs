@@ -166,7 +166,16 @@ public sealed class CoursesService : ICoursesService
             return;
         }
 
-        var formId = GoogleFormsService.TryParseFormId(rawFormId)
+        var trimmed = rawFormId.Trim();
+
+        // Public share / viewform / forms.gle links are enough for student embed.
+        if (IsPublicChooseHomeworkUrl(trimmed))
+        {
+            lecture.ChooseHomeworkFormUrl = NormalizeChooseHomeworkFormUrl(trimmed);
+            return;
+        }
+
+        var formId = GoogleFormsService.TryParseFormId(trimmed)
             ?? throw new ApiException(LecturesErrors.InvalidChooseHomeworkFormId);
 
         var form = await _googleFormsService.GetFormAsync(formId);
@@ -176,7 +185,41 @@ public sealed class CoursesService : ICoursesService
         lecture.ChooseHomeworkFormId = form.FormId;
         lecture.ChooseHomeworkFormUrl = string.IsNullOrWhiteSpace(form.ResponderUri)
             ? null
-            : form.ResponderUri.Trim();
+            : NormalizeChooseHomeworkFormUrl(form.ResponderUri.Trim());
+    }
+
+    private static bool IsPublicChooseHomeworkUrl(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host.ToLowerInvariant();
+        if (host is "forms.gle" or "www.forms.gle")
+            return true;
+
+        return host.Contains("google.com", StringComparison.Ordinal)
+            && uri.AbsolutePath.Contains("/forms/d/e/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeChooseHomeworkFormUrl(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            return value.Trim();
+
+        // Prefer the standard viewform endpoint for embedding.
+        var path = uri.AbsolutePath;
+        if (path.Contains("/forms/d/e/", StringComparison.OrdinalIgnoreCase)
+            && !path.EndsWith("/viewform", StringComparison.OrdinalIgnoreCase)
+            && !path.Contains("/viewform", StringComparison.OrdinalIgnoreCase))
+        {
+            if (path.EndsWith('/'))
+                path += "viewform";
+            else
+                path += "/viewform";
+            uri = new UriBuilder(uri) { Path = path, Query = uri.Query.TrimStart('?') }.Uri;
+        }
+
+        return uri.ToString();
     }
 
     public async Task<SyncChooseHomeworkScoresResult> ExecuteAsync(SyncChooseHomeworkScoresCommand command)

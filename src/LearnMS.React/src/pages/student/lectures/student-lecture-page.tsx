@@ -156,7 +156,7 @@ function ChooseHomeworkSection({
         dir={isRTL ? "rtl" : "ltr"}
         className="text-xl font-bold sm:text-2xl text-foreground"
       >
-        {t("lectures.chooseHomework")}
+        {t("lectures.chooseHomeworkForm")}
       </h2>
       {studentCode && (
         <div
@@ -173,7 +173,7 @@ function ChooseHomeworkSection({
       )}
       <div className="overflow-hidden rounded-xl border border-color2/20 bg-background">
         <iframe
-          title={t("lectures.chooseHomework")}
+          title={t("lectures.chooseHomeworkForm")}
           src={embedUrl}
           className="h-[70vh] min-h-[480px] w-full border-0"
           loading="lazy"

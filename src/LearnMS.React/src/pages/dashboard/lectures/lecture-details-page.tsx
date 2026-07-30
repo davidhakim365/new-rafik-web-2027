@@ -907,15 +907,16 @@ function LectureDetailsForm({
                 <FormControl>
                   <Input
                     className='text-primary'
-                    placeholder='https://docs.google.com/forms/d/{formId}/edit'
+                    placeholder='Edit URL, forms.gle link, or viewform link'
                     {...field}
                     value={field.value ?? ""}
                   />
                 </FormControl>
                 <p className='text-xs text-muted-foreground'>
-                  Paste the form edit URL or form ID (not the public /d/e/ link).
-                  Form must be a quiz with a required question titled &quot;Student
-                  ID&quot;, and shared with the Google service account.
+                  Paste the form edit URL (for score sync) or the public student
+                  link (forms.gle / viewform) to embed for students. For sync,
+                  the form must be a quiz with a required question titled
+                  &quot;Student ID&quot;, shared with the Google service account.
                 </p>
                 <FormMessage />
               </FormItem>

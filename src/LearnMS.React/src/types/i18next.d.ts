@@ -349,6 +349,7 @@ declare module "i18next" {
           lectureContent: string;
           homeworkVideo: string;
           chooseHomework: string;
+          chooseHomeworkForm: string;
           enterStudentIdInForm: string;
           confirmPurchase: string;
           confirmPurchaseDescription: string;
