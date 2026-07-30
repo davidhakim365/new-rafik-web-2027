@@ -351,6 +351,8 @@ declare module "i18next" {
           chooseHomework: string;
           chooseHomeworkForm: string;
           enterStudentIdInForm: string;
+          chooseHomeworkGoogleSignInHint: string;
+          chooseHomeworkOpenWithGoogle: string;
           confirmPurchase: string;
           confirmPurchaseDescription: string;
           buyFor: string;

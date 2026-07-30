@@ -554,7 +554,7 @@ function ChooseHomeworkSyncButton({
           syncMutation.mutate(
             { courseId: lecture.courseId, lectureId: lecture.id },
             {
-              onSuccess: (res) => {
+              onSuccess: async (res) => {
                 const data = res.data;
                 toast({
                   title: "Choose Homework synced",
@@ -898,6 +898,9 @@ function LectureDetailsForm({
                   link (forms.gle / viewform) to embed for students. For sync,
                   the form must be a quiz with a required question titled
                   &quot;Student ID&quot;, shared with the Google service account.
+                  Tip: turn off &quot;Collect email addresses&quot; and domain
+                  restriction so students can fill the form in-page without
+                  leaving for Google login.
                 </p>
                 <FormMessage />
               </FormItem>

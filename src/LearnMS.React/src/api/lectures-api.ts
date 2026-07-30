@@ -1,5 +1,9 @@
 import { ApiResponse, api } from "@/api";
-import { getGetLectureQueryKey, getGetProfileQueryKey } from "@/generated/api";
+import {
+  getGetLectureQueryKey,
+  getGetLectureStudentsQueryKey,
+  getGetProfileQueryKey,
+} from "@/generated/api";
 import { LectureDetails, SingleLectureStudent } from "@/types/lectures";
 import { PageList } from "@/types/page-list";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -269,12 +273,25 @@ export const useSyncChooseHomeworkScoresMutation = () => {
           `/api/courses/${courseId}/lectures/${lectureId}/choose-homework/sync`
         )
         .then((res) => res.data),
-    onSuccess: (_, { lectureId, courseId }) => {
-      qc.invalidateQueries({
-        queryKey: ["lecture-students", { id: lectureId, courseId }],
-      });
-      qc.invalidateQueries({
-        queryKey: getGetLectureQueryKey(courseId, lectureId),
+    onSuccess: async (_, { lectureId, courseId }) => {
+      await Promise.all([
+        qc.invalidateQueries({
+          queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
+        }),
+        // Prefix match: also refresh paged/search variants of the students table.
+        qc.invalidateQueries({
+          queryKey: [`/api/courses/${courseId}/lectures/${lectureId}/students`],
+        }),
+        qc.invalidateQueries({
+          queryKey: getGetLectureQueryKey(courseId, lectureId),
+        }),
+        qc.invalidateQueries({
+          queryKey: ["lecture-students", { id: lectureId, courseId }],
+        }),
+      ]);
+      await qc.refetchQueries({
+        queryKey: [`/api/courses/${courseId}/lectures/${lectureId}/students`],
+        type: "active",
       });
     },
   });

@@ -532,6 +532,8 @@
     "chooseHomework": "Choose Homework",
     "chooseHomeworkForm": "Choose Homework Form",
     "enterStudentIdInForm": "Enter this Student ID in the form",
+    "chooseHomeworkGoogleSignInHint": "If Google asks you to sign in, use the button — a popup opens so you stay on this page.",
+    "chooseHomeworkOpenWithGoogle": "Sign in with Google & fill form",
     "confirmPurchase": "Confirm Purchase",
     "confirmPurchaseDescription": "Are you sure you want to buy this lecture?",
     "buyFor": "Buy for {{price}} LE ({{days}} days)",

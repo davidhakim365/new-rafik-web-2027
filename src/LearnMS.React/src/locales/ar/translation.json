@@ -530,6 +530,8 @@
     "chooseHomework": "واجب الاختيار",
     "chooseHomeworkForm": "نموذج واجب الاختيار",
     "enterStudentIdInForm": "أدخل رقم الطالب هذا في النموذج",
+    "chooseHomeworkGoogleSignInHint": "إذا طلب Google تسجيل الدخول، استخدم الزر — تفتح نافذة منبثقة وتبقى على هذه الصفحة.",
+    "chooseHomeworkOpenWithGoogle": "تسجيل الدخول بـ Google وملء النموذج",
     "confirmPurchase": "تأكيد الشراء",
     "confirmPurchaseDescription": "هل أنت متأكد من أنك تريد شراء هذه المحاضرة؟",
     "buyFor": "اشتري مقابل {{price}} جم ({{days}} يوم)",

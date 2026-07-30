@@ -1,5 +1,6 @@
 import { useBuyLectureMutation } from "@/api/lectures-api";
 import { useBuyExamMutation } from "@/api/exams-api";
+import { ChooseHomeworkFormEmbed } from "@/components/choose-homework-form-embed";
 import { YoutubeEmbed } from "@/components/youtube-embed";
 import {
   Accordion,
@@ -855,7 +856,15 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
 
       {/* Choose Homework Google Form — embedded in-app */}
       {lecture.chooseHomeworkFormUrl && (
-        <ChooseHomeworkFormSection url={lecture.chooseHomeworkFormUrl} />
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center gap-2">
+            <FaQuestionCircle className="w-4 h-4 text-primary sm:w-5 sm:h-5" />
+            <h4 className="text-base font-semibold text-foreground sm:text-xl">
+              {t("lectures.chooseHomeworkForm")}
+            </h4>
+          </div>
+          <ChooseHomeworkFormEmbed formUrl={lecture.chooseHomeworkFormUrl} />
+        </div>
       )}
 
       {/* Attachments Section */}
@@ -930,57 +939,6 @@ function HomeworkVideoSection({ url }: { url: string }) {
         </h4>
       </div>
       <YoutubeEmbed url={url} title={t("courses.homeworkVideo")} />
-    </div>
-  );
-}
-
-function chooseHomeworkEmbedUrl(formUrl: string) {
-  try {
-    const url = new URL(formUrl);
-    url.searchParams.set("embedded", "true");
-    return url.toString();
-  } catch {
-    const sep = formUrl.includes("?") ? "&" : "?";
-    return `${formUrl}${sep}embedded=true`;
-  }
-}
-
-function ChooseHomeworkFormSection({ url }: { url: string }) {
-  const { t } = useTranslation();
-  const { data: profile } = useGetProfile();
-  const studentCode =
-    profile?.data?.$type === "GetStudentProfileResult"
-      ? profile.data.studentCode
-      : undefined;
-  const embedUrl = chooseHomeworkEmbedUrl(url);
-
-  return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="flex items-center gap-2">
-        <FaQuestionCircle className="w-4 h-4 text-primary sm:w-5 sm:h-5" />
-        <h4 className="text-base font-semibold text-foreground sm:text-xl">
-          {t("lectures.chooseHomeworkForm")}
-        </h4>
-      </div>
-      {studentCode && (
-        <div className="rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm">
-          <span className="text-muted-foreground">
-            {t("lectures.enterStudentIdInForm")}:{" "}
-          </span>
-          <span className="font-mono font-semibold text-foreground">
-            {studentCode}
-          </span>
-        </div>
-      )}
-      <div className="overflow-hidden rounded-lg border border-border/50 bg-background">
-        <iframe
-          title={t("lectures.chooseHomeworkForm")}
-          src={embedUrl}
-          className="h-[70vh] min-h-[480px] w-full border-0"
-          loading="lazy"
-          allow="autoplay; clipboard-write; encrypted-media"
-        />
-      </div>
     </div>
   );
 }
