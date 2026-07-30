@@ -5,7 +5,9 @@ public sealed record GoogleFormInfo(
     string? Title,
     string? ResponderUri,
     string? StudentIdQuestionId,
-    IReadOnlyList<GoogleFormQuestion> Questions
+    IReadOnlyList<GoogleFormQuestion> Questions,
+    /// <summary>Sum of quiz question point values from the form grading settings.</summary>
+    decimal? TotalPointValue
 );
 
 public sealed record GoogleFormQuestion(string QuestionId, string Title);

@@ -107,8 +107,7 @@ public sealed class CoursesService : ICoursesService
         if (command.HomeworkFullMark is not null)
             lecture.HomeworkFullMark = command.HomeworkFullMark;
 
-        if (command.ChooseHomeworkFullMark is not null)
-            lecture.ChooseHomeworkFullMark = command.ChooseHomeworkFullMark;
+        // ChooseHomeworkFullMark is set automatically from the Google Form quiz point total.
 
         if (command.QuizFullMark is not null)
             lecture.QuizFullMark = command.QuizFullMark;
@@ -163,6 +162,7 @@ public sealed class CoursesService : ICoursesService
         {
             lecture.ChooseHomeworkFormId = null;
             lecture.ChooseHomeworkFormUrl = null;
+            lecture.ChooseHomeworkFullMark = null;
             return;
         }
 
@@ -186,6 +186,8 @@ public sealed class CoursesService : ICoursesService
         lecture.ChooseHomeworkFormUrl = string.IsNullOrWhiteSpace(form.ResponderUri)
             ? null
             : NormalizeChooseHomeworkFormUrl(form.ResponderUri.Trim());
+        if (form.TotalPointValue is not null)
+            lecture.ChooseHomeworkFullMark = form.TotalPointValue;
     }
 
     private static bool IsPublicChooseHomeworkUrl(string value)
@@ -247,9 +249,13 @@ public sealed class CoursesService : ICoursesService
             )
         )
         {
-            lecture.ChooseHomeworkFormUrl = form.ResponderUri;
-            _context.Update(lecture);
+            lecture.ChooseHomeworkFormUrl = NormalizeChooseHomeworkFormUrl(form.ResponderUri);
         }
+
+        if (form.TotalPointValue is not null)
+            lecture.ChooseHomeworkFullMark = form.TotalPointValue;
+
+        _context.Update(lecture);
 
         var responses = await _googleFormsService.ListResponseScoresAsync(
             lecture.ChooseHomeworkFormId,

@@ -160,7 +160,6 @@ public sealed class LecturesController : ControllerBase
                 HomeworkVideoUrl = request.HomeworkVideoUrl,
                 ChooseHomeworkFormId = request.ChooseHomeworkFormId,
                 HomeworkFullMark = request.HomeworkFullMark,
-                ChooseHomeworkFullMark = request.ChooseHomeworkFullMark,
                 QuizFullMark = request.QuizFullMark,
                 Id = lectureId,
                 Title = request.Title,

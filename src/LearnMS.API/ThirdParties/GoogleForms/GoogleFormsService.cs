@@ -52,25 +52,51 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
         var questions = new List<GoogleFormQuestion>();
         string? studentIdQuestionId = null;
+        decimal totalPoints = 0;
+        var hasGradedQuestion = false;
 
         foreach (var item in form.Items ?? [])
         {
-            if (item.QuestionItem?.Question is null)
-                continue;
-
-            var questionId = item.QuestionItem.Question.QuestionId;
-            var title = item.Title?.Trim() ?? "";
-            if (string.IsNullOrWhiteSpace(questionId))
-                continue;
-
-            questions.Add(new GoogleFormQuestion(questionId, title));
-
-            if (
-                studentIdQuestionId is null
-                && string.Equals(title, StudentIdQuestionTitle, StringComparison.OrdinalIgnoreCase)
-            )
+            if (item.QuestionItem?.Question is { } singleQuestion)
             {
-                studentIdQuestionId = questionId;
+                var questionId = singleQuestion.QuestionId;
+                var title = item.Title?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(questionId))
+                    continue;
+
+                questions.Add(new GoogleFormQuestion(questionId, title));
+
+                if (
+                    studentIdQuestionId is null
+                    && string.Equals(title, StudentIdQuestionTitle, StringComparison.OrdinalIgnoreCase)
+                )
+                {
+                    studentIdQuestionId = questionId;
+                }
+
+                if (singleQuestion.Grading?.PointValue is { } points)
+                {
+                    totalPoints += points;
+                    hasGradedQuestion = true;
+                }
+            }
+
+            if (item.QuestionGroupItem?.Questions is { } groupQuestions)
+            {
+                foreach (var groupQuestion in groupQuestions)
+                {
+                    var questionId = groupQuestion.QuestionId;
+                    if (string.IsNullOrWhiteSpace(questionId))
+                        continue;
+
+                    questions.Add(new GoogleFormQuestion(questionId, item.Title?.Trim() ?? ""));
+
+                    if (groupQuestion.Grading?.PointValue is { } points)
+                    {
+                        totalPoints += points;
+                        hasGradedQuestion = true;
+                    }
+                }
             }
         }
 
@@ -79,7 +105,8 @@ public sealed class GoogleFormsService : IGoogleFormsService
             form.Info?.Title,
             form.ResponderUri,
             studentIdQuestionId,
-            questions
+            questions,
+            hasGradedQuestion ? totalPoints : null
         );
     }
 

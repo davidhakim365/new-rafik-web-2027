@@ -420,15 +420,11 @@ function LectureFullMarksForm({
   isSaving: boolean;
   onSave: (data: {
     homeworkFullMark?: number;
-    chooseHomeworkFullMark?: number;
     quizFullMark?: number;
   }) => void;
 }) {
   const [homeworkFullMark, setHomeworkFullMark] = useState(
     lecture.homeworkFullMark?.toString() ?? ""
-  );
-  const [chooseHomeworkFullMark, setChooseHomeworkFullMark] = useState(
-    lecture.chooseHomeworkFullMark?.toString() ?? ""
   );
   const [quizFullMark, setQuizFullMark] = useState(
     lecture.quizFullMark?.toString() ?? ""
@@ -436,21 +432,14 @@ function LectureFullMarksForm({
 
   useEffect(() => {
     setHomeworkFullMark(lecture.homeworkFullMark?.toString() ?? "");
-    setChooseHomeworkFullMark(lecture.chooseHomeworkFullMark?.toString() ?? "");
     setQuizFullMark(lecture.quizFullMark?.toString() ?? "");
-  }, [
-    lecture.homeworkFullMark,
-    lecture.chooseHomeworkFullMark,
-    lecture.quizFullMark,
-  ]);
+  }, [lecture.homeworkFullMark, lecture.quizFullMark]);
 
   const hw = Number(homeworkFullMark);
-  const choose = Number(chooseHomeworkFullMark);
   const qz = Number(quizFullMark);
   const hwValid = Number.isFinite(hw) && hw > 0;
-  const chooseValid = Number.isFinite(choose) && choose > 0;
   const qzValid = Number.isFinite(qz) && qz > 0;
-  const canSave = hwValid || chooseValid || qzValid;
+  const canSave = hwValid || qzValid;
 
   return (
     <div className="rounded-xl border border-color2/20 bg-color2/5 p-3 sm:p-4">
@@ -459,8 +448,12 @@ function LectureFullMarksForm({
           Offline score full marks
         </h3>
         <p className="text-xs text-muted-foreground">
-          Set full marks first. Essay scores are entered manually; Choose scores
-          sync from Google Forms.
+          Set Essay and Quiz full marks here. Choose Homework full mark is taken
+          automatically from the Google Form quiz points
+          {lecture.chooseHomeworkFullMark
+            ? ` (currently ${lecture.chooseHomeworkFullMark})`
+            : ""}
+          .
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -475,20 +468,6 @@ function LectureFullMarksForm({
             placeholder="e.g. 20"
             value={homeworkFullMark}
             onChange={(e) => setHomeworkFullMark(e.target.value)}
-            className="w-full sm:w-40"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Choose Homework full mark
-          </label>
-          <Input
-            type="number"
-            min={0.01}
-            step="any"
-            placeholder="e.g. 10"
-            value={chooseHomeworkFullMark}
-            onChange={(e) => setChooseHomeworkFullMark(e.target.value)}
             className="w-full sm:w-40"
           />
         </div>
@@ -512,11 +491,9 @@ function LectureFullMarksForm({
           onClick={() => {
             const data: {
               homeworkFullMark?: number;
-              chooseHomeworkFullMark?: number;
               quizFullMark?: number;
             } = {};
             if (hwValid) data.homeworkFullMark = hw;
-            if (chooseValid) data.chooseHomeworkFullMark = choose;
             if (qzValid) data.quizFullMark = qz;
             onSave(data);
           }}
@@ -560,8 +537,12 @@ function ChooseHomeworkSyncButton({
           Choose Homework sync
         </h3>
         <p className="text-xs text-muted-foreground">
-          Pull quiz scores from Google Forms matched by Student ID. Also runs
-          automatically every 15 minutes.
+          Pull quiz scores from Google Forms matched by Student ID. Full mark is
+          taken automatically from the form quiz points
+          {lecture.chooseHomeworkFullMark != null
+            ? ` (${lecture.chooseHomeworkFullMark})`
+            : ""}
+          . Also runs automatically every 15 minutes.
         </p>
       </div>
       <Button
