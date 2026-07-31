@@ -12,5 +12,8 @@ public sealed record GetLectureStatisticsResponse(
     decimal AverageHomeworksScore,
     decimal AverageQuizzesScore,
     long OnlineIncome,
-    long OfflineIncome
+    long OfflineIncome,
+    long StudentsWithHomeworkScore,
+    long StudentsWithChooseHomeworkScore,
+    long StudentsWithQuizScore
 );

@@ -11,6 +11,7 @@ import {
   Circle,
   Globe,
   GraduationCap,
+  ListChecks,
   Users,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
@@ -132,8 +133,9 @@ export function LectureStudentStats({
   const enrolled = stats?.enrolledStudents ?? 0;
   const notAttended = Math.max(totalInGrade - attended, 0);
   const notEnrolled = Math.max(totalInGrade - enrolled, 0);
-  const avgHomework = stats?.averageHomeworksScore ?? 0;
-  const avgQuiz = stats?.averageQuizzesScore ?? 0;
+  const essayHomeworkScored = stats?.studentsWithHomeworkScore ?? 0;
+  const chooseHomeworkScored = stats?.studentsWithChooseHomeworkScore ?? 0;
+  const quizScored = stats?.studentsWithQuizScore ?? 0;
 
   return (
     <DashboardCard padding="sm" spotlight={false}>
@@ -199,17 +201,25 @@ export function LectureStudentStats({
           iconClassName="bg-rose-500/20 text-rose-600"
         />
         <StatBox
-          title="Avg Homework"
-          value={avgHomework.toFixed(1)}
-          subtitle="Class average score"
+          title="Essay Homework Scored"
+          value={`${essayHomeworkScored} / ${totalInGrade}`}
+          subtitle="Students with a score"
           icon={BookOpen}
           className="border-purple-500/30 bg-purple-500/10 text-purple-800 dark:text-purple-200"
           iconClassName="bg-purple-500/20 text-purple-600"
         />
         <StatBox
-          title="Avg Quiz"
-          value={avgQuiz.toFixed(1)}
-          subtitle="Class average score"
+          title="Choose Homework Scored"
+          value={`${chooseHomeworkScored} / ${totalInGrade}`}
+          subtitle="Students with a score"
+          icon={ListChecks}
+          className="border-teal-500/30 bg-teal-500/10 text-teal-800 dark:text-teal-200"
+          iconClassName="bg-teal-500/20 text-teal-600"
+        />
+        <StatBox
+          title="Quiz Scored"
+          value={`${quizScored} / ${totalInGrade}`}
+          subtitle="Students with a score"
           icon={GraduationCap}
           className="border-indigo-500/30 bg-indigo-500/10 text-indigo-800 dark:text-indigo-200"
           iconClassName="bg-indigo-500/20 text-indigo-600"

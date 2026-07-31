@@ -12,4 +12,7 @@ export interface GetLectureStatisticsResponse {
   enrolledStudents?: number;
   offlineIncome?: number;
   onlineIncome?: number;
+  studentsWithHomeworkScore?: number;
+  studentsWithChooseHomeworkScore?: number;
+  studentsWithQuizScore?: number;
 }
