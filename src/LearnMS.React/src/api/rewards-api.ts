@@ -203,6 +203,8 @@ export type StudentAppleLookup = {
   fullName: string;
   studentCode: string;
   apples: number;
+  cooldownRemainingSeconds?: number;
+  cooldownEndsAt?: string | null;
 };
 
 export type AddStudentApplesResult = {

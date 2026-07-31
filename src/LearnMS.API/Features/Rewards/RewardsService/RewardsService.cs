@@ -150,6 +150,10 @@ public sealed class RewardsService(
         var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode == code)
             ?? throw new ApiException(RewardsErrors.StudentNotFound);
 
+        var cooldown = await GetScannerCooldownAsync(student.Id);
+        if (cooldown.RemainingSeconds > 0)
+            throw new ApiException(RewardsErrors.StudentScannerCooldown(cooldown.RemainingSeconds));
+
         return await ApplyStudentApplesAsync(student, command.Amount, command.Reason, command.ActorId);
     }
 
@@ -162,12 +166,16 @@ public sealed class RewardsService(
         var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode == code)
             ?? throw new ApiException(RewardsErrors.StudentNotFound);
 
+        var cooldown = await GetScannerCooldownAsync(student.Id);
+
         return new StudentAppleLookupResult
         {
             StudentId = student.Id,
             FullName = student.FullName,
             StudentCode = student.StudentCode,
-            Apples = student.Apples
+            Apples = student.Apples,
+            CooldownRemainingSeconds = cooldown.RemainingSeconds,
+            CooldownEndsAt = cooldown.EndsAt
         };
     }
 
@@ -232,6 +240,34 @@ public sealed class RewardsService(
         db.RewardSystemSettings.Update(settings);
         await db.SaveChangesAsync();
         return MapSettings(settings);
+    }
+
+    private const int ScannerCooldownMinutes = 10;
+    private const string ScannerReasonPrefix = "Scanner";
+
+    private async Task<(int RemainingSeconds, DateTime? EndsAt)> GetScannerCooldownAsync(Guid studentId)
+    {
+        var since = DateTime.UtcNow.AddMinutes(-ScannerCooldownMinutes);
+        var lastAt = await db.Set<StudentAppleTransaction>()
+            .AsNoTracking()
+            .Where(t =>
+                t.StudentId == studentId &&
+                t.CreatedAt >= since &&
+                t.Reason != null &&
+                t.Reason.StartsWith(ScannerReasonPrefix))
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => (DateTime?)t.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (lastAt is null)
+            return (0, null);
+
+        var endsAt = lastAt.Value.AddMinutes(ScannerCooldownMinutes);
+        var remaining = (int)Math.Ceiling((endsAt - DateTime.UtcNow).TotalSeconds);
+        if (remaining <= 0)
+            return (0, null);
+
+        return (remaining, endsAt);
     }
 
     private async Task<AddStudentApplesResult> ApplyStudentApplesAsync(

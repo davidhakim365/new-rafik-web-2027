@@ -161,6 +161,8 @@ public sealed record StudentAppleLookupResult
     public required string FullName { get; init; }
     public required string StudentCode { get; init; }
     public required int Apples { get; init; }
+    public int CooldownRemainingSeconds { get; init; }
+    public DateTime? CooldownEndsAt { get; init; }
 }
 
 public sealed record AssistantLookupResult

@@ -45,4 +45,18 @@ public static class RewardsErrors
             "rewards/invalid-system-settings",
             "Base pay, sessions per bonus, and bonus amount must be positive. Max value must be at least the base pay.",
             StatusCodes.Status400BadRequest);
+
+    public static ApiError StudentScannerCooldown(int remainingSeconds)
+    {
+        var minutes = remainingSeconds / 60;
+        var seconds = remainingSeconds % 60;
+        var time = minutes > 0
+            ? $"{minutes}m {seconds:D2}s"
+            : $"{seconds}s";
+
+        return new(
+            "rewards/student-scanner-cooldown",
+            $"This student was already awarded. Wait {time} before the next scanner action.",
+            StatusCodes.Status429TooManyRequests);
+    }
 }

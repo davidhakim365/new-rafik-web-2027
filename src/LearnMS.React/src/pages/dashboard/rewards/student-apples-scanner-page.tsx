@@ -18,16 +18,34 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/axiosCustomInstant";
 import { toast } from "@/lib/utils";
 import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Apple, ArrowLeft, CheckCircle, Loader2, ScanLine, XCircle } from "lucide-react";
+import { Apple, ArrowLeft, CheckCircle, Clock, Loader2, ScanLine, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 const SCAN_COOLDOWN_MS = 2500;
 const APPLE_OPTIONS = [1, 5, 20] as const;
+
+function formatRemaining(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 0) return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+  return `${seconds}s`;
+}
+
+function resolveCooldownEndsAt(found: StudentAppleLookup): number | null {
+  if (found.cooldownEndsAt) {
+    const ends = Date.parse(found.cooldownEndsAt);
+    if (!Number.isNaN(ends) && ends > Date.now()) return ends;
+  }
+  const remaining = found.cooldownRemainingSeconds ?? 0;
+  if (remaining > 0) return Date.now() + remaining * 1000;
+  return null;
+}
 
 const StudentApplesScannerPage = () => {
   const navigate = useNavigate();
@@ -44,11 +62,34 @@ const StudentApplesScannerPage = () => {
   >("initializing");
   const [feedback, setFeedback] = useState("");
   const [student, setStudent] = useState<StudentAppleLookup | null>(null);
+  const [cooldownEndsAt, setCooldownEndsAt] = useState<number | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   const form = useForm<LookupStudentByCodeRequest>({
     resolver: zodResolver(LookupStudentByCodeRequest),
     defaultValues: { code: "" },
   });
+
+  const onCooldown = cooldownRemaining > 0;
+
+  useEffect(() => {
+    if (!cooldownEndsAt) {
+      setCooldownRemaining(0);
+      return;
+    }
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((cooldownEndsAt - Date.now()) / 1000));
+      setCooldownRemaining(remaining);
+      if (remaining <= 0) {
+        setCooldownEndsAt(null);
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [cooldownEndsAt]);
 
   const resumeScanning = useCallback(
     (delay = 1500) => {
@@ -80,6 +121,7 @@ const StudentApplesScannerPage = () => {
       setStatus("processing");
       setFeedback(`Looking up: ${code}`);
       setStudent(null);
+      setCooldownEndsAt(null);
 
       lookupMutation.mutate(
         { code },
@@ -92,14 +134,29 @@ const StudentApplesScannerPage = () => {
               resumeScanning(2000);
               return;
             }
+
+            const endsAt = resolveCooldownEndsAt(found);
             setStudent(found);
+            setCooldownEndsAt(endsAt);
             setStatus("found");
-            setFeedback(`${found.fullName} · ${found.apples} apples`);
             form.setValue("code", found.studentCode);
-            toast({
-              title: "Student found",
-              description: `${found.fullName} (${found.studentCode})`,
-            });
+
+            if (endsAt) {
+              const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+              setFeedback(
+                `${found.fullName} · wait ${formatRemaining(remaining)} before next action`
+              );
+              toast({
+                title: "Cooldown active",
+                description: `${found.fullName}: wait ${formatRemaining(remaining)} before awarding again.`,
+              });
+            } else {
+              setFeedback(`${found.fullName} · ${found.apples} apples`);
+              toast({
+                title: "Student found",
+                description: `${found.fullName} (${found.studentCode})`,
+              });
+            }
             processingRef.current = false;
           },
           onError: () => {
@@ -120,6 +177,8 @@ const StudentApplesScannerPage = () => {
 
   const clearStudent = useCallback(() => {
     setStudent(null);
+    setCooldownEndsAt(null);
+    setCooldownRemaining(0);
     setStatus("scanning");
     setFeedback("Ready for next scan...");
     form.reset({ code: "" });
@@ -128,7 +187,7 @@ const StudentApplesScannerPage = () => {
   }, [form]);
 
   const addApples = (amount: number) => {
-    if (!student) return;
+    if (!student || onCooldown) return;
 
     addApplesMutation.mutate(
       {
@@ -143,10 +202,16 @@ const StudentApplesScannerPage = () => {
           toast({ title: "Apples updated", description: message });
           clearStudent();
         },
-        onError: () => {
+        onError: (error) => {
+          const message =
+            error instanceof ApiError
+              ? error.message
+              : "Could not update apples.";
           toast({
-            title: "Failed",
-            description: "Could not update apples.",
+            title: error instanceof ApiError && error.code === "rewards/student-scanner-cooldown"
+              ? "Cooldown active"
+              : "Failed",
+            description: message,
             variant: "destructive",
           });
         },
@@ -294,15 +359,31 @@ const StudentApplesScannerPage = () => {
                 Clear
               </Button>
             </div>
-            <p className="relative z-10 mb-2 text-sm font-medium text-emerald-100/80">
-              Award apples
-            </p>
+
+            {onCooldown ? (
+              <div className="relative z-10 mb-3 flex items-center gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/15 px-3 py-3">
+                <Clock className="size-5 shrink-0 text-amber-300" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-amber-100">
+                    Wait {formatRemaining(cooldownRemaining)}
+                  </p>
+                  <p className="text-xs text-amber-100/70">
+                    This student was already awarded. Next scanner action after the cooldown.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="relative z-10 mb-2 text-sm font-medium text-emerald-100/80">
+                Award apples
+              </p>
+            )}
+
             <div className="relative z-10 grid grid-cols-3 gap-2">
               {APPLE_OPTIONS.map((amount) => (
                 <AppleAmountButton
                   key={amount}
                   amount={amount}
-                  disabled={addApplesMutation.isPending}
+                  disabled={addApplesMutation.isPending || onCooldown}
                   onClick={() => addApples(amount)}
                 />
               ))}
@@ -311,7 +392,7 @@ const StudentApplesScannerPage = () => {
               <AppleAmountButton
                 amount={-10}
                 tone="remove"
-                disabled={addApplesMutation.isPending || student.apples <= 0}
+                disabled={addApplesMutation.isPending || onCooldown || student.apples <= 0}
                 onClick={() => addApples(-10)}
               />
             </div>
