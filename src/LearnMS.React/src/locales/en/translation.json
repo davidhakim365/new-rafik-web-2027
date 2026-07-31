@@ -522,6 +522,7 @@
     "chooseHomework": "Choose Homework",
     "chooseHomeworkForm": "Choose Homework Form",
     "enterStudentIdInForm": "Enter this Student ID in the form",
+    "chooseHomeworkPrefillHint": "Your name and Student ID are pre-filled in the form. Please confirm them before submitting.",
     "chooseHomeworkGoogleSignInHint": "If Google asks you to sign in, use the button — a popup opens so you stay on this page.",
     "chooseHomeworkOpenWithGoogle": "Sign in with Google & fill form",
     "confirmPurchase": "Confirm Purchase",

@@ -520,6 +520,7 @@
     "chooseHomework": "واجب الاختيار",
     "chooseHomeworkForm": "نموذج واجب الاختيار",
     "enterStudentIdInForm": "أدخل رقم الطالب هذا في النموذج",
+    "chooseHomeworkPrefillHint": "تم تعبئة الاسم ورقم الطالب تلقائياً في النموذج. يرجى التأكد منهما قبل الإرسال.",
     "chooseHomeworkGoogleSignInHint": "إذا طلب Google تسجيل الدخول، استخدم الزر — تفتح نافذة منبثقة وتبقى على هذه الصفحة.",
     "chooseHomeworkOpenWithGoogle": "تسجيل الدخول بـ Google وملء النموذج",
     "confirmPurchase": "تأكيد الشراء",

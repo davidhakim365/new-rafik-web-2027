@@ -323,6 +323,12 @@ namespace LearnMS.API.Migrations
                     b.Property<string>("ChooseHomeworkFormUrl")
                         .HasColumnType("text");
 
+                    b.Property<string>("ChooseHomeworkNameEntryId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ChooseHomeworkStudentIdEntryId")
+                        .HasColumnType("text");
+
                     b.Property<decimal?>("ChooseHomeworkFullMark")
                         .HasColumnType("numeric");
 

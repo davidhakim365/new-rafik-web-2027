@@ -45,6 +45,12 @@ Homework Video :
     /// <summary>Public Google Form responder URL embedded for students.</summary>
     public string? ChooseHomeworkFormUrl { get; set; }
 
+    /// <summary>Google Forms prefill entry id for the Student ID question.</summary>
+    public string? ChooseHomeworkStudentIdEntryId { get; set; }
+
+    /// <summary>Google Forms prefill entry id for the Name question.</summary>
+    public string? ChooseHomeworkNameEntryId { get; set; }
+
     /// <summary>Full mark for Choose Homework scores synced from Google Forms.</summary>
     public decimal? ChooseHomeworkFullMark { get; set; }
 

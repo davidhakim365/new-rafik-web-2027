@@ -5,6 +5,7 @@ using LearnMS.API.Entities;
 using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Students.Dtos;
 using LearnMS.API.Security;
+using LearnMS.API.ThirdParties.GoogleForms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
@@ -72,6 +73,14 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
     {
         CurrentUser? user = await currentUserService.GetUserAsync();
 
+        var studentInfo = user == null
+            ? null
+            : await context.Students
+                .AsNoTracking()
+                .Where(s => s.Id == user.Id || s.Accounts.Any(a => a.Id == user.Id))
+                .Select(s => new { s.FullName, s.StudentCode })
+                .FirstOrDefaultAsync();
+
         var course = await context.Courses
             .Where(c => c.IsPublished && c.Id == courseId)
             .Select(c => new
@@ -105,6 +114,8 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             l.ImageUrl,
                             l.HomeworkVideoUrl,
                             l.ChooseHomeworkFormUrl,
+                            l.ChooseHomeworkStudentIdEntryId,
+                            l.ChooseHomeworkNameEntryId,
                             Enrollment = user == null
                                 ? null
                                 : l.LectureEnrollments
@@ -203,7 +214,13 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             Order = l.Order,
             ImageUrl = l.ImageUrl,
             HomeworkVideoUrl = l.HomeworkVideoUrl,
-            ChooseHomeworkFormUrl = l.ChooseHomeworkFormUrl,
+            ChooseHomeworkFormUrl = GoogleFormsPrefill.ApplyPrefill(
+                l.ChooseHomeworkFormUrl,
+                l.ChooseHomeworkStudentIdEntryId,
+                l.ChooseHomeworkNameEntryId,
+                studentInfo?.StudentCode,
+                studentInfo?.FullName
+            ),
             Assets = l.Assets,
             ExpirationDays = l.ExpirationDays,
             Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),

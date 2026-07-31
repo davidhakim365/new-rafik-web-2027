@@ -43,10 +43,11 @@ export function ChooseHomeworkFormEmbed({
 }: ChooseHomeworkFormEmbedProps) {
   const { t } = useTranslation();
   const { data: profile } = useGetProfile();
-  const studentCode =
-    profile?.data?.$type === "GetStudentProfileResult"
-      ? profile.data.studentCode
-      : undefined;
+  const studentProfile =
+    profile?.data?.$type === "GetStudentProfileResult" ? profile.data : null;
+  const studentCode = studentProfile?.studentCode;
+  const fullName = studentProfile?.fullName;
+  const isPrefilled = /[?&]entry\.\d+=/.test(formUrl);
   const embedUrl = chooseHomeworkEmbedUrl(formUrl);
   const heading = title ?? t("lectures.chooseHomeworkForm");
 
@@ -64,14 +65,35 @@ export function ChooseHomeworkFormEmbed({
 
   return (
     <div className={className ?? "space-y-3"}>
-      {studentCode && (
+      {(studentCode || fullName) && (
         <div className="rounded-lg border border-color2/20 bg-muted/40 px-3 py-2 text-sm">
-          <span className="text-muted-foreground">
-            {t("lectures.enterStudentIdInForm")}:{" "}
-          </span>
-          <span className="font-mono font-semibold text-foreground">
-            {studentCode}
-          </span>
+          {isPrefilled ? (
+            <p className="text-muted-foreground">
+              {t("lectures.chooseHomeworkPrefillHint")}
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              {t("lectures.enterStudentIdInForm")}:{" "}
+              <span className="font-mono font-semibold text-foreground">
+                {studentCode}
+              </span>
+            </p>
+          )}
+          {(fullName || studentCode) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {fullName ? (
+                <>
+                  <span className="font-medium text-foreground">{fullName}</span>
+                  {studentCode ? " · " : null}
+                </>
+              ) : null}
+              {studentCode ? (
+                <span className="font-mono font-semibold text-foreground">
+                  {studentCode}
+                </span>
+              ) : null}
+            </p>
+          )}
         </div>
       )}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

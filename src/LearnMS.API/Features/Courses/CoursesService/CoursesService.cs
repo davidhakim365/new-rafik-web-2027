@@ -23,13 +23,15 @@ public sealed class CoursesService : ICoursesService
     private readonly IOptions<StorageConfig> _storageCfg;
     private readonly StorageService _storageService;
     private readonly IGoogleFormsService _googleFormsService;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public CoursesService(
         AppDbContext contextContext,
         VdoService vdoService,
         IOptions<StorageConfig> storageCfg,
         StorageService storageService,
-        IGoogleFormsService googleFormsService
+        IGoogleFormsService googleFormsService,
+        IHttpClientFactory httpClientFactory
     )
     {
         _context = contextContext;
@@ -37,6 +39,7 @@ public sealed class CoursesService : ICoursesService
         _storageCfg = storageCfg;
         _storageService = storageService;
         _googleFormsService = googleFormsService;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task ExecuteAsync(CreateLectureCommand command)
@@ -81,6 +84,8 @@ public sealed class CoursesService : ICoursesService
             {
                 lecture.ChooseHomeworkFormId = null;
                 lecture.ChooseHomeworkFormUrl = null;
+                lecture.ChooseHomeworkStudentIdEntryId = null;
+                lecture.ChooseHomeworkNameEntryId = null;
             }
             else
             {
@@ -95,7 +100,14 @@ public sealed class CoursesService : ICoursesService
                     && !string.IsNullOrWhiteSpace(lecture.ChooseHomeworkFormUrl)
                 )
                 {
-                    // Unchanged form — skip Google round-trip on every save.
+                    // Unchanged form — refresh prefill entry ids if missing.
+                    if (
+                        string.IsNullOrWhiteSpace(lecture.ChooseHomeworkStudentIdEntryId)
+                        || string.IsNullOrWhiteSpace(lecture.ChooseHomeworkNameEntryId)
+                    )
+                    {
+                        await RefreshChooseHomeworkPrefillEntriesAsync(lecture);
+                    }
                 }
                 else
                 {
@@ -163,6 +175,8 @@ public sealed class CoursesService : ICoursesService
             lecture.ChooseHomeworkFormId = null;
             lecture.ChooseHomeworkFormUrl = null;
             lecture.ChooseHomeworkFullMark = null;
+            lecture.ChooseHomeworkStudentIdEntryId = null;
+            lecture.ChooseHomeworkNameEntryId = null;
             return;
         }
 
@@ -172,6 +186,7 @@ public sealed class CoursesService : ICoursesService
         if (IsPublicChooseHomeworkUrl(trimmed))
         {
             lecture.ChooseHomeworkFormUrl = NormalizeChooseHomeworkFormUrl(trimmed);
+            await RefreshChooseHomeworkPrefillEntriesAsync(lecture);
             return;
         }
 
@@ -188,6 +203,41 @@ public sealed class CoursesService : ICoursesService
             : NormalizeChooseHomeworkFormUrl(form.ResponderUri.Trim());
         if (form.TotalPointValue is not null)
             lecture.ChooseHomeworkFullMark = form.TotalPointValue;
+
+        await RefreshChooseHomeworkPrefillEntriesAsync(lecture);
+    }
+
+    private async Task RefreshChooseHomeworkPrefillEntriesAsync(Lecture lecture)
+    {
+        if (string.IsNullOrWhiteSpace(lecture.ChooseHomeworkFormUrl))
+        {
+            lecture.ChooseHomeworkStudentIdEntryId = null;
+            lecture.ChooseHomeworkNameEntryId = null;
+            return;
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(15);
+            if (!client.DefaultRequestHeaders.UserAgent.Any())
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                    "Mozilla/5.0 (compatible; LearnMS/1.0; +https://localhost)"
+                );
+            }
+
+            var entries = await GoogleFormsPrefill.ResolveEntryIdsAsync(
+                client,
+                lecture.ChooseHomeworkFormUrl
+            );
+            lecture.ChooseHomeworkStudentIdEntryId = entries.StudentIdEntryId;
+            lecture.ChooseHomeworkNameEntryId = entries.NameEntryId;
+        }
+        catch
+        {
+            // Prefill is best-effort; form embed still works without it.
+        }
     }
 
     private static bool IsPublicChooseHomeworkUrl(string value)
@@ -254,6 +304,14 @@ public sealed class CoursesService : ICoursesService
 
         if (form.TotalPointValue is not null)
             lecture.ChooseHomeworkFullMark = form.TotalPointValue;
+
+        if (
+            string.IsNullOrWhiteSpace(lecture.ChooseHomeworkStudentIdEntryId)
+            || string.IsNullOrWhiteSpace(lecture.ChooseHomeworkNameEntryId)
+        )
+        {
+            await RefreshChooseHomeworkPrefillEntriesAsync(lecture);
+        }
 
         _context.Update(lecture);
 
@@ -1984,6 +2042,26 @@ public sealed class CoursesService : ICoursesService
                 ? lecture.Assets
                 : [];
 
+        if (
+            !string.IsNullOrWhiteSpace(lecture.ChooseHomeworkFormUrl)
+            && (
+                string.IsNullOrWhiteSpace(lecture.ChooseHomeworkStudentIdEntryId)
+                || string.IsNullOrWhiteSpace(lecture.ChooseHomeworkNameEntryId)
+            )
+        )
+        {
+            await RefreshChooseHomeworkPrefillEntriesAsync(lecture);
+            _context.Update(lecture);
+            await _context.SaveChangesAsync();
+        }
+
+        var chooseHomeworkFormUrl = GoogleFormsPrefill.ApplyPrefill(
+            lecture.ChooseHomeworkFormUrl,
+            lecture.ChooseHomeworkStudentIdEntryId,
+            lecture.ChooseHomeworkNameEntryId,
+            student.StudentCode,
+            student.FullName
+        );
 
         return new GetStudentLectureResult
         {
@@ -1994,7 +2072,7 @@ public sealed class CoursesService : ICoursesService
             ExpiresAt = expiresAt,
             ImageUrl = lecture.ImageUrl!,
             HomeworkVideoUrl = lecture.HomeworkVideoUrl,
-            ChooseHomeworkFormUrl = lecture.ChooseHomeworkFormUrl,
+            ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
             Price = lecture.Price!.Value,
             ExpirationDays = lecture.ExpirationDays!.Value,
             RenewalPrice = lecture.RenewalPrice!.Value,
