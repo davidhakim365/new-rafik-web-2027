@@ -381,7 +381,8 @@ public sealed class LecturesController : ControllerBase
     [HttpPost("{lectureId:guid}/students/{code}/attend")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
     [SwaggerOperation(OperationId = "AttendLecture")]
-    public async Task<ApiWrapper.Success<object?>> AttendLecture(
+    public async Task<ApiWrapper.Success<AttendLectureResult>> AttendLecture(
+        Guid courseId,
         Guid lectureId,
         string code,
         [FromBody] AttendLectureRequest request
@@ -428,9 +429,57 @@ public sealed class LecturesController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        return new ApiWrapper.Success<object?>
+        var compareLectureId = request.CompareChooseHomeworkLectureId;
+        string? compareTitle = null;
+
+        if (compareLectureId is null || compareLectureId == Guid.Empty)
         {
-            Message = $"{student.FullName} attended successfully at {center.Name}"
+            var previous = await _context.Lectures
+                .AsNoTracking()
+                .Where(l => l.CourseId == courseId && l.Order < lecture.Order)
+                .OrderByDescending(l => l.Order)
+                .Select(l => new { l.Id, l.Title })
+                .FirstOrDefaultAsync();
+
+            if (previous is not null)
+            {
+                compareLectureId = previous.Id;
+                compareTitle = previous.Title;
+            }
+            else
+            {
+                compareLectureId = lecture.Id;
+                compareTitle = lecture.Title;
+            }
+        }
+        else
+        {
+            compareTitle = await _context.Lectures
+                .AsNoTracking()
+                .Where(l => l.Id == compareLectureId)
+                .Select(l => l.Title)
+                .FirstOrDefaultAsync();
+        }
+
+        var compareScore = await _context.Set<LectureChooseHomework>()
+            .AsNoTracking()
+            .Where(x => x.LectureId == compareLectureId && x.StudentId == student.Id)
+            .Select(x => (decimal?)x.Score)
+            .FirstOrDefaultAsync();
+
+        return new ApiWrapper.Success<AttendLectureResult>
+        {
+            Message = $"{student.FullName} attended successfully at {center.Name}",
+            Data = new AttendLectureResult
+            {
+                StudentId = student.Id,
+                StudentCode = student.StudentCode,
+                FullName = student.FullName,
+                CenterName = center.Name,
+                CompareChooseHomeworkLectureId = compareLectureId,
+                CompareChooseHomeworkLectureTitle = compareTitle,
+                CompareChooseHomeworkScore = compareScore
+            }
         };
     }
 

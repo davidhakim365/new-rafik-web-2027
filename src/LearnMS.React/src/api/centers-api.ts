@@ -21,8 +21,20 @@ export type SingleLectureStudentWithCenter = {
   centerName?: string | null;
 };
 
+export type AttendLectureResult = {
+  studentId: string;
+  studentCode: string;
+  fullName: string;
+  centerName: string;
+  compareChooseHomeworkLectureId?: string | null;
+  compareChooseHomeworkLectureTitle?: string | null;
+  compareChooseHomeworkScore?: number | null;
+  isChooseHomeworkDone?: boolean;
+};
+
 const CENTERS_QUERY_KEY = ["/api/centers"] as const;
 export const SELECTED_CENTER_STORAGE_KEY = "offlineAttendanceCenterId";
+const COMPARE_CHOOSE_HW_STORAGE_PREFIX = "chooseHomeworkCompare:";
 
 export const getCenters = () =>
   api.get<ApiSuccess<CenterDto[]>>("/api/centers").then((res) => res.data);
@@ -36,12 +48,18 @@ export const attendLectureAtCenter = (
   courseId: string,
   lectureId: string,
   code: string,
-  centerId: string
+  centerId: string,
+  compareChooseHomeworkLectureId?: string | null
 ) =>
   api
-    .post<ApiSuccess<object | null>>(
+    .post<ApiSuccess<AttendLectureResult>>(
       `/api/courses/${courseId}/lectures/${lectureId}/students/${code}/attend`,
-      { centerId }
+      {
+        centerId,
+        ...(compareChooseHomeworkLectureId
+          ? { compareChooseHomeworkLectureId }
+          : {}),
+      }
     )
     .then((res) => res.data);
 
@@ -86,21 +104,26 @@ export function useCreateCenter() {
   });
 }
 
-export function useAttendLectureAtCenter() {
+export function useAttendLectureAtCenter(options?: {
+  mutation?: { throwOnError?: boolean };
+}) {
   const qc = useQueryClient();
 
   return useMutation({
+    throwOnError: options?.mutation?.throwOnError,
     mutationFn: (vars: {
       courseId: string;
       lectureId: string;
       code: string;
       centerId: string;
+      compareChooseHomeworkLectureId?: string | null;
     }) =>
       attendLectureAtCenter(
         vars.courseId,
         vars.lectureId,
         vars.code,
-        vars.centerId
+        vars.centerId,
+        vars.compareChooseHomeworkLectureId
       ),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({
@@ -153,5 +176,23 @@ export function writeSelectedCenterId(centerId: string | null) {
     localStorage.setItem(SELECTED_CENTER_STORAGE_KEY, centerId);
   } else {
     localStorage.removeItem(SELECTED_CENTER_STORAGE_KEY);
+  }
+}
+
+export function readCompareChooseHomeworkLectureId(
+  lectureId: string
+): string | null {
+  return sessionStorage.getItem(`${COMPARE_CHOOSE_HW_STORAGE_PREFIX}${lectureId}`);
+}
+
+export function writeCompareChooseHomeworkLectureId(
+  lectureId: string,
+  compareLectureId: string | null
+) {
+  const key = `${COMPARE_CHOOSE_HW_STORAGE_PREFIX}${lectureId}`;
+  if (compareLectureId) {
+    sessionStorage.setItem(key, compareLectureId);
+  } else {
+    sessionStorage.removeItem(key);
   }
 }

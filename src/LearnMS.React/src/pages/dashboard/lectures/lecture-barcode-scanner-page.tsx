@@ -1,5 +1,7 @@
 import {
+  AttendLectureResult,
   getLectureStatisticsParams,
+  readCompareChooseHomeworkLectureId,
   readSelectedCenterId,
   useAttendLectureAtCenter,
   useGetCenters,
@@ -32,7 +34,11 @@ const LectureBarcodeScannerPage = () => {
     "initializing" | "scanning" | "processing" | "success" | "error"
   >("initializing");
   const [feedback, setFeedback] = useState("");
+  const [lastAttend, setLastAttend] = useState<AttendLectureResult | null>(null);
   const centerId = readSelectedCenterId();
+  const compareChooseHomeworkLectureId = lectureId
+    ? readCompareChooseHomeworkLectureId(lectureId)
+    : null;
   const { data: centersData } = useGetCenters();
   const centerName =
     centersData?.data?.find((center) => center.id === centerId)?.name ??
@@ -84,14 +90,33 @@ const LectureBarcodeScannerPage = () => {
       setFeedback(`Processing: ${code}`);
 
       attendLecture(
-        { courseId, lectureId, code, centerId },
+        {
+          courseId,
+          lectureId,
+          code,
+          centerId,
+          compareChooseHomeworkLectureId,
+        },
         {
           onSuccess: (data) => {
             const message = data.message ?? "Student attended successfully";
+            const result = data.data ?? null;
+            const chooseHwDone =
+              result?.isChooseHomeworkDone ??
+              result?.compareChooseHomeworkScore != null;
+            const sourceTitle =
+              result?.compareChooseHomeworkLectureTitle ?? "Source Choose HW";
+
+            setLastAttend(result);
             setStatus("success");
             setFeedback(message);
             playScanSuccessVoice("Barcode scanned successfully");
-            toast({ title: "Attended", description: message });
+            toast({
+              title: "Attended",
+              description: `${message} · ${sourceTitle}: ${
+                chooseHwDone ? "Done" : "Missing"
+              }`,
+            });
             qc.invalidateQueries({
               queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
             });
@@ -100,7 +125,7 @@ const LectureBarcodeScannerPage = () => {
                 getLectureStatisticsParams(lectureId, centerId) as any
               ),
             });
-            resumeScanning(1200);
+            resumeScanning(1600);
           },
           onError: () => {
             setStatus("error");
@@ -115,7 +140,15 @@ const LectureBarcodeScannerPage = () => {
         }
       );
     },
-    [attendLecture, centerId, courseId, lectureId, qc, resumeScanning]
+    [
+      attendLecture,
+      centerId,
+      compareChooseHomeworkLectureId,
+      courseId,
+      lectureId,
+      qc,
+      resumeScanning,
+    ]
   );
 
   useEffect(() => {
@@ -184,6 +217,12 @@ const LectureBarcodeScannerPage = () => {
     };
   }, [handleScan]);
 
+  const chooseHwDone =
+    lastAttend?.isChooseHomeworkDone ??
+    lastAttend?.compareChooseHomeworkScore != null;
+  const sourceTitle =
+    lastAttend?.compareChooseHomeworkLectureTitle ?? "Source Choose HW";
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-black text-white">
       <header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-black/90 px-3 py-3">
@@ -211,7 +250,7 @@ const LectureBarcodeScannerPage = () => {
         </div>
       </div>
 
-      <footer className="shrink-0 space-y-2 border-t border-white/10 bg-black/90 p-4">
+      <footer className="shrink-0 space-y-3 border-t border-white/10 bg-black/90 p-4">
         <div className="flex min-h-[2.5rem] items-center justify-center gap-2 text-sm">
           {status === "initializing" && (
             <>
@@ -241,6 +280,32 @@ const LectureBarcodeScannerPage = () => {
             <span className="text-white/70">{feedback}</span>
           )}
         </div>
+
+        {lastAttend && (
+          <div
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl border px-3 py-3 text-center ${
+              chooseHwDone
+                ? "border-emerald-400/40 bg-emerald-500/15"
+                : "border-red-400/40 bg-red-500/15"
+            }`}
+          >
+            <p className="text-xs uppercase tracking-wide text-white/60">
+              Source Choose HW
+              {sourceTitle ? ` · ${sourceTitle}` : ""}
+            </p>
+            <p
+              className={`text-lg font-bold ${
+                chooseHwDone ? "text-emerald-300" : "text-red-300"
+              }`}
+            >
+              {chooseHwDone ? "Done" : "Missing"}
+              {chooseHwDone && lastAttend.compareChooseHomeworkScore != null
+                ? ` (${lastAttend.compareChooseHomeworkScore})`
+                : ""}
+            </p>
+          </div>
+        )}
+
         <Button
           variant="outline"
           className="w-full border-white/20 bg-transparent text-white hover:bg-white/10"

@@ -3,9 +3,11 @@ import {
   useUpdateLectureAssetsMutation,
 } from "@/api/lectures-api";
 import {
+  AttendLectureResult,
   getLectureStatisticsParams,
   readSelectedCenterId,
   useAttendLectureAtCenter,
+  writeCompareChooseHomeworkLectureId,
 } from "@/api/centers-api";
 import { CenterSelector } from "@/components/dashboard/center-selector";
 import Confirmation from "@/components/confirmation";
@@ -240,6 +242,13 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     setCompareLectureInitialized(true);
   }, [compareLectureInitialized, courseLectures, lecture.id]);
 
+  useEffect(() => {
+    writeCompareChooseHomeworkLectureId(
+      lecture.id,
+      compareChooseHomeworkLectureId
+    );
+  }, [compareChooseHomeworkLectureId, lecture.id]);
+
   const compareLectureTitle = useMemo(() => {
     if (!compareChooseHomeworkLectureId) return null;
     return (
@@ -423,6 +432,7 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
             lectureId={lecture.id}
             courseId={lecture.courseId}
             centerId={selectedCenterId}
+            compareChooseHomeworkLectureId={compareChooseHomeworkLectureId}
           />
           <Button
             disabled={updateLectureGrades.isPending}
@@ -1440,14 +1450,17 @@ function AttendInput({
   lectureId,
   courseId,
   centerId,
+  compareChooseHomeworkLectureId,
 }: {
   lectureId: string;
   courseId: string;
   centerId: string | null;
+  compareChooseHomeworkLectureId: string | null;
 }) {
   const navigate = useNavigate();
   const [showManual, setShowManual] = useState(false);
   const [code, setCode] = useState("");
+  const [lastAttend, setLastAttend] = useState<AttendLectureResult | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const { mutate: attendLecture, isPending } = useAttendLectureAtCenter({
@@ -1483,12 +1496,22 @@ function AttendInput({
         lectureId,
         code,
         centerId,
+        compareChooseHomeworkLectureId,
       },
       {
         onSuccess: (data) => {
+          const result = data.data ?? null;
+          setLastAttend(result);
+          const chooseHwDone =
+            result?.isChooseHomeworkDone ??
+            result?.compareChooseHomeworkScore != null;
+          const sourceTitle =
+            result?.compareChooseHomeworkLectureTitle ?? "Source Choose HW";
           toast({
-            title: "Success",
-            description: data.message,
+            title: data.message ?? "Student attended successfully",
+            description: chooseHwDone
+              ? `${sourceTitle}: Done`
+              : `${sourceTitle}: Missing`,
           });
           qc.invalidateQueries({
             queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
@@ -1509,45 +1532,73 @@ function AttendInput({
     );
   };
 
+  const chooseHwDone =
+    lastAttend?.isChooseHomeworkDone ??
+    lastAttend?.compareChooseHomeworkScore != null;
+  const sourceTitle =
+    lastAttend?.compareChooseHomeworkLectureTitle ?? "Source Choose HW";
+
   return (
-    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-      <Button
-        className="w-full gap-2 bg-gradient-to-r from-color1 to-color2 sm:w-auto"
-        disabled={!centerId}
-        onClick={() =>
-          navigate(
-            `/dashboard/courses/${courseId}/lectures/${lectureId}/scan`
-          )
-        }
-      >
-        <FaBarcode className="h-4 w-4" />
-        Scan Barcode
-      </Button>
-      <Button
-        variant="outline"
-        className="w-full sm:w-auto"
-        onClick={() => setShowManual((state) => !state)}
-      >
-        {showManual ? "Hide Manual" : "Manual Entry"}
-      </Button>
-      {showManual && (
-        <div className="flex w-full gap-2 sm:w-auto">
-          <Input
-            ref={inputRef}
-            type="text"
-            className="w-full text-primary sm:w-[200px]"
-            placeholder="Student code..."
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-          <Button
-            size="icon"
-            onClick={handleSubmit}
-            disabled={isPending}
-            className="shrink-0"
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <Button
+          className="w-full gap-2 bg-gradient-to-r from-color1 to-color2 sm:w-auto"
+          disabled={!centerId}
+          onClick={() =>
+            navigate(
+              `/dashboard/courses/${courseId}/lectures/${lectureId}/scan`
+            )
+          }
+        >
+          <FaBarcode className="h-4 w-4" />
+          Scan Barcode
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => setShowManual((state) => !state)}
+        >
+          {showManual ? "Hide Manual" : "Manual Entry"}
+        </Button>
+        {showManual && (
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Input
+              ref={inputRef}
+              type="text"
+              className="w-full text-primary sm:w-[200px]"
+              placeholder="Student code..."
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+            <Button
+              size="icon"
+              onClick={handleSubmit}
+              disabled={isPending}
+              className="shrink-0"
+            >
+              <FaCheck className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {lastAttend && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-sm">
+          <span className="font-medium text-foreground">
+            {lastAttend.fullName} attended
+          </span>
+          <Badge
+            className={
+              chooseHwDone
+                ? "bg-emerald-600 hover:bg-emerald-600"
+                : "bg-red-600 hover:bg-red-600"
+            }
           >
-            <FaCheck className="h-4 w-4" />
-          </Button>
+            {sourceTitle}: {chooseHwDone ? "Done" : "Missing"}
+            {chooseHwDone && lastAttend.compareChooseHomeworkScore != null
+              ? ` (${lastAttend.compareChooseHomeworkScore})`
+              : ""}
+          </Badge>
         </div>
       )}
     </div>
