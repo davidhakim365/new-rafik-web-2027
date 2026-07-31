@@ -23,7 +23,6 @@ export type ParentStudentSummary = {
   studentCode: string;
   level: "Level0" | "Level1" | "Level2" | "Level3";
   schoolName: string;
-  apples: number;
 };
 
 export type ParentLoginResult = {
@@ -54,6 +53,7 @@ export type ParentQuizGradeItem = {
   lectureId: string;
   lectureTitle: string;
   courseTitle: string;
+  lectureCreatedAt: string;
   offlineQuizScore: number | null;
   offlineQuizFullMark: number | null;
   homeworkScore: number | null;
@@ -73,20 +73,12 @@ export type ParentExamGradeItem = {
   submittedAt: string | null;
 };
 
-export type ParentAppleTransactionItem = {
-  id: string;
-  amount: number;
-  reason: string | null;
-  createdAt: string;
-};
-
 export type ParentProgressResult = {
   student: ParentStudentSummary;
   statistics: ParentStatistics;
   attendance: ParentAttendanceItem[];
   quizGrades: ParentQuizGradeItem[];
   examGrades: ParentExamGradeItem[];
-  appleTransactions: ParentAppleTransactionItem[];
 };
 
 const parentApi = axios.create();

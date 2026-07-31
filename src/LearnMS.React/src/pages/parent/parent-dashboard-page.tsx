@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  Apple,
   BookOpen,
   CalendarCheck,
   ClipboardList,
@@ -118,17 +117,10 @@ const ParentDashboardPage = () => {
   const progress = data.data;
   const student = progress.student;
   const stats = progress.statistics;
-  const appleTransactions = progress.appleTransactions ?? [];
   const levelLabel =
     levelLabels[student.level]?.[isRTL ? "ar" : "en"] ?? student.level;
 
   const statCards = [
-    {
-      icon: Apple,
-      label: t("parent.dashboard.stats.apples"),
-      value: String(student.apples ?? 0),
-      hint: t("parent.dashboard.stats.applesHint"),
-    },
     {
       icon: CalendarCheck,
       label: t("parent.dashboard.stats.attendance"),
@@ -231,9 +223,6 @@ const ParentDashboardPage = () => {
                 <p className="text-sm text-muted-foreground">
                   {student.schoolName}
                 </p>
-                <p className="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  {t("parent.dashboard.appleBalance")}: {student.apples ?? 0}
-                </p>
               </div>
             </div>
             <Badge className="w-fit rounded-full bg-color2/10 px-3 py-1 text-color2 hover:bg-color2/15">
@@ -242,7 +231,7 @@ const ParentDashboardPage = () => {
           </div>
         </motion.section>
 
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           {statCards.map(({ icon: Icon, label, value, hint }, i) => (
             <motion.div
               key={label}
@@ -276,10 +265,6 @@ const ParentDashboardPage = () => {
             <TabsTrigger value="exams" className="flex-1 min-w-[7rem] gap-1.5 sm:flex-none">
               <GraduationCap className="size-3.5" />
               {t("parent.dashboard.tabs.exams")}
-            </TabsTrigger>
-            <TabsTrigger value="apples" className="flex-1 min-w-[7rem] gap-1.5 sm:flex-none">
-              <Apple className="size-3.5" />
-              {t("parent.dashboard.tabs.apples")}
             </TabsTrigger>
           </TabsList>
 
@@ -343,6 +328,12 @@ const ParentDashboardPage = () => {
                       <p className="font-medium">{item.lectureTitle}</p>
                       <p className="mt-0.5 text-sm text-muted-foreground">
                         {item.courseTitle}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("parent.dashboard.lectureDate")}:{" "}
+                        <span className="font-medium text-foreground">
+                          {formatDateTime(item.lectureCreatedAt, i18n.language)}
+                        </span>
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-[14rem]">
@@ -412,44 +403,6 @@ const ParentDashboardPage = () => {
                           </p>
                         )}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </DataPanel>
-          </TabsContent>
-
-          <TabsContent value="apples">
-            <DataPanel
-              empty={appleTransactions.length === 0}
-              emptyText={t("parent.dashboard.empty.apples")}
-            >
-              <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
-                <p className="text-sm text-muted-foreground">
-                  {t("parent.dashboard.appleBalance")}
-                </p>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                  {student.apples ?? 0}
-                </p>
-              </div>
-              <ul className="divide-y divide-color2/10">
-                {appleTransactions.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex flex-col gap-1 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {item.amount > 0 ? "+" : ""}
-                        {item.amount}{" "}
-                        {t("parent.dashboard.applesUnit")}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.reason || t("parent.dashboard.appleUpdate")}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(item.createdAt, i18n.language)}
-                    </span>
                   </li>
                 ))}
               </ul>
