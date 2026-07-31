@@ -4,15 +4,16 @@ namespace LearnMS.API.Features.Courses;
 
 public static class AttendanceEnrollmentHelper
 {
-    private static readonly TimeZoneInfo EgyptTimeZone = ResolveEgyptTimeZone();
-
     /// <summary>
-    /// Grants or refreshes a same-day lecture enrollment for a center attendance.
-    /// Does not shorten an existing paid enrollment that is still active / longer-lived.
+    /// Creates or refreshes an immediately-expired lecture enrollment for center attendance
+    /// so the next purchase uses RenewalPrice. Does not shorten an existing paid enrollment.
     /// </summary>
     public static void EnsureAttendanceEnrollment(Lecture lecture, Guid studentId, DateTime attendedAtUtc)
     {
-        var endOfAttendDayUtc = GetEgyptEndOfAttendDayUtc(attendedAtUtc);
+        var attendedAt = NormalizeUtc(attendedAtUtc);
+        // Expired immediately (access check uses ExpiresAt > UtcNow).
+        var expiresAt = attendedAt;
+
         var enrollment = lecture.LectureEnrollments.FirstOrDefault(x => x.StudentId == studentId);
 
         if (enrollment is null)
@@ -21,22 +22,14 @@ public static class AttendanceEnrollmentHelper
             {
                 StudentId = studentId,
                 LectureId = lecture.Id,
-                EnrolledAt = attendedAtUtc,
-                ExpiresAt = endOfAttendDayUtc,
+                EnrolledAt = attendedAt,
+                ExpiresAt = expiresAt,
                 IsFromAttendance = true
             });
             return;
         }
 
-        // Keep paid / longer access intact.
-        if (!enrollment.IsFromAttendance &&
-            enrollment.ExpiresAt is { } expiresAt &&
-            expiresAt > DateTime.UtcNow &&
-            expiresAt > endOfAttendDayUtc)
-        {
-            return;
-        }
-
+        // Keep paid / active access intact.
         if (!enrollment.IsFromAttendance &&
             enrollment.ExpiresAt is { } paidExpires &&
             paidExpires > DateTime.UtcNow)
@@ -44,7 +37,7 @@ public static class AttendanceEnrollmentHelper
             return;
         }
 
-        enrollment.ExpiresAt = endOfAttendDayUtc;
+        enrollment.ExpiresAt = expiresAt;
         enrollment.IsFromAttendance = true;
     }
 
@@ -62,38 +55,11 @@ public static class AttendanceEnrollmentHelper
         return enrollment;
     }
 
-    /// <summary>
-    /// End of the Egypt calendar day of attendance, as UTC
-    /// (start of the next Egypt day — access while ExpiresAt &gt; UtcNow).
-    /// </summary>
-    public static DateTime GetEgyptEndOfAttendDayUtc(DateTime attendedAtUtc)
-    {
-        var utc = attendedAtUtc.Kind switch
+    private static DateTime NormalizeUtc(DateTime value) =>
+        value.Kind switch
         {
-            DateTimeKind.Utc => attendedAtUtc,
-            DateTimeKind.Local => attendedAtUtc.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(attendedAtUtc, DateTimeKind.Utc)
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
         };
-
-        var local = TimeZoneInfo.ConvertTimeFromUtc(utc, EgyptTimeZone);
-        var nextLocalMidnight = local.Date.AddDays(1);
-        return TimeZoneInfo.ConvertTimeToUtc(nextLocalMidnight, EgyptTimeZone);
-    }
-
-    private static TimeZoneInfo ResolveEgyptTimeZone()
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(
-                OperatingSystem.IsWindows() ? "Egypt Standard Time" : "Africa/Cairo");
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.CreateCustomTimeZone(
-                "Africa/Cairo",
-                TimeSpan.FromHours(2),
-                "Africa/Cairo",
-                "Africa/Cairo");
-        }
-    }
 }
