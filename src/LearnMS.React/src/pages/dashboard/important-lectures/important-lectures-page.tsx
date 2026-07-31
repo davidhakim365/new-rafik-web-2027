@@ -54,6 +54,7 @@ const ImportantLecturesPage = () => {
                 <SelectItem value="Level1">1st Secondary</SelectItem>
                 <SelectItem value="Level2">2nd Secondary</SelectItem>
                 <SelectItem value="Level3">3rd Secondary</SelectItem>
+                <SelectItem value="Level4">3rd Secondary Adby</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

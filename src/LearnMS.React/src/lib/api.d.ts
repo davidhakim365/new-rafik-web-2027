@@ -2156,7 +2156,7 @@ export interface components {
       data?: components["schemas"]["StringApiResponse"];
     };
     /** @enum {string} */
-    StudentLevel: "Level0" | "Level1" | "Level2" | "Level3";
+    StudentLevel: "Level0" | "Level1" | "Level2" | "Level3" | "Level4";
     SubmitQuizRequest: {
       questionAnswers: components["schemas"]["QuestionAnswer"][];
     };

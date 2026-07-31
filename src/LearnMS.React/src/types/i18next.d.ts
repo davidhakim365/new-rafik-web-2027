@@ -31,6 +31,7 @@ declare module "i18next" {
             level1: string;
             level2: string;
             level3: string;
+            level4: string;
           };
           pagination: {
             showing: string;
@@ -166,6 +167,7 @@ declare module "i18next" {
                 level1: string;
                 level2: string;
                 level3: string;
+                level4: string;
               };
             };
             forgotPassword: string;
@@ -320,6 +322,7 @@ declare module "i18next" {
           level1stSecondary: string;
           level2ndSecondary: string;
           level3rdSecondary: string;
+          level3rdSecondaryAdby: string;
           phoneNumber: string;
           phoneNumberDescription: string;
           parentPhoneNumber: string;

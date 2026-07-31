@@ -121,6 +121,7 @@ const StudentsPage = () => {
                 <SelectItem value={StudentLevel.Level1}>1st Secondary</SelectItem>
                 <SelectItem value={StudentLevel.Level2}>2nd Secondary</SelectItem>
                 <SelectItem value={StudentLevel.Level3}>3rd Secondary</SelectItem>
+                <SelectItem value={StudentLevel.Level4}>3rd Secondary Adby</SelectItem>
               </SelectContent>
             </Select>
           </div>

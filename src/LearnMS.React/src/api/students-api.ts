@@ -39,7 +39,7 @@ export const CreateStudentRequest = z
       .string()
       .min(1, { message: "ID must be at least 6 characters" }),
 
-    level: z.enum(["Level0", "Level1", "Level2", "Level3"]),
+    level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -112,7 +112,7 @@ export const UpdateStudentRequest = z.object({
   studentCode: z
     .string(),
     
-  level: z.enum(["Level0", "Level1", "Level2", "Level3"]),
+  level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"]),
 });
 
 export type UpdateStudentRequest = z.infer<typeof UpdateStudentRequest>;

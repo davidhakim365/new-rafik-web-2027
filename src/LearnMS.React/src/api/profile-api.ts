@@ -24,7 +24,7 @@ export type Profile = {
   | {
       role: "Student";
       fullName: string;
-      level: "Level0" | "Level1" | "Level2" | "Level3";
+      level: "Level0" | "Level1" | "Level2" | "Level3" | "Level4";
       phoneNumber: string;
       parentPhoneNumber: string;
       studentCode: string;
@@ -71,7 +71,7 @@ export const UpdateProfileRequest = z.object({
     .string()
     .min(8, { message: "Password must be at least 8 characters" })
     .nullish(),
-  level: z.enum(["Level0", "Level1", "Level2", "Level3"]).nullish(),
+  level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"]).nullish(),
   school: z.string().min(1, { message: "School is required" }).nullish(),
 });
 

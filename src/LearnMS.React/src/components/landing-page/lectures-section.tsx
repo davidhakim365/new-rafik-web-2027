@@ -423,6 +423,9 @@ const LatestLecturesSection = () => {
                   <SelectItem value="Level3">
                     {t("latestLectures.levels.level3")}
                   </SelectItem>
+                  <SelectItem value="Level4">
+                    {t("latestLectures.levels.level4")}
+                  </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -568,6 +571,9 @@ const LatestLecturesSection = () => {
                 </SelectItem>
                 <SelectItem value="Level3">
                   {t("latestLectures.levels.level3")}
+                </SelectItem>
+                <SelectItem value="Level4">
+                  {t("latestLectures.levels.level4")}
                 </SelectItem>
               </SelectGroup>
             </SelectContent>

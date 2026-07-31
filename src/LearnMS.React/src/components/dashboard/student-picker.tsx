@@ -20,6 +20,7 @@ export const levelMap: Record<StudentLevel, string> = {
   Level1: "1st Secondary",
   Level2: "2nd Secondary",
   Level3: "3rd Secondary",
+  Level4: "3rd Secondary Adby",
 };
 
 type StudentPickerProps = {

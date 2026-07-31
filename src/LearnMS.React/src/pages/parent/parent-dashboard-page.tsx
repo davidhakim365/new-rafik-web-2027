@@ -32,6 +32,7 @@ const levelLabels: Record<string, { en: string; ar: string }> = {
   Level1: { en: "1st Secondary", ar: "أولى ثانوي" },
   Level2: { en: "2nd Secondary", ar: "ثانية ثانوي" },
   Level3: { en: "3rd Secondary", ar: "ثالثة ثانوي" },
+  Level4: { en: "3rd Secondary Adby", ar: "الثالث الثانوي أدبي" },
 };
 
 function formatDate(value: string | null | undefined, locale: string) {

@@ -84,7 +84,8 @@
       "level0": "3rd Prep",
       "level1": "1st Secondary",
       "level2": "2nd Secondary",
-      "level3": "3rd Secondary"
+      "level3": "3rd Secondary",
+      "level4": "3rd Secondary Adby"
     },
     "pagination": {
       "showing": "Showing page",
@@ -404,6 +405,7 @@
     "level1stSecondary": "1st Secondary",
     "level2ndSecondary": "2nd Secondary",
     "level3rdSecondary": "3rd Secondary",
+    "level3rdSecondaryAdby": "3rd Secondary Adby",
     "studentId": "Student ID",
     "studentIdDescription": "Your unique student identification code.",
     "balance": "Balance",
@@ -499,7 +501,8 @@
           "level0": "3rd Prep School",
           "level1": "1st Secondary",
           "level2": "2nd Secondary",
-          "level3": "3rd Secondary"
+          "level3": "3rd Secondary",
+          "level4": "3rd Secondary Adby"
         }
       },
       "forgotPassword": "Forgot Password?",

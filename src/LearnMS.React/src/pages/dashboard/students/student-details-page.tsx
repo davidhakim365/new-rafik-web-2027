@@ -98,6 +98,7 @@ function StudentProfile({ studentId }: { studentId: string }) {
     Level1: "1st Secondary",
     Level2: "2nd Secondary",
     Level3: "3rd Secondary",
+    Level4: "3rd Secondary Adby",
   };
 
   const form = useForm<UpdateStudentRequest>({
@@ -297,6 +298,7 @@ function StudentProfile({ studentId }: { studentId: string }) {
                       <SelectItem value="Level1">1st Secondary</SelectItem>
                       <SelectItem value="Level2">2nd Secondary</SelectItem>
                       <SelectItem value="Level3">3rd Secondary</SelectItem>
+                      <SelectItem value="Level4">3rd Secondary Adby</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>

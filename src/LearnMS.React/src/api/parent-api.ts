@@ -21,7 +21,7 @@ export type ParentStudentSummary = {
   id: string;
   fullName: string;
   studentCode: string;
-  level: "Level0" | "Level1" | "Level2" | "Level3";
+  level: "Level0" | "Level1" | "Level2" | "Level3" | "Level4";
   schoolName: string;
 };
 

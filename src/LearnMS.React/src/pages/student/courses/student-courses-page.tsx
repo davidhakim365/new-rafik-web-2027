@@ -45,6 +45,8 @@ export const StudentCoursesPage = () => {
         return t("profile.level2ndSecondary");
       case "Level3":
         return t("profile.level3rdSecondary");
+      case "Level4":
+        return t("profile.level3rdSecondaryAdby");
       default:
         return level;
     }
@@ -125,6 +127,8 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
         return t("profile.level2ndSecondary");
       case "Level3":
         return t("profile.level3rdSecondary");
+      case "Level4":
+        return t("profile.level3rdSecondaryAdby");
       default:
         return level?.replace("Level", "Level ");
     }

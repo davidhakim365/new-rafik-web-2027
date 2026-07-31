@@ -21,7 +21,7 @@ export type LoginResponse = {
 
 export const RegisterRequest = z
   .object({
-    level: z.enum(["Level0", "Level1", "Level2", "Level3"], {
+    level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"], {
       errorMap: () => ({ message: "Level is required" }),
     }),
     fullName: z.string().min(1, { message: "Name is required" }),

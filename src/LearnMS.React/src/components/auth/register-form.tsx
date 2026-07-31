@@ -268,6 +268,7 @@ const navigate = useNavigate();
                   <SelectItem value="Level1">{t("auth.forms.level.options.level1")}</SelectItem>
                   <SelectItem value="Level2">{t("auth.forms.level.options.level2")}</SelectItem>
                   <SelectItem value="Level3">{t("auth.forms.level.options.level3")}</SelectItem>
+                  <SelectItem value="Level4">{t("auth.forms.level.options.level4")}</SelectItem>
                 </SelectContent>
               </Select>
             )}

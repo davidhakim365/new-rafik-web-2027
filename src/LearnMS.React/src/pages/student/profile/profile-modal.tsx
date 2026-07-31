@@ -246,6 +246,9 @@ function ProfileContent({ profile }: { profile: GetStudentProfileResult }) {
                     <SelectItem value="Level3">
                       {t("profile.level3rdSecondary")}
                     </SelectItem>
+                    <SelectItem value="Level4">
+                      {t("profile.level3rdSecondaryAdby")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription className="text-sm text-muted-foreground">
