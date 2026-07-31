@@ -9,7 +9,6 @@ export const PARENT_TOKEN_KEY = "parentToken";
 export const PARENT_STUDENT_KEY = "parentStudent";
 
 export const ParentLoginRequest = z.object({
-  studentCode: z.string().min(1, { message: "Student ID is required" }),
   phoneNumber: z.string().min(8, { message: "Student phone number is required" }),
   parentPhoneNumber: z
     .string()

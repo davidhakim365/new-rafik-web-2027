@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ArrowLeft, Hash, Phone, Users } from "lucide-react";
+import { ArrowLeft, Phone, Users } from "lucide-react";
 import {
   ParentLoginRequest,
   getParentToken,
@@ -28,7 +28,6 @@ const ParentLoginPage = () => {
   const form = useForm<ParentLoginRequest>({
     resolver: zodResolver(ParentLoginRequest),
     defaultValues: {
-      studentCode: "",
       phoneNumber: "",
       parentPhoneNumber: "",
     },
@@ -95,14 +94,6 @@ const ParentLoginPage = () => {
           </div>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <InputField
-              name="studentCode"
-              label={t("parent.login.studentCode")}
-              placeholder={t("parent.login.studentCodePlaceholder")}
-              register={form.register}
-              error={errors.studentCode}
-              icon={<Hash className="size-4" />}
-            />
             <InputField
               name="phoneNumber"
               type="tel"

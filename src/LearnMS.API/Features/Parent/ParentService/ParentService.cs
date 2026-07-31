@@ -21,16 +21,23 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
 
     public async Task<ParentLoginResult> LoginAsync(ParentLoginCommand command)
     {
-        var studentCode = command.StudentCode.Trim();
         var phone = NormalizePhone(command.PhoneNumber);
         var parentPhone = NormalizePhone(command.ParentPhoneNumber);
 
-        var students = await db.Students
+        if (string.IsNullOrEmpty(phone) || string.IsNullOrEmpty(parentPhone))
+            throw new ApiException(ParentErrors.InvalidCredentials);
+
+        var phoneTail = phone.Length >= 9 ? phone[^9..] : phone;
+        var parentPhoneTail = parentPhone.Length >= 9 ? parentPhone[^9..] : parentPhone;
+
+        var candidates = await db.Students
             .AsNoTracking()
-            .Where(s => s.StudentCode.Trim().ToLower() == studentCode.ToLower())
+            .Where(s =>
+                s.PhoneNumber.Contains(phoneTail) &&
+                s.ParentPhoneNumber.Contains(parentPhoneTail))
             .ToListAsync();
 
-        var student = students.FirstOrDefault(s =>
+        var student = candidates.FirstOrDefault(s =>
             NormalizePhone(s.PhoneNumber) == phone &&
             NormalizePhone(s.ParentPhoneNumber) == parentPhone);
 

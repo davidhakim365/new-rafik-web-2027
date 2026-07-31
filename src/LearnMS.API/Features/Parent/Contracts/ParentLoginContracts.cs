@@ -6,9 +6,6 @@ namespace LearnMS.API.Features.Parent.Contracts;
 public sealed record ParentLoginRequest
 {
     [Required]
-    public required string StudentCode { get; init; }
-
-    [Required]
     public required string PhoneNumber { get; init; }
 
     [Required]
@@ -17,7 +14,6 @@ public sealed record ParentLoginRequest
 
 public sealed record ParentLoginCommand
 {
-    public required string StudentCode { get; init; }
     public required string PhoneNumber { get; init; }
     public required string ParentPhoneNumber { get; init; }
 }

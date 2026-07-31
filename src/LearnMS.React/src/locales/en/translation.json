@@ -184,7 +184,7 @@
     "section": {
       "badge": "For Parents",
       "title": "Follow Your Child's Progress",
-      "description": "Track attendance, quiz grades, exam results, apple rewards, and overall statistics — securely, using your child's student ID and phone numbers.",
+      "description": "Track attendance, quiz grades, exam results, apple rewards, and overall statistics — securely, using the registered student and parent phone numbers.",
       "cta": "Parent Sign In",
       "items": {
         "attendance": {
@@ -211,9 +211,7 @@
     },
     "login": {
       "title": "Parent Sign In",
-      "description": "Enter your child's student ID and the registered phone numbers to follow their progress.",
-      "studentCode": "Student ID",
-      "studentCodePlaceholder": "Enter student ID",
+      "description": "Enter the registered student and parent phone numbers to follow their progress.",
       "studentPhone": "Student Phone Number",
       "studentPhonePlaceholder": "01xxxxxxxxx",
       "parentPhone": "Parent Phone Number",

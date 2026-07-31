@@ -17,7 +17,6 @@ public sealed class ParentController(IParentService parentService) : ControllerB
     {
         var result = await parentService.LoginAsync(new ParentLoginCommand
         {
-            StudentCode = request.StudentCode,
             PhoneNumber = request.PhoneNumber,
             ParentPhoneNumber = request.ParentPhoneNumber
         });
