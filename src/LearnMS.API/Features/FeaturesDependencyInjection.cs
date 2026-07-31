@@ -1,5 +1,6 @@
 using LearnMS.API.Features.Administration;
 using LearnMS.API.Features.Auth;
+using LearnMS.API.Features.CallCenter;
 using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Courses.Lectures;
 using LearnMS.API.Features.Courses.Lectures.Lessons;
@@ -38,6 +39,7 @@ public static class FeaturesDependencyInjection
         services.AddScoped<IRewardsService, RewardsService>();
         services.AddScoped<IAppleStoreService, AppleStoreService>();
         services.AddScoped<IQuestionsService, QuestionsService>();
+        services.AddScoped<ICallCenterService, CallCenterService>();
 
         services.AddHostedService<ChooseHomeworkSyncHostedService>();
 

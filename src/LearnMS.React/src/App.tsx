@@ -26,6 +26,7 @@ import MyRewardsPage from "@/pages/dashboard/rewards/my-rewards-page";
 import RewardSystemSettingsPage from "@/pages/dashboard/rewards/reward-system-settings-page";
 import StudentApplesScannerPage from "@/pages/dashboard/rewards/student-apples-scanner-page";
 import AppleRewardsStorePage from "@/pages/dashboard/rewards/apple-rewards-store-page";
+import CallCenterPage from "@/pages/dashboard/call-center/call-center-page";
 import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
 import StudentDetailsPage from "@/pages/dashboard/students/student-details-page";
 import StudentsPage from "@/pages/dashboard/students/students-page";
@@ -378,6 +379,17 @@ function App() {
                 element={
                   <RequireAuth roles={["Assistant"]}>
                     <MyRewardsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="call-center"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageCallCenter"]}
+                  >
+                    <CallCenterPage />
                   </RequireAuth>
                 }
               />

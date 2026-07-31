@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   LogOut,
   Apple,
+  Phone,
   QrCode,
   Shield,
   SlidersHorizontal,
@@ -89,6 +90,13 @@ const userItems: NavItem[] = [
     icon: Users,
     match: (pathname) => pathname.startsWith("/dashboard/students"),
     permission: Permission.ManageStudents,
+  },
+  {
+    to: "/dashboard/call-center",
+    label: "Call Center",
+    icon: Phone,
+    match: (pathname) => pathname.startsWith("/dashboard/call-center"),
+    permission: Permission.ManageCallCenter,
   },
   {
     to: "/dashboard/granted-access",

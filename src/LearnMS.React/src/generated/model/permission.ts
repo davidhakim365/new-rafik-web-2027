@@ -22,4 +22,5 @@ export const Permission = {
   ManageExpirationTime: 'ManageExpirationTime',
   ManageStudentApples: 'ManageStudentApples',
   ManageAppleRewardsStore: 'ManageAppleRewardsStore',
+  ManageCallCenter: 'ManageCallCenter',
 } as const;

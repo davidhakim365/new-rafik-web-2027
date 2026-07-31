@@ -1,0 +1,465 @@
+import {
+  CallCenterStudent,
+  buildCallCenterWhatsAppMessage,
+  openWhatsApp,
+  useCallCenterStudentsQuery,
+  useUpsertCallCenterStudentMutation,
+} from "@/api/call-center-api";
+import { useCoursesQuery } from "@/api/courses-api";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
+import Loading from "@/components/loading/loading";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useGetCourse } from "@/generated/api";
+import { StudentLevel } from "@/generated/model";
+import { toast } from "@/lib/utils";
+import { MessageCircle, Phone, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+const LEVEL_LABELS: Record<string, string> = {
+  Level0: "3rd Prep",
+  Level1: "1st Secondary",
+  Level2: "2nd Secondary",
+  Level3: "3rd Secondary",
+  Level4: "3rd Secondary Adby",
+};
+
+function formatScore(value?: number | null) {
+  return value == null ? "—" : String(value);
+}
+
+const CallCenterPage = () => {
+  const [level, setLevel] = useState<StudentLevel | undefined>();
+  const [courseId, setCourseId] = useState<string | undefined>();
+  const [lectureId, setLectureId] = useState<string | undefined>();
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [attendance, setAttendance] = useState<"all" | "present" | "absent">(
+    "all"
+  );
+  const [page, setPage] = useState(1);
+
+  const { data: coursesData, isLoading: coursesLoading } = useCoursesQuery();
+  const { data: courseData, isLoading: courseLoading } = useGetCourse(
+    courseId as string,
+    { query: { enabled: !!courseId } }
+  );
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(id);
+  }, [search]);
+
+  useEffect(() => {
+    setCourseId(undefined);
+    setLectureId(undefined);
+    setPage(1);
+  }, [level]);
+
+  useEffect(() => {
+    setLectureId(undefined);
+    setPage(1);
+  }, [courseId]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, attendance, lectureId]);
+
+  const courses = useMemo(() => {
+    const items = coursesData?.data?.items ?? [];
+    return items.filter((item) => !level || item.level === level);
+  }, [coursesData, level]);
+
+  const lectures = useMemo(() => {
+    const items = courseData?.data?.items ?? [];
+    return items
+      .filter((item) => item.type === "Lecture")
+      .slice()
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [courseData]);
+
+  const selectedLectureTitle =
+    lectures.find((item) => item.id === lectureId)?.title ?? "Lecture";
+
+  const studentsQuery = useCallCenterStudentsQuery(
+    courseId && lectureId
+      ? {
+          courseId,
+          lectureId,
+          search: debouncedSearch || undefined,
+          attendance,
+          page,
+          pageSize: 50,
+        }
+      : null
+  );
+
+  const uniqueLevels = useMemo(() => {
+    const levels = (coursesData?.data?.items ?? []).map((item) => item.level);
+    return Array.from(new Set(levels));
+  }, [coursesData]);
+
+  if (coursesLoading) return <Loading />;
+
+  const pageData = studentsQuery.data?.data;
+  const students = pageData?.items ?? [];
+
+  return (
+    <DashboardPageShell
+      title="Call Center"
+      description="Pick level, course, and lecture — then call parents with attendance and scores ready."
+      icon={Phone}
+    >
+      <DashboardCard>
+        <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">Level</p>
+            <Select
+              value={level}
+              onValueChange={(value) => setLevel(value as StudentLevel)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Select level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Levels</SelectLabel>
+                  {uniqueLevels.map((lvl) => (
+                    <SelectItem key={lvl} value={lvl}>
+                      {LEVEL_LABELS[lvl] ?? lvl}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">Course</p>
+            <Select
+              value={courseId}
+              onValueChange={setCourseId}
+              disabled={!level}
+            >
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <SelectValue placeholder="Select course" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">Lecture</p>
+            <Select
+              value={lectureId}
+              onValueChange={setLectureId}
+              disabled={!courseId || courseLoading}
+            >
+              <SelectTrigger className="w-full sm:w-[240px]">
+                <SelectValue placeholder="Select lecture" />
+              </SelectTrigger>
+              <SelectContent>
+                {lectures.map((lecture) => (
+                  <SelectItem key={lecture.id} value={lecture.id}>
+                    {lecture.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </DashboardCard>
+
+      {courseId && lectureId && (
+        <DashboardCard className="mt-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Input
+              className="w-full sm:max-w-xs"
+              placeholder="Search name, code, phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Select
+              value={attendance}
+              onValueChange={(value) =>
+                setAttendance(value as "all" | "present" | "absent")
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Attendance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="present">Present</SelectItem>
+                <SelectItem value="absent">Absent</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground sm:ml-auto">
+              {pageData?.totalCount ?? 0} students
+            </p>
+          </div>
+
+          {studentsQuery.isLoading || courseLoading ? (
+            <Loading />
+          ) : students.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No students found for this filter.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {students.map((student) => (
+                <CallCenterStudentCard
+                  key={student.id}
+                  student={student}
+                  courseId={courseId}
+                  lectureId={lectureId}
+                  lectureTitle={selectedLectureTitle}
+                />
+              ))}
+            </div>
+          )}
+
+          {pageData && pageData.totalCount > pageData.pageSize && (
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <Button
+                variant="outline"
+                disabled={!pageData.hasPreviousPage}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {pageData.page}
+              </span>
+              <Button
+                variant="outline"
+                disabled={!pageData.hasNextPage}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </DashboardCard>
+      )}
+    </DashboardPageShell>
+  );
+};
+
+function CallCenterStudentCard({
+  student,
+  courseId,
+  lectureId,
+  lectureTitle,
+}: {
+  student: CallCenterStudent;
+  courseId: string;
+  lectureId: string;
+  lectureTitle: string;
+}) {
+  const upsert = useUpsertCallCenterStudentMutation();
+  const [comment, setComment] = useState(student.comment ?? "");
+  const [called, setCalled] = useState(student.called);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+
+  useEffect(() => {
+    setComment(student.comment ?? "");
+    setCalled(student.called);
+  }, [student.comment, student.called, student.id]);
+
+  const saveComment = () => {
+    upsert.mutate(
+      {
+        courseId,
+        lectureId,
+        studentId: student.id,
+        comment,
+        called,
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Saved", description: `Updated ${student.fullName}` });
+        },
+        onError: () => {
+          toast({
+            title: "Save failed",
+            description: "Could not update call log.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const toggleCalled = (next: boolean) => {
+    setCalled(next);
+    upsert.mutate(
+      {
+        courseId,
+        lectureId,
+        studentId: student.id,
+        comment,
+        called: next,
+      },
+      {
+        onError: () => {
+          setCalled(!next);
+          toast({
+            title: "Update failed",
+            description: "Could not update called flag.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const notify = (language: "ar" | "en") => {
+    const message = buildCallCenterWhatsAppMessage(
+      { ...student, comment, called },
+      lectureTitle,
+      language
+    );
+    const opened = openWhatsApp(student.parentPhoneNumber, message);
+    if (!opened) {
+      toast({
+        title: "Invalid parent phone",
+        description: "Cannot open WhatsApp for this number.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setNotifyOpen(false);
+  };
+
+  return (
+    <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold">{student.fullName}</h3>
+            <Badge variant="outline">{student.studentCode}</Badge>
+            <Badge
+              className={
+                student.attended
+                  ? "bg-emerald-600 hover:bg-emerald-600"
+                  : "bg-red-600 hover:bg-red-600"
+              }
+            >
+              {student.attended ? "Present" : "Absent"}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Parent:{" "}
+            <span className="font-medium text-foreground">
+              {student.parentPhoneNumber || "—"}
+            </span>
+            {" · "}
+            Student: {student.phoneNumber || "—"}
+          </p>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span>
+              Essay:{" "}
+              <strong>{formatScore(student.homeworkScore)}</strong>
+            </span>
+            <span>
+              Choose:{" "}
+              <strong>{formatScore(student.chooseHomeworkScore)}</strong>
+            </span>
+            <span>
+              Quiz: <strong>{formatScore(student.quizScore)}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+            <Checkbox
+              checked={called}
+              onCheckedChange={(value) => toggleCalled(value === true)}
+              disabled={upsert.isPending}
+            />
+            Called
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => setNotifyOpen(true)}
+            disabled={!student.parentPhoneNumber}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Notify
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+        <Textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Call comment..."
+          className="min-h-[72px]"
+        />
+        <Button
+          type="button"
+          className="shrink-0 gap-2"
+          onClick={saveComment}
+          disabled={upsert.isPending}
+        >
+          <Save className="h-4 w-4" />
+          Save
+        </Button>
+      </div>
+
+      <Dialog open={notifyOpen} onOpenChange={setNotifyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>WhatsApp notify</DialogTitle>
+            <DialogDescription>
+              Choose message language. Opens WhatsApp to the parent phone with
+              attendance and scores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => notify("en")}>
+              English
+            </Button>
+            <Button type="button" onClick={() => notify("ar")}>
+              العربية
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export default CallCenterPage;

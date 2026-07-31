@@ -73,6 +73,7 @@ Homework Video :
     public List<LectureQuiz> LectureQuizzes { get; } = [];
 
     public List<LectureAttendance> LectureAttendances { get; } = [];
+    public List<LectureStudentCallLog> LectureStudentCallLogs { get; } = [];
 
     public List<Quiz> Quizzes { get; } = [];
     public List<Lesson> Lessons { get; } = [];
