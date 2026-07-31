@@ -268,7 +268,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     private async Task<long> GetTotalLectureOnlineIncomeAsync(Guid lectureId, GetLectureStatisticsQuery query)
     {
         var totalLectureEnrollments = context.Set<LectureEnrollment>()
-            .Where(e => e.LectureId == lectureId)
+            .Where(e => e.LectureId == lectureId && !e.IsFromAttendance)
             .AsQueryable();
 
         if (query.StartDate != null)
@@ -287,7 +287,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     private async Task<long> GetLectureTotalEnrolledStudentsAsync(Guid lectureId)
     {
         var lectureEnrollmentQuery = context.Set<LectureEnrollment>()
-            .Where(e => e.LectureId == lectureId)
+            .Where(e => e.LectureId == lectureId && !e.IsFromAttendance)
             .GroupBy(le => le.StudentId)
             .Select(le => le.Key)
             .AsQueryable();
@@ -433,7 +433,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     private Task<List<LectureStudents>> GetOnlineStudentsAsync(GetCourseStatisticsQuery query, Guid courseId)
     {
         var totalStudentsQuery = context.Set<LectureEnrollment>()
-            .Where(e => e.Lecture.CourseId == courseId)
+            .Where(e => e.Lecture.CourseId == courseId && !e.IsFromAttendance)
             .AsQueryable();
 
         return totalStudentsQuery
@@ -477,6 +477,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     private async Task<long> GetTotalOnlineIncomeAsync(GetIncomeStatisticsQuery query)
     {
         var totalEnrollmentsQuery = context.Set<LectureEnrollment>()
+            .Where(e => !e.IsFromAttendance)
             .AsQueryable();
 
         if (query.StartDate != null)

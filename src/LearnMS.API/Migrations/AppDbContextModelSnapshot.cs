@@ -402,6 +402,9 @@ namespace LearnMS.API.Migrations
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsFromAttendance")
+                        .HasColumnType("boolean");
+
                     b.HasKey("StudentId", "LectureId");
 
                     b.ToTable("LectureEnrollment");

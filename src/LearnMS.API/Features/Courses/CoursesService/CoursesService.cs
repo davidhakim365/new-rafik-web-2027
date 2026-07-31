@@ -1211,6 +1211,7 @@ public sealed class CoursesService : ICoursesService
             await _context
                 .Set<Lecture>()
                 .Include(x => x.LectureAttendances.Where(x => x.StudentId == command.StudentId))
+                .Include(x => x.LectureEnrollments.Where(x => x.StudentId == command.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == command.LectureId)
             ?? throw new ApiException(LecturesErrors.NotFound);
 
@@ -1230,11 +1231,20 @@ public sealed class CoursesService : ICoursesService
 
                 attendance.AttendedAt = DateTime.UtcNow;
                 attendance.CenterId = center.Id;
+                AttendanceEnrollmentHelper.EnsureAttendanceEnrollment(
+                    lecture,
+                    command.StudentId,
+                    attendance.AttendedAt.Value);
             }
             else
             {
                 attendance.AttendedAt = null;
                 attendance.CenterId = null;
+                var removed = AttendanceEnrollmentHelper.ClearAttendanceEnrollmentIfNeeded(
+                    lecture,
+                    command.StudentId);
+                if (removed is not null)
+                    _context.Remove(removed);
             }
         }
         else
@@ -1246,14 +1256,19 @@ public sealed class CoursesService : ICoursesService
                 .FirstOrDefaultAsync(c => c.Id == command.CenterId && c.IsActive)
                 ?? throw new ApiException(CentersErrors.NotFound);
 
+            var attendedAt = DateTime.UtcNow;
             lecture.LectureAttendances.Add(
                 new LectureAttendance
                 {
                     StudentId = command.StudentId,
-                    AttendedAt = DateTime.UtcNow,
+                    AttendedAt = attendedAt,
                     CenterId = center.Id
                 }
             );
+            AttendanceEnrollmentHelper.EnsureAttendanceEnrollment(
+                lecture,
+                command.StudentId,
+                attendedAt);
         }
 
         _context.Update(lecture);

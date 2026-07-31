@@ -5,6 +5,7 @@ using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Centers;
 using LearnMS.API.Features.Centers.Contracts;
+using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Students;
 using LearnMS.API.Security;
@@ -362,19 +363,19 @@ public sealed class LecturesController : ControllerBase
             .FirstOrDefaultAsync(c => c.Id == request.CenterId && c.IsActive)
             ?? throw new ApiException(CentersErrors.NotFound);
 
-        var lecture = await _context
-            .Lectures
-            .Include(x => x.LectureAttendances
-                .Where(a => a.Student.StudentCode.Trim().ToLower() == code.Trim().ToLower()).Take(1)
-            )
-            .FirstOrDefaultAsync(x => x.Id == lectureId) ?? throw new ApiException(LecturesErrors.NotFound);
-
         var student
             = await _context
                   .Students
                   .FirstOrDefaultAsync(x => x.StudentCode.Trim().ToLower() == code.Trim().ToLower()) ??
               throw new ApiException(StudentsErrors.NotFound);
 
+        var lecture = await _context
+            .Lectures
+            .Include(x => x.LectureAttendances.Where(a => a.StudentId == student.Id).Take(1))
+            .Include(x => x.LectureEnrollments.Where(e => e.StudentId == student.Id).Take(1))
+            .FirstOrDefaultAsync(x => x.Id == lectureId) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        var attendedAt = DateTime.UtcNow;
 
         if (lecture.LectureAttendances.FirstOrDefault(a => a.StudentId == student.Id) is not { } lectureAttendance)
         {
@@ -384,15 +385,18 @@ public sealed class LecturesController : ControllerBase
                 {
                     LectureId = lectureId,
                     StudentId = student.Id,
-                    AttendedAt = DateTime.UtcNow,
+                    AttendedAt = attendedAt,
                     CenterId = center.Id
                 });
         }
         else
         {
-            lectureAttendance.AttendedAt ??= DateTime.UtcNow;
+            lectureAttendance.AttendedAt ??= attendedAt;
             lectureAttendance.CenterId = center.Id;
+            attendedAt = lectureAttendance.AttendedAt!.Value;
         }
+
+        AttendanceEnrollmentHelper.EnsureAttendanceEnrollment(lecture, student.Id, attendedAt);
 
         await _context.SaveChangesAsync();
 

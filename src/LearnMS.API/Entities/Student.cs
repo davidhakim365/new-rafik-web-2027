@@ -162,6 +162,7 @@ public class Student : User
                 throw new ApiException(ProfileErrors.InsufficientCredits);
             _credit -= lecture.RenewalPrice ?? 0;
             lectureEnrollment.ExpiresAt = DateTime.UtcNow.AddDays(lecture.ExpirationDays ?? 0);
+            lectureEnrollment.IsFromAttendance = false;
             Events.Add(
                 new StudentEvent()
                 {
@@ -178,7 +179,8 @@ public class Student : User
                 new LectureEnrollment
                 {
                     ExpiresAt = DateTime.UtcNow.AddDays(lecture.ExpirationDays ?? 0),
-                    StudentId = Id
+                    StudentId = Id,
+                    IsFromAttendance = false
                 }
             );
             Events.Add(
