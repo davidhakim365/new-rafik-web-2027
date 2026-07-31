@@ -202,24 +202,48 @@ export function LectureStudentStats({
         />
         <StatBox
           title="Essay Homework Scored"
-          value={`${essayHomeworkScored} / ${totalInGrade}`}
-          subtitle="Students with a score"
+          value={
+            selectedCenterName
+              ? `${essayHomeworkScored} / ${attended}`
+              : `${essayHomeworkScored} / ${totalInGrade}`
+          }
+          subtitle={
+            selectedCenterName
+              ? `Scored among attended at ${selectedCenterName}`
+              : "Students with a score"
+          }
           icon={BookOpen}
           className="border-purple-500/30 bg-purple-500/10 text-purple-800 dark:text-purple-200"
           iconClassName="bg-purple-500/20 text-purple-600"
         />
         <StatBox
           title="Choose Homework Scored"
-          value={`${chooseHomeworkScored} / ${totalInGrade}`}
-          subtitle="Students with a score"
+          value={
+            selectedCenterName
+              ? `${chooseHomeworkScored} / ${attended}`
+              : `${chooseHomeworkScored} / ${totalInGrade}`
+          }
+          subtitle={
+            selectedCenterName
+              ? `Scored among attended at ${selectedCenterName}`
+              : "Students with a score"
+          }
           icon={ListChecks}
           className="border-teal-500/30 bg-teal-500/10 text-teal-800 dark:text-teal-200"
           iconClassName="bg-teal-500/20 text-teal-600"
         />
         <StatBox
           title="Quiz Scored"
-          value={`${quizScored} / ${totalInGrade}`}
-          subtitle="Students with a score"
+          value={
+            selectedCenterName
+              ? `${quizScored} / ${attended}`
+              : `${quizScored} / ${totalInGrade}`
+          }
+          subtitle={
+            selectedCenterName
+              ? `Scored among attended at ${selectedCenterName}`
+              : "Students with a score"
+          }
           icon={GraduationCap}
           className="border-indigo-500/30 bg-indigo-500/10 text-indigo-800 dark:text-indigo-200"
           iconClassName="bg-indigo-500/20 text-indigo-600"

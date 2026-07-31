@@ -69,9 +69,9 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         decimal averageHomeworks = await GetLectureAverageHomeworksAsync(lectureId);
         long totalAttended = await GetLectureTotalAttendedStudentsAsync(lectureId, query);
         long totalEnrolled = await GetLectureTotalEnrolledStudentsAsync(lectureId);
-        long studentsWithHomeworkScore = await GetLectureScoredHomeworkCountAsync(lectureId);
-        long studentsWithChooseHomeworkScore = await GetLectureScoredChooseHomeworkCountAsync(lectureId);
-        long studentsWithQuizScore = await GetLectureScoredQuizCountAsync(lectureId);
+        long studentsWithHomeworkScore = await GetLectureScoredHomeworkCountAsync(lectureId, query);
+        long studentsWithChooseHomeworkScore = await GetLectureScoredChooseHomeworkCountAsync(lectureId, query);
+        long studentsWithQuizScore = await GetLectureScoredQuizCountAsync(lectureId, query);
 
         long totalOfflineIncome = await GetTotalLectureOfflineIncomeAsync(lectureId, query);
         long totalOnlineIncome = await GetTotalLectureOnlineIncomeAsync(lectureId, query);
@@ -345,20 +345,62 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         return (decimal)result;
     }
 
-    private Task<long> GetLectureScoredHomeworkCountAsync(Guid lectureId) =>
-        context.Set<LectureHomework>()
-            .Where(e => e.LectureId == lectureId)
-            .LongCountAsync();
+    private Task<long> GetLectureScoredHomeworkCountAsync(Guid lectureId, GetLectureStatisticsQuery query)
+    {
+        var scoredQuery = context.Set<LectureHomework>()
+            .Where(e => e.LectureId == lectureId);
 
-    private Task<long> GetLectureScoredChooseHomeworkCountAsync(Guid lectureId) =>
-        context.Set<LectureChooseHomework>()
-            .Where(e => e.LectureId == lectureId)
-            .LongCountAsync();
+        if (query.CenterId != null)
+        {
+            var centerId = query.CenterId;
+            scoredQuery = scoredQuery.Where(e =>
+                context.Set<LectureAttendance>().Any(a =>
+                    a.LectureId == lectureId &&
+                    a.StudentId == e.StudentId &&
+                    a.AttendedAt != null &&
+                    a.CenterId == centerId));
+        }
 
-    private Task<long> GetLectureScoredQuizCountAsync(Guid lectureId) =>
-        context.Set<LectureQuiz>()
-            .Where(e => e.LectureId == lectureId)
-            .LongCountAsync();
+        return scoredQuery.LongCountAsync();
+    }
+
+    private Task<long> GetLectureScoredChooseHomeworkCountAsync(Guid lectureId, GetLectureStatisticsQuery query)
+    {
+        var scoredQuery = context.Set<LectureChooseHomework>()
+            .Where(e => e.LectureId == lectureId);
+
+        if (query.CenterId != null)
+        {
+            var centerId = query.CenterId;
+            scoredQuery = scoredQuery.Where(e =>
+                context.Set<LectureAttendance>().Any(a =>
+                    a.LectureId == lectureId &&
+                    a.StudentId == e.StudentId &&
+                    a.AttendedAt != null &&
+                    a.CenterId == centerId));
+        }
+
+        return scoredQuery.LongCountAsync();
+    }
+
+    private Task<long> GetLectureScoredQuizCountAsync(Guid lectureId, GetLectureStatisticsQuery query)
+    {
+        var scoredQuery = context.Set<LectureQuiz>()
+            .Where(e => e.LectureId == lectureId);
+
+        if (query.CenterId != null)
+        {
+            var centerId = query.CenterId;
+            scoredQuery = scoredQuery.Where(e =>
+                context.Set<LectureAttendance>().Any(a =>
+                    a.LectureId == lectureId &&
+                    a.StudentId == e.StudentId &&
+                    a.AttendedAt != null &&
+                    a.CenterId == centerId));
+        }
+
+        return scoredQuery.LongCountAsync();
+    }
 
     private Task<List<LectureAverageScore>> GetAverageHomeworksAsync(GetCourseStatisticsQuery query,
         Guid courseId)
