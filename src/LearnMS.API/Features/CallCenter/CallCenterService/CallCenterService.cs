@@ -19,39 +19,12 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         if (lecture.CourseId != query.CourseId)
             throw new ApiException(CallCenterErrors.LectureCourseMismatch);
 
-        var search = query.Search?.Trim().ToLower();
-        var attendance = query.Attendance?.Trim().ToLowerInvariant();
-
-        var studentsQuery = db.Students
-            .AsNoTracking()
-            .Where(x => x.Level == lecture.Course.Level)
-            .Include(x => x.LectureHomeworks.Where(h => h.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureChooseHomeworks.Where(h => h.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureQuizzes.Where(q => q.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureAttendances.Where(a => a.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureStudentCallLogs.Where(c => c.LectureId == query.LectureId).Take(1))
-            .OrderBy(x => x.StudentCode)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            studentsQuery = studentsQuery.Where(x =>
-                x.FullName.ToLower().Contains(search) ||
-                x.StudentCode.ToLower().Contains(search) ||
-                x.ParentPhoneNumber.Contains(search) ||
-                x.PhoneNumber.Contains(search));
-        }
-
-        if (attendance is "present")
-        {
-            studentsQuery = studentsQuery.Where(x =>
-                x.LectureAttendances.Any(a => a.LectureId == query.LectureId && a.AttendedAt != null));
-        }
-        else if (attendance is "absent")
-        {
-            studentsQuery = studentsQuery.Where(x =>
-                !x.LectureAttendances.Any(a => a.LectureId == query.LectureId && a.AttendedAt != null));
-        }
+        var studentsQuery = BuildStudentsQuery(
+            lecture.Course.Level,
+            query.LectureId,
+            query.Search,
+            query.Attendance,
+            query.Called);
 
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 200);
@@ -98,39 +71,12 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         if (lecture.CourseId != query.CourseId)
             throw new ApiException(CallCenterErrors.LectureCourseMismatch);
 
-        var search = query.Search?.Trim().ToLower();
-        var attendance = query.Attendance?.Trim().ToLowerInvariant();
-
-        var studentsQuery = db.Students
-            .AsNoTracking()
-            .Where(x => x.Level == lecture.Course.Level)
-            .Include(x => x.LectureHomeworks.Where(h => h.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureChooseHomeworks.Where(h => h.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureQuizzes.Where(q => q.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureAttendances.Where(a => a.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureStudentCallLogs.Where(c => c.LectureId == query.LectureId).Take(1))
-            .OrderBy(x => x.StudentCode)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            studentsQuery = studentsQuery.Where(x =>
-                x.FullName.ToLower().Contains(search) ||
-                x.StudentCode.ToLower().Contains(search) ||
-                x.ParentPhoneNumber.Contains(search) ||
-                x.PhoneNumber.Contains(search));
-        }
-
-        if (attendance is "present")
-        {
-            studentsQuery = studentsQuery.Where(x =>
-                x.LectureAttendances.Any(a => a.LectureId == query.LectureId && a.AttendedAt != null));
-        }
-        else if (attendance is "absent")
-        {
-            studentsQuery = studentsQuery.Where(x =>
-                !x.LectureAttendances.Any(a => a.LectureId == query.LectureId && a.AttendedAt != null));
-        }
+        var studentsQuery = BuildStudentsQuery(
+            lecture.Course.Level,
+            query.LectureId,
+            query.Search,
+            query.Attendance,
+            query.Called);
 
         const int chunkSize = 200;
         var total = await studentsQuery.CountAsync();
@@ -233,5 +179,61 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             Called = callLog.Called,
             CalledAt = callLog.CalledAt
         };
+    }
+
+    private IQueryable<Student> BuildStudentsQuery(
+        StudentLevel level,
+        Guid lectureId,
+        string? search,
+        string? attendance,
+        string? called)
+    {
+        search = search?.Trim().ToLower();
+        attendance = attendance?.Trim().ToLowerInvariant();
+        called = called?.Trim().ToLowerInvariant();
+
+        var studentsQuery = db.Students
+            .AsNoTracking()
+            .Where(x => x.Level == level)
+            .Include(x => x.LectureHomeworks.Where(h => h.LectureId == lectureId).Take(1))
+            .Include(x => x.LectureChooseHomeworks.Where(h => h.LectureId == lectureId).Take(1))
+            .Include(x => x.LectureQuizzes.Where(q => q.LectureId == lectureId).Take(1))
+            .Include(x => x.LectureAttendances.Where(a => a.LectureId == lectureId).Take(1))
+            .Include(x => x.LectureStudentCallLogs.Where(c => c.LectureId == lectureId).Take(1))
+            .OrderBy(x => x.StudentCode)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                x.FullName.ToLower().Contains(search) ||
+                x.StudentCode.ToLower().Contains(search) ||
+                x.ParentPhoneNumber.Contains(search) ||
+                x.PhoneNumber.Contains(search));
+        }
+
+        if (attendance is "present")
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureAttendances.Any(a => a.LectureId == lectureId && a.AttendedAt != null));
+        }
+        else if (attendance is "absent")
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureAttendances.Any(a => a.LectureId == lectureId && a.AttendedAt != null));
+        }
+
+        if (called is "called" or "yes" or "true")
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureStudentCallLogs.Any(c => c.LectureId == lectureId && c.Called));
+        }
+        else if (called is "not-called" or "notcalled" or "no" or "false")
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureStudentCallLogs.Any(c => c.LectureId == lectureId && c.Called));
+        }
+
+        return studentsQuery;
     }
 }

@@ -59,6 +59,9 @@ const CallCenterPage = () => {
   const [attendance, setAttendance] = useState<"all" | "present" | "absent">(
     "all"
   );
+  const [calledFilter, setCalledFilter] = useState<
+    "all" | "called" | "not-called"
+  >("all");
   const [page, setPage] = useState(1);
   const { download, isDownloading } = useDownloadFile();
 
@@ -86,7 +89,7 @@ const CallCenterPage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, attendance, lectureId]);
+  }, [debouncedSearch, attendance, calledFilter, lectureId]);
 
   const courses = useMemo(() => {
     const items = coursesData?.data?.items ?? [];
@@ -109,6 +112,7 @@ const CallCenterPage = () => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (attendance !== "all") params.set("attendance", attendance);
+    if (calledFilter !== "all") params.set("called", calledFilter);
     const qs = params.toString();
     const safeTitle = selectedLectureTitle
       .replace(/[^\w\-]+/g, "_")
@@ -129,6 +133,7 @@ const CallCenterPage = () => {
           lectureId,
           search: debouncedSearch || undefined,
           attendance,
+          called: calledFilter,
           page,
           pageSize: 50,
         }
@@ -236,9 +241,24 @@ const CallCenterPage = () => {
                 <SelectValue placeholder="Attendance" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All attendance</SelectItem>
                 <SelectItem value="present">Present</SelectItem>
                 <SelectItem value="absent">Absent</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={calledFilter}
+              onValueChange={(value) =>
+                setCalledFilter(value as "all" | "called" | "not-called")
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Called" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All calls</SelectItem>
+                <SelectItem value="called">Called</SelectItem>
+                <SelectItem value="not-called">Not called</SelectItem>
               </SelectContent>
             </Select>
             <Button

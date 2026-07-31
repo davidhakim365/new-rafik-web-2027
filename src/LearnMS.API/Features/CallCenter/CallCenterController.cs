@@ -24,6 +24,7 @@ public sealed class CallCenterController(
         Guid lectureId,
         [FromQuery] string? search,
         [FromQuery] string? attendance,
+        [FromQuery] string? called,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
@@ -33,6 +34,7 @@ public sealed class CallCenterController(
             LectureId = lectureId,
             Search = search,
             Attendance = attendance,
+            Called = called,
             Page = page,
             PageSize = pageSize
         });
@@ -80,14 +82,16 @@ public sealed class CallCenterController(
         Guid courseId,
         Guid lectureId,
         [FromQuery] string? search,
-        [FromQuery] string? attendance)
+        [FromQuery] string? attendance,
+        [FromQuery] string? called)
     {
         var data = callCenterService.ExportAsync(new ExportCallCenterStudentsQuery
         {
             CourseId = courseId,
             LectureId = lectureId,
             Search = search,
-            Attendance = attendance
+            Attendance = attendance,
+            Called = called
         });
 
         Response.Headers.Append("Content-Type", "text/csv");

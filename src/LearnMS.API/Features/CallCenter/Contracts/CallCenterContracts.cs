@@ -9,6 +9,8 @@ public sealed record GetCallCenterStudentsQuery
     public required Guid LectureId { get; init; }
     public string? Search { get; init; }
     public string? Attendance { get; init; }
+    /// <summary>all | called | not-called</summary>
+    public string? Called { get; init; }
     public int Page { get; init; } = 1;
     public int PageSize { get; init; } = 50;
 }
@@ -51,6 +53,8 @@ public sealed record ExportCallCenterStudentsQuery
     public required Guid LectureId { get; init; }
     public string? Search { get; init; }
     public string? Attendance { get; init; }
+    /// <summary>all | called | not-called</summary>
+    public string? Called { get; init; }
 }
 
 public sealed record ExportCallCenterStudentRow

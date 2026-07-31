@@ -35,6 +35,7 @@ export type GetCallCenterStudentsParams = {
   lectureId: string;
   search?: string;
   attendance?: "all" | "present" | "absent";
+  called?: "all" | "called" | "not-called";
   page?: number;
   pageSize?: number;
 };
@@ -48,6 +49,9 @@ export const getCallCenterStudents = (params: GetCallCenterStudentsParams) => {
   if (params.search) searchParams.set("search", params.search);
   if (params.attendance && params.attendance !== "all") {
     searchParams.set("attendance", params.attendance);
+  }
+  if (params.called && params.called !== "all") {
+    searchParams.set("called", params.called);
   }
   searchParams.set("page", String(params.page ?? 1));
   searchParams.set("pageSize", String(params.pageSize ?? 50));
