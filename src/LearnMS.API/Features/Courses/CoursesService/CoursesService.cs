@@ -340,6 +340,81 @@ public sealed class CoursesService : ICoursesService
         };
     }
 
+    public async Task<ImportChooseHomeworkScoresResult> ExecuteAsync(ImportChooseHomeworkScoresCommand command)
+    {
+        if (command.SourceLectureId == command.LectureId)
+            throw new ApiException(LecturesErrors.ChooseHomeworkImportSameLecture);
+
+        var target =
+            await _context
+                .Set<Lecture>()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.LectureId && x.CourseId == command.CourseId
+                ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        var sourceExists = await _context
+            .Set<Lecture>()
+            .AnyAsync(x => x.Id == command.SourceLectureId && x.CourseId == command.CourseId);
+
+        if (!sourceExists)
+            throw new ApiException(LecturesErrors.ChooseHomeworkImportSourceNotFound);
+
+        var sourceScores = await _context
+            .Set<LectureChooseHomework>()
+            .Where(x => x.LectureId == command.SourceLectureId)
+            .ToListAsync();
+
+        var existing = await _context
+            .Set<LectureChooseHomework>()
+            .Where(x => x.LectureId == command.LectureId)
+            .ToListAsync();
+
+        var existingByStudent = existing.ToDictionary(x => x.StudentId);
+        var created = 0;
+        var updated = 0;
+
+        foreach (var source in sourceScores)
+        {
+            var score = source.Score;
+            if (target.ChooseHomeworkFullMark is > 0 && score > target.ChooseHomeworkFullMark.Value)
+                score = target.ChooseHomeworkFullMark.Value;
+            if (score < 0)
+                score = 0;
+
+            if (existingByStudent.TryGetValue(source.StudentId, out var row))
+            {
+                if (row.Score != score)
+                {
+                    row.Score = score;
+                    _context.Update(row);
+                    updated++;
+                }
+            }
+            else
+            {
+                await _context.AddAsync(
+                    new LectureChooseHomework
+                    {
+                        LectureId = command.LectureId,
+                        StudentId = source.StudentId,
+                        Score = score
+                    }
+                );
+                created++;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new ImportChooseHomeworkScoresResult
+        {
+            SourceCount = sourceScores.Count,
+            Imported = created + updated,
+            Updated = updated,
+            Created = created
+        };
+    }
+
     public async Task ExecuteAsync(CreateLessonCommand command)
     {
         var lecture =
@@ -2082,12 +2157,19 @@ public sealed class CoursesService : ICoursesService
                 .FirstOrDefaultAsync(x => x.Id == query.LectureId)
             ?? throw new ApiException(LecturesErrors.NotFound);
 
+        var compareLectureId =
+            query.CompareChooseHomeworkLectureId is { } compareId && compareId != query.LectureId
+                ? compareId
+                : (Guid?)null;
+
         var studentsQuery = _context
             .Set<Student>()
             .Where(x => x.Level == lecture.Course.Level)
             .Include(x => x.Accounts)
             .Include(x => x.LectureHomeworks.Where(x => x.LectureId == query.LectureId).Take(1))
-            .Include(x => x.LectureChooseHomeworks.Where(x => x.LectureId == query.LectureId).Take(1))
+            .Include(x => x.LectureChooseHomeworks.Where(x =>
+                x.LectureId == query.LectureId
+                || (compareLectureId != null && x.LectureId == compareLectureId)).Take(2))
             .Include(x => x.LectureQuizzes.Where(x => x.LectureId == query.LectureId).Take(1))
             .Include(x => x.AttendedLessons.Where(x => x.LectureId == query.LectureId))
             .Include(x => x.LectureAttendances.Where(x => x.LectureId == query.LectureId).Take(1))
@@ -2135,7 +2217,13 @@ public sealed class CoursesService : ICoursesService
                     FullName = student.FullName,
                     StudentCode = student.StudentCode,
                     HomeworkScore = student.LectureHomeworks.SingleOrDefault()?.Score,
-                    ChooseHomeworkScore = student.LectureChooseHomeworks.SingleOrDefault()?.Score,
+                    ChooseHomeworkScore = student.LectureChooseHomeworks
+                        .SingleOrDefault(x => x.LectureId == query.LectureId)?.Score,
+                    CompareChooseHomeworkScore = compareLectureId is null
+                        ? student.LectureChooseHomeworks
+                            .SingleOrDefault(x => x.LectureId == query.LectureId)?.Score
+                        : student.LectureChooseHomeworks
+                            .SingleOrDefault(x => x.LectureId == compareLectureId)?.Score,
                     QuizScore = student.LectureQuizzes.SingleOrDefault()?.Score,
                     StudentQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfCorrect),
                     TotalQuizzesScore = student.QuizSubmissions.Sum(x => x.NumOfQuestions),

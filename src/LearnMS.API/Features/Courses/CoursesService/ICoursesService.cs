@@ -27,6 +27,7 @@ public interface ICoursesService
     public Task ExecuteAsync(ChangeLectureHomeworkScoreCommand command);
     public Task ExecuteAsync(ChangeLectureQuizScoreCommand command);
     public Task<SyncChooseHomeworkScoresResult> ExecuteAsync(SyncChooseHomeworkScoresCommand command);
+    public Task<ImportChooseHomeworkScoresResult> ExecuteAsync(ImportChooseHomeworkScoresCommand command);
     public Task<UpdateQuizResult> ExecuteAsync(UpdateQuizCommand command);
     public Task ExecuteAsync(DeleteQuizCommand command);
     public Task ExecuteAsync(SubmitQuizCommand command);

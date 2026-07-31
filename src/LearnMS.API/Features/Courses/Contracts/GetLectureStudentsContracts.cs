@@ -10,6 +10,10 @@ public sealed record GetLectureStudentsQuery
     public string? Search;
     public int Page = 1;
     public int PageSize = 10;
+    /// <summary>
+    /// When set, includes that lecture's Choose Homework score for comparison/import preview.
+    /// </summary>
+    public Guid? CompareChooseHomeworkLectureId;
 }
 
 public sealed record SingleLectureStudent
@@ -20,6 +24,7 @@ public sealed record SingleLectureStudent
     [Required] public required string Email { get; set; }
     [Required] public decimal? HomeworkScore { get; set; }
     [Required] public decimal? ChooseHomeworkScore { get; set; }
+    public decimal? CompareChooseHomeworkScore { get; set; }
     [Required] public decimal? QuizScore { get; set; }
     [Required] public decimal? StudentQuizzesScore { get; set; }
     [Required] public decimal? TotalQuizzesScore { get; set; }

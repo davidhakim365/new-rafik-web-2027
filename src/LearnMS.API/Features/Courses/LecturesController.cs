@@ -250,6 +250,32 @@ public sealed class LecturesController : ControllerBase
     }
 
 
+    [HttpPost("{lectureId:guid}/choose-homework/import")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [SwaggerOperation(OperationId = "ImportChooseHomeworkScores")]
+    public async Task<ApiWrapper.Success<ImportChooseHomeworkScoresResult>> ImportChooseHomeworkScores(
+        Guid lectureId,
+        Guid courseId,
+        [FromBody] ImportChooseHomeworkScoresRequest request
+    )
+    {
+        var result = await _coursesService.ExecuteAsync(
+            new ImportChooseHomeworkScoresCommand
+            {
+                CourseId = courseId,
+                LectureId = lectureId,
+                SourceLectureId = request.SourceLectureId
+            }
+        );
+
+        return new ApiWrapper.Success<ImportChooseHomeworkScoresResult>
+        {
+            Data = result,
+            Message = "Choose homework scores imported successfully"
+        };
+    }
+
+
     [HttpPut("{lectureId:guid}/students/{studentId:guid}/quiz")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
     [SwaggerOperation(OperationId = "ChangeLectureQuizScore")]
@@ -282,7 +308,8 @@ public sealed class LecturesController : ControllerBase
         Guid courseId,
         int page,
         int pageSize,
-        string search
+        string search,
+        Guid? compareChooseHomeworkLectureId = null
     )
     {
         var result = await _coursesService.QueryAsync(
@@ -292,7 +319,8 @@ public sealed class LecturesController : ControllerBase
                 LectureId = lectureId,
                 Page = page,
                 PageSize = pageSize,
-                Search = search
+                Search = search,
+                CompareChooseHomeworkLectureId = compareChooseHomeworkLectureId
             }
         );
 

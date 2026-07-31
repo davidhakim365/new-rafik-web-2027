@@ -297,6 +297,53 @@ export const useSyncChooseHomeworkScoresMutation = () => {
   });
 };
 
+export type ImportChooseHomeworkScoresResult = {
+  sourceCount: number;
+  imported: number;
+  updated: number;
+  created: number;
+};
+
+export const useImportChooseHomeworkScoresMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<ImportChooseHomeworkScoresResult>,
+    Error,
+    { lectureId: string; courseId: string; sourceLectureId: string }
+  >({
+    mutationFn: ({ lectureId, courseId, sourceLectureId }) =>
+      api
+        .post(
+          `/api/courses/${courseId}/lectures/${lectureId}/choose-homework/import`,
+          { sourceLectureId }
+        )
+        .then((res) => res.data),
+    onSuccess: async (_, { lectureId, courseId }) => {
+      await Promise.all([
+        qc.invalidateQueries({
+          queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
+        }),
+        qc.invalidateQueries({
+          queryKey: [`/api/courses/${courseId}/lectures/${lectureId}/students`],
+        }),
+        qc.invalidateQueries({
+          queryKey: getGetLectureQueryKey(courseId, lectureId),
+        }),
+        qc.invalidateQueries({
+          queryKey: ["lecture-students", { id: lectureId, courseId }],
+        }),
+        qc.invalidateQueries({
+          queryKey: [`/api/statistics/lecture`],
+        }),
+      ]);
+      await qc.refetchQueries({
+        queryKey: [`/api/courses/${courseId}/lectures/${lectureId}/students`],
+        type: "active",
+      });
+    },
+  });
+};
+
 export const useUpdateLectureAssetsMutation = () => {
   const qc = useQueryClient();
   return useMutation<

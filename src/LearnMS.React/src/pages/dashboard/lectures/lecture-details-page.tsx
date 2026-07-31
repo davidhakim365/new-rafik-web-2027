@@ -1,4 +1,8 @@
-import { useSyncChooseHomeworkScoresMutation, useUpdateLectureAssetsMutation } from "@/api/lectures-api";
+import {
+  useImportChooseHomeworkScoresMutation,
+  useSyncChooseHomeworkScoresMutation,
+  useUpdateLectureAssetsMutation,
+} from "@/api/lectures-api";
 import {
   getLectureStatisticsParams,
   readSelectedCenterId,
@@ -25,6 +29,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { toast } from "@/components/ui/use-toast";
 import { Lesson } from "@/types/lessons";
@@ -138,6 +149,10 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     () => readSelectedCenterId()
   );
   const [selectedCenterName, setSelectedCenterName] = useState<string>();
+  const [compareChooseHomeworkLectureId, setCompareChooseHomeworkLectureId] =
+    useState<string | null>(null);
+  const [compareLectureInitialized, setCompareLectureInitialized] =
+    useState(false);
 
   const handleCenterChange = useCallback(
     (centerId: string | null, center?: { name: string }) => {
@@ -193,18 +208,67 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
       getLectureStatisticsParams(lecture.id, selectedCenterId) as any
     );
 
+  const { data: courseData } = useGetCourse(courseId);
+  const gradeLevel =
+    courseData?.data?.$type === "GetDashboardCourseResult"
+      ? courseData.data.level
+      : undefined;
+
+  const courseLectures = useMemo(() => {
+    const items =
+      courseData?.data?.$type === "GetDashboardCourseResult"
+        ? courseData.data.items ?? []
+        : [];
+    return items
+      .filter((item) => item.type === "Lecture")
+      .slice()
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [courseData]);
+
+  useEffect(() => {
+    if (compareLectureInitialized || courseLectures.length === 0) return;
+
+    const currentOrder =
+      courseLectures.find((item) => item.id === lecture.id)?.order ?? null;
+    const previous =
+      currentOrder == null
+        ? undefined
+        : [...courseLectures]
+            .filter((item) => (item.order ?? 0) < currentOrder)
+            .sort((a, b) => (b.order ?? 0) - (a.order ?? 0))[0];
+
+    setCompareChooseHomeworkLectureId(previous?.id ?? lecture.id);
+    setCompareLectureInitialized(true);
+  }, [compareLectureInitialized, courseLectures, lecture.id]);
+
+  const compareLectureTitle = useMemo(() => {
+    if (!compareChooseHomeworkLectureId) return null;
+    return (
+      courseLectures.find((item) => item.id === compareChooseHomeworkLectureId)
+        ?.title ?? null
+    );
+  }, [compareChooseHomeworkLectureId, courseLectures]);
+
+  const showCompareChooseHomework =
+    !!compareChooseHomeworkLectureId &&
+    compareChooseHomeworkLectureId !== lecture.id;
+
   const studentColumns = useMemo(
     () =>
       createLectureStudentsColumns(selectedCenterId, {
         homeworkFullMark: lecture.homeworkFullMark,
         chooseHomeworkFullMark: lecture.chooseHomeworkFullMark,
         quizFullMark: lecture.quizFullMark,
+        showCompareChooseHomework,
+        compareChooseHomeworkLectureTitle: compareLectureTitle,
       }),
     [
       selectedCenterId,
       lecture.homeworkFullMark,
       lecture.chooseHomeworkFullMark,
       lecture.quizFullMark,
+      showCompareChooseHomework,
+      compareLectureTitle,
     ]
   );
 
@@ -213,12 +277,6 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     lecture.id,
     { page: 1, pageSize: 1 }
   );
-
-  const { data: courseData } = useGetCourse(courseId);
-  const gradeLevel =
-    courseData?.data?.$type === "GetDashboardCourseResult"
-      ? courseData.data.level
-      : undefined;
 
   const totalInGrade = gradeTotalData?.data?.totalCount ?? 0;
 
@@ -244,6 +302,9 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
       page: Number(searchParams.get("page")) || 1,
       pageSize: Number(searchParams.get("pageSize")) || 10,
       search,
+      ...(showCompareChooseHomework && compareChooseHomeworkLectureId
+        ? { compareChooseHomeworkLectureId }
+        : {}),
     }
   );
 
@@ -337,6 +398,13 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
       />
 
       <ChooseHomeworkSyncButton lecture={lecture} />
+
+      <ChooseHomeworkImportPanel
+        lecture={lecture}
+        courseLectures={courseLectures}
+        selectedSourceLectureId={compareChooseHomeworkLectureId}
+        onSourceLectureChange={setCompareChooseHomeworkLectureId}
+      />
 
       {!selectedCenterId && (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
@@ -509,6 +577,104 @@ function LectureFullMarksForm({
       {(!lecture.homeworkFullMark || !lecture.quizFullMark) && (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
           Essay and quiz score fields unlock after their full mark is saved.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ChooseHomeworkImportPanel({
+  lecture,
+  courseLectures,
+  selectedSourceLectureId,
+  onSourceLectureChange,
+}: {
+  lecture: GetLectureDashboardResult;
+  courseLectures: { id: string; title: string; order?: number }[];
+  selectedSourceLectureId: string | null;
+  onSourceLectureChange: (lectureId: string) => void;
+}) {
+  const importMutation = useImportChooseHomeworkScoresMutation();
+  const canImport =
+    !!selectedSourceLectureId && selectedSourceLectureId !== lecture.id;
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-teal-500/25 bg-teal-500/5 p-3 sm:p-4">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground">
+          Choose Homework from another lecture
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Pick a lecture to preview who already has Choose Homework scores
+          (Source column). Import copies those scores into this lecture.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Select
+          value={selectedSourceLectureId ?? undefined}
+          onValueChange={onSourceLectureChange}
+        >
+          <SelectTrigger className="w-full sm:max-w-md">
+            <SelectValue placeholder="Select a lecture" />
+          </SelectTrigger>
+          <SelectContent>
+            {courseLectures.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                {item.title}
+                {item.id === lecture.id ? " (this lecture)" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          disabled={!canImport || importMutation.isPending}
+          onClick={() => {
+            if (!selectedSourceLectureId) return;
+            importMutation.mutate(
+              {
+                courseId: lecture.courseId,
+                lectureId: lecture.id,
+                sourceLectureId: selectedSourceLectureId,
+              },
+              {
+                onSuccess: (res) => {
+                  const data = res.data;
+                  toast({
+                    title: "Choose Homework imported",
+                    description: data
+                      ? `Source ${data.sourceCount}, imported ${data.imported} (created ${data.created}, updated ${data.updated})`
+                      : res.message,
+                  });
+                },
+                onError: (error) => {
+                  toast({
+                    title: "Import failed",
+                    description: error.message,
+                    variant: "destructive",
+                  });
+                },
+              }
+            );
+          }}
+        >
+          {importMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <FaFileImport className="mr-2 h-4 w-4" />
+          )}
+          Import into this lecture
+        </Button>
+      </div>
+
+      {!canImport && selectedSourceLectureId === lecture.id && (
+        <p className="text-xs text-muted-foreground">
+          Showing this lecture&apos;s scores. Choose a different lecture to
+          preview and import.
         </p>
       )}
     </div>

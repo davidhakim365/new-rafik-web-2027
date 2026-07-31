@@ -37,4 +37,12 @@ public static class LecturesErrors
         "lecture/choose-homework-student-id-question-missing",
         "The Google Form must include a required question titled exactly \"Student ID\"",
         StatusCodes.Status400BadRequest);
+    public static readonly ApiError ChooseHomeworkImportSameLecture = new ApiError(
+        "lecture/choose-homework-import-same-lecture",
+        "Select a different lecture to import Choose Homework scores from",
+        StatusCodes.Status400BadRequest);
+    public static readonly ApiError ChooseHomeworkImportSourceNotFound = new ApiError(
+        "lecture/choose-homework-import-source-not-found",
+        "Source lecture was not found in this course",
+        StatusCodes.Status404NotFound);
 }

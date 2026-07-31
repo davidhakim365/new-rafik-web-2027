@@ -9,4 +9,5 @@ export type GetLectureStudentsParams = {
 page?: number;
 pageSize?: number;
 search?: string;
+compareChooseHomeworkLectureId?: string;
 };

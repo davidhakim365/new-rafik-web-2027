@@ -251,11 +251,15 @@ export function createLectureStudentsColumns(
     homeworkFullMark?: number | null;
     chooseHomeworkFullMark?: number | null;
     quizFullMark?: number | null;
+    compareChooseHomeworkLectureTitle?: string | null;
+    showCompareChooseHomework?: boolean;
   }
 ): ColumnDef<SingleLectureStudent & SingleLectureStudentWithCenter>[] {
   const homeworkFullMark = options?.homeworkFullMark;
   const chooseHomeworkFullMark = options?.chooseHomeworkFullMark;
   const quizFullMark = options?.quizFullMark;
+  const compareTitle = options?.compareChooseHomeworkLectureTitle;
+  const showCompare = options?.showCompareChooseHomework === true;
 
   return [
     {
@@ -425,6 +429,36 @@ export function createLectureStudentsColumns(
         );
       },
     },
+    ...(showCompare
+      ? ([
+          {
+            accessorKey: "compareChooseHomeworkScore",
+            header: compareTitle
+              ? `Source Choose HW (${compareTitle})`
+              : "Source Choose HW",
+            cell: ({ row }) => {
+              const score = row.original.compareChooseHomeworkScore;
+              if (score == null) {
+                return (
+                  <span className="text-xs font-medium text-rose-600 dark:text-rose-300">
+                    Missing
+                  </span>
+                );
+              }
+              return (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    Done
+                  </span>
+                  <span className="font-medium">{score}</span>
+                </div>
+              );
+            },
+          } satisfies ColumnDef<
+            SingleLectureStudent & SingleLectureStudentWithCenter
+          >,
+        ] as ColumnDef<SingleLectureStudent & SingleLectureStudentWithCenter>[])
+      : []),
     {
       accessorKey: "quizScore",
       header: quizFullMark ? `Quiz ( / ${quizFullMark})` : "Quiz Score",

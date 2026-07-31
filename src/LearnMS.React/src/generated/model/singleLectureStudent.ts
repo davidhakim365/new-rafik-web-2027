@@ -12,6 +12,7 @@ export interface SingleLectureStudent {
   fullName: string;
   homeworkScore: number;
   chooseHomeworkScore?: number | null;
+  compareChooseHomeworkScore?: number | null;
   id: string;
   quizScore: number;
   studentCode: string;
