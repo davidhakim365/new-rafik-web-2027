@@ -182,7 +182,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
     }
 
     private IQueryable<Student> BuildStudentsQuery(
-        StudentLevel level,
+        StudentLevel? level,
         Guid lectureId,
         string? search,
         string? attendance,
