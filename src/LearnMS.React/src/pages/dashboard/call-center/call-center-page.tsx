@@ -33,8 +33,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useGetCourse } from "@/generated/api";
 import { StudentLevel } from "@/generated/model";
+import useDownloadFile from "@/hooks/useDownloadFile";
 import { toast } from "@/lib/utils";
-import { MessageCircle, Phone, Save } from "lucide-react";
+import { FileSpreadsheet, Loader2, MessageCircle, Phone, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -59,6 +60,7 @@ const CallCenterPage = () => {
     "all"
   );
   const [page, setPage] = useState(1);
+  const { download, isDownloading } = useDownloadFile();
 
   const { data: coursesData, isLoading: coursesLoading } = useCoursesQuery();
   const { data: courseData, isLoading: courseLoading } = useGetCourse(
@@ -101,6 +103,24 @@ const CallCenterPage = () => {
 
   const selectedLectureTitle =
     lectures.find((item) => item.id === lectureId)?.title ?? "Lecture";
+
+  const onExport = async () => {
+    if (!courseId || !lectureId) return;
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (attendance !== "all") params.set("attendance", attendance);
+    const qs = params.toString();
+    const safeTitle = selectedLectureTitle
+      .replace(/[^\w\-]+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 40);
+    await download(
+      `/api/call-center/courses/${courseId}/lectures/${lectureId}/students/export${
+        qs ? `?${qs}` : ""
+      }`,
+      `call-center-${safeTitle || "students"}.csv`
+    );
+  };
 
   const studentsQuery = useCallCenterStudentsQuery(
     courseId && lectureId
@@ -221,6 +241,20 @@ const CallCenterPage = () => {
                 <SelectItem value="absent">Absent</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2"
+              disabled={isDownloading || studentsQuery.isLoading}
+              onClick={onExport}
+            >
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="h-4 w-4" />
+              )}
+              Export Excel
+            </Button>
             <p className="text-sm text-muted-foreground sm:ml-auto">
               {pageData?.totalCount ?? 0} students
             </p>

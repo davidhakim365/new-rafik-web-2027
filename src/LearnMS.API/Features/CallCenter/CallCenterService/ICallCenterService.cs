@@ -7,4 +7,5 @@ public interface ICallCenterService
 {
     Task<PageList<CallCenterStudentDto>> QueryAsync(GetCallCenterStudentsQuery query);
     Task<CallCenterStudentDto> ExecuteAsync(UpsertCallCenterStudentCommand command);
+    IAsyncEnumerable<List<ExportCallCenterStudentRow>> ExportAsync(ExportCallCenterStudentsQuery query);
 }

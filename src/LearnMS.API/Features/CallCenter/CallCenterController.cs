@@ -1,3 +1,5 @@
+using System.Globalization;
+using CsvHelper;
 using LearnMS.API.Common;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Auth;
@@ -69,5 +71,40 @@ public sealed class CallCenterController(
             Data = result,
             Message = "Call log updated successfully"
         };
+    }
+
+    [HttpGet("courses/{courseId:guid}/lectures/{lectureId:guid}/students/export")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
+    [SwaggerOperation(OperationId = "ExportCallCenterStudents")]
+    public async Task<IActionResult> ExportStudents(
+        Guid courseId,
+        Guid lectureId,
+        [FromQuery] string? search,
+        [FromQuery] string? attendance)
+    {
+        var data = callCenterService.ExportAsync(new ExportCallCenterStudentsQuery
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            Search = search,
+            Attendance = attendance
+        });
+
+        Response.Headers.Append("Content-Type", "text/csv");
+        Response.Headers.Append(
+            "Content-Disposition",
+            "attachment; filename=call-center-students.csv");
+
+        await using var sw = new StreamWriter(Response.Body);
+        await using var csv = new CsvWriter(sw, CultureInfo.InvariantCulture);
+
+        await foreach (var records in data)
+        {
+            await csv.WriteRecordsAsync(records);
+            await csv.FlushAsync();
+            await sw.FlushAsync();
+        }
+
+        return new EmptyResult();
     }
 }
