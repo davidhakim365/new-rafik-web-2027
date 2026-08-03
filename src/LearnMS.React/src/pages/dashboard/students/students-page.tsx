@@ -17,14 +17,12 @@ import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { Permission } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { studentsColumns } from "@/pages/dashboard/students/columns";
-import { useModalStore } from "@/store/use-modal-store";
 import { PaginationState } from "@tanstack/react-table";
-import { Apple, Download, Loader2, Plus, Search, Users } from "lucide-react";
+import { Apple, Download, Loader2, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 const StudentsPage = () => {
-  const { openModal } = useModalStore();
   const { hasPermission } = useDashboardPermissions();
   const canScanApples = hasPermission(Permission.ManageStudentApples);
   const { download, isDownloading } = useDownloadFile();
@@ -62,27 +60,18 @@ const StudentsPage = () => {
       description="Search, manage, and export your student roster."
       icon={Users}
       actions={
-        <div className="flex flex-wrap gap-2">
-          {canScanApples && (
-            <Button
-              asChild
-              variant="outline"
-              className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
-            >
-              <Link to="/dashboard/student-apples-scanner">
-                <Apple className="size-4" />
-                Apple Scanner
-              </Link>
-            </Button>
-          )}
+        canScanApples ? (
           <Button
-            onClick={() => openModal("add-student-modal")}
-            className="bg-gradient-to-r from-color1 to-color2 shadow-md shadow-color2/20 hover:opacity-90"
+            asChild
+            variant="outline"
+            className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Student
+            <Link to="/dashboard/student-apples-scanner">
+              <Apple className="size-4" />
+              Apple Scanner
+            </Link>
           </Button>
-        </div>
+        ) : undefined
       }
       fullWidth
     >

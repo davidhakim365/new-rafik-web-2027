@@ -20,6 +20,7 @@ import {
   Shield,
   SlidersHorizontal,
   Star,
+  UserPlus,
   UserRound,
   Users,
 } from "lucide-react";
@@ -85,10 +86,19 @@ const materialItems: NavItem[] = [
 
 const userItems: NavItem[] = [
   {
+    to: "/dashboard/students/add",
+    label: "Add Students",
+    icon: UserPlus,
+    match: (pathname) => pathname.startsWith("/dashboard/students/add"),
+    permission: Permission.AddStudents,
+  },
+  {
     to: "/dashboard/students",
     label: "Students",
     icon: Users,
-    match: (pathname) => pathname.startsWith("/dashboard/students"),
+    match: (pathname) =>
+      pathname.startsWith("/dashboard/students") &&
+      !pathname.startsWith("/dashboard/students/add"),
     permission: Permission.ManageStudents,
   },
   {

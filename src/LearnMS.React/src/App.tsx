@@ -28,6 +28,7 @@ import StudentApplesScannerPage from "@/pages/dashboard/rewards/student-apples-s
 import AppleRewardsStorePage from "@/pages/dashboard/rewards/apple-rewards-store-page";
 import CallCenterPage from "@/pages/dashboard/call-center/call-center-page";
 import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
+import AddStudentsPage from "@/pages/dashboard/students/add-students-page";
 import StudentDetailsPage from "@/pages/dashboard/students/student-details-page";
 import StudentsPage from "@/pages/dashboard/students/students-page";
 import { StudentCoursePage } from "@/pages/student/courses/student-course-page";
@@ -390,6 +391,17 @@ function App() {
                     permissions={["ManageCallCenter"]}
                   >
                     <CallCenterPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="students/add"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["AddStudents"]}
+                  >
+                    <AddStudentsPage />
                   </RequireAuth>
                 }
               />

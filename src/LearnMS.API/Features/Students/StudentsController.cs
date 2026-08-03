@@ -54,7 +54,7 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
     }
 
     [HttpPost]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.AddStudents])]
     [SwaggerOperation(OperationId = "CreateStudent")]
     public async Task<ApiWrapper.Success<object?>> Post([FromBody] CreateStudentRequest request)
     {

@@ -6,6 +6,7 @@ import { z } from "zod";
 export type Permission =
   | "ManageCourses"
   | "ManageStudents"
+  | "AddStudents"
   | "ManageLecture"
   | "ManageCreditCodes"
   | "GenerateCreditCodes"

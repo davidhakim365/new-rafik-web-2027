@@ -12,6 +12,7 @@ export type Permission = typeof Permission[keyof typeof Permission];
 export const Permission = {
   ManageCourses: 'ManageCourses',
   ManageStudents: 'ManageStudents',
+  AddStudents: 'AddStudents',
   ManageLecture: 'ManageLecture',
   ManageCreditCodes: 'ManageCreditCodes',
   GenerateCreditCodes: 'GenerateCreditCodes',
