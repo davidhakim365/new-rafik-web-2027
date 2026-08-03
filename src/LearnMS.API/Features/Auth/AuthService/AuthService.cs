@@ -54,7 +54,13 @@ public sealed class AuthService : IAuthService
             throw new ApiException(AuthErrors.code);
         }
 
+        var phone = await _dbContext.Students
+            .FirstOrDefaultAsync(x => x.PhoneNumber == command.PhoneNumber);
 
+        if (phone != null)
+        {
+            throw new ApiException(AuthErrors.PhoneAlreadyExists);
+        }
 
         var passwordHash = _passwordHasher.Hash(command.Password.Trim());
 

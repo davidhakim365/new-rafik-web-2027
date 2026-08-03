@@ -32,6 +32,14 @@ public sealed class StudentsService(AppDbContext db, IPasswordHasher passwordHas
             throw new ApiException(AuthErrors.code);
         }
 
+        var phone = await db.Students
+            .FirstOrDefaultAsync(x => x.PhoneNumber == command.PhoneNumber);
+
+        if (phone != null)
+        {
+            throw new ApiException(AuthErrors.PhoneAlreadyExists);
+        }
+
         var passwordHash = passwordHasher.Hash(command.Password.Trim());
 
         var student = Student.Register(
@@ -95,12 +103,29 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
             student.FullName = command.FullName;
 
         if (!string.IsNullOrEmpty(command.PhoneNumber))
+        {
+            var phoneTaken = await db.Students.AnyAsync(x =>
+                x.PhoneNumber == command.PhoneNumber && x.Id != command.Id);
+
+            if (phoneTaken)
+                throw new ApiException(AuthErrors.PhoneAlreadyExists);
+
             student.PhoneNumber = command.PhoneNumber;
+        }
 
         if (!string.IsNullOrEmpty(command.ParentPhoneNumber))
             student.ParentPhoneNumber = command.ParentPhoneNumber;
+
         if (!string.IsNullOrEmpty(command.StudentCode))
+        {
+            var codeTaken = await db.Students.AnyAsync(x =>
+                x.StudentCode == command.StudentCode && x.Id != command.Id);
+
+            if (codeTaken)
+                throw new ApiException(AuthErrors.code);
+
             student.StudentCode = command.StudentCode;
+        }
 
         if (!string.IsNullOrEmpty(command.SchoolName))
             student.SchoolName = command.SchoolName;

@@ -43,5 +43,8 @@ public sealed class StudentsConfigurations : IEntityTypeConfiguration<Student>
 
         builder.HasMany(x => x.Events)
             .WithOne(x => x.Student).HasForeignKey(x => x.StudentId);
+
+        builder.HasIndex(x => x.StudentCode).IsUnique();
+        builder.HasIndex(x => x.PhoneNumber).IsUnique();
     }
 }

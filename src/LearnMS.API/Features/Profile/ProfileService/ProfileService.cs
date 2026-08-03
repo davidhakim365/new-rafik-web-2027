@@ -2,6 +2,7 @@ using System.Diagnostics;
 using LearnMS.API.Common;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
+using LearnMS.API.Features.Auth;
 using LearnMS.API.Features.Profile.Contracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,17 +40,29 @@ public sealed class ProfileService : IProfileService
 
         if (!string.IsNullOrWhiteSpace(command.PhoneNumber))
         {
+            var phoneTaken = await _dbContext.Students.AnyAsync(x =>
+                x.PhoneNumber == command.PhoneNumber && x.Id != student.Id);
+
+            if (phoneTaken)
+                throw new ApiException(AuthErrors.PhoneAlreadyExists);
+
             student.PhoneNumber = command.PhoneNumber;
         }
 
         if (!string.IsNullOrWhiteSpace(command.ParentPhoneNumber))
         {
-            student.PhoneNumber = command.ParentPhoneNumber;
+            student.ParentPhoneNumber = command.ParentPhoneNumber;
         }
 
         if (!string.IsNullOrWhiteSpace(command.StudentCode))
         {
-            student.PhoneNumber = command.StudentCode;
+            var codeTaken = await _dbContext.Students.AnyAsync(x =>
+                x.StudentCode == command.StudentCode && x.Id != student.Id);
+
+            if (codeTaken)
+                throw new ApiException(AuthErrors.code);
+
+            student.StudentCode = command.StudentCode;
         }
 
         if (!string.IsNullOrWhiteSpace(command.ProfilePicture))
