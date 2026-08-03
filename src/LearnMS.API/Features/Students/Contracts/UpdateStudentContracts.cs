@@ -9,7 +9,7 @@ public sealed record UpdateStudentRequest
     public string? FullName { get; set; }
     [Length(11, 11)]
     public string? ParentPhoneNumber { get; set; }
-    [Length(1, 8)]
+    [Length(1, 12)]
     public string? StudentCode { get; set; }
     [Length(11, 11)]
     public string? PhoneNumber { get; set; }

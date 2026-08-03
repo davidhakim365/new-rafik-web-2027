@@ -35,15 +35,30 @@ export const CreateStudentRequest = z
     fullName: z.string().min(3, { message: "Name is required" }),
     phoneNumber: z.string(),
     parentPhoneNumber: z.string(),
-    studentCode: z
-      .string()
-      .min(1, { message: "ID must be at least 6 characters" }),
-
+    studentCode: z.string().optional(),
+    mode: z.enum(["online", "offline"], {
+      errorMap: () => ({ message: "Study mode is required" }),
+    }),
     level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"]),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
+  .superRefine((data, ctx) => {
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        path: ["confirmPassword"],
+        code: "custom",
+        message: "Passwords do not match",
+      });
+    }
+
+    if (data.mode === "offline") {
+      if (!data.studentCode || data.studentCode.length < 6) {
+        ctx.addIssue({
+          path: ["studentCode"],
+          code: "custom",
+          message: "ID must be at least 6 characters",
+        });
+      }
+    }
   });
 
 export type CreateStudentRequest = z.infer<typeof CreateStudentRequest>;
@@ -55,7 +70,7 @@ export const useCreateStudentMutation = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
     },
-    mutationFn: (data) =>
+    mutationFn: ({ mode: _mode, ...data }) =>
       api.post("/api/students", data).then((res) => res.data),
   });
 };

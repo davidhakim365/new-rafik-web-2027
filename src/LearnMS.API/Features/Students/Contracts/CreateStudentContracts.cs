@@ -30,7 +30,7 @@ public sealed record CreateStudentRequest
     public required string PhoneNumber { get; init; }
     [Required, Length(11, 11)]
     public required string ParentPhoneNumber { get; init; }
-    [Required,Length(1, 8)]
+    [Required, Length(1, 12)]
     public required string StudentCode { get; init; }
     [Required]
     public required StudentLevel Level { get; init; }

@@ -36,6 +36,10 @@ interface AddStudentModalProps {
   onClose: () => void;
 }
 
+const generateStudentCode = () => {
+  return `ONL-${Math.floor(100000 + Math.random() * 900000)}`;
+};
+
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
   const createStudentMutation = useCreateStudentMutation();
 
@@ -51,6 +55,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
       parentPhoneNumber: "",
       studentCode: "",
       phoneNumber: "",
+      mode: "offline",
     },
     defaultValues: {
       email: "",
@@ -62,19 +67,29 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
       parentPhoneNumber: "",
       studentCode: "",
       phoneNumber: "",
+      mode: "offline",
     },
   });
 
+  const mode = form.watch("mode");
+
   const onSubmit = (data: CreateStudentRequest) => {
-    createStudentMutation.mutate(data, {
-      onSuccess: () => {
-        toast({
-          title: "Student created",
-          description: "Student created successfully",
-        });
-        onClose();
+    createStudentMutation.mutate(
+      {
+        ...data,
+        studentCode:
+          data.mode === "online" ? generateStudentCode() : data.studentCode,
       },
-    });
+      {
+        onSuccess: () => {
+          toast({
+            title: "Student created",
+            description: "Student created successfully",
+          });
+          onClose();
+        },
+      }
+    );
   };
 
   return (
@@ -139,17 +154,42 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
                 )}
               />
               <FormField
-                name="studentCode"
+                name="mode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel> Student ID </FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <FormLabel>Study Mode</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select study mode" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="offline">Offline</SelectItem>
+                        <SelectItem value="online">Online</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {mode === "offline" && (
+                <FormField
+                  name="studentCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel> Student ID </FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 name="school"
                 render={({ field }) => (
