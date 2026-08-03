@@ -25,8 +25,12 @@ export const RegisterRequest = z
       errorMap: () => ({ message: "Level is required" }),
     }),
     fullName: z.string().min(1, { message: "Name is required" }),
-    phoneNumber: z.string(),
-    parentPhoneNumber: z.string(),
+    phoneNumber: z
+      .string()
+      .min(11, { message: "Phone number must be 11 digits" }),
+    parentPhoneNumber: z
+      .string()
+      .min(11, { message: "Parent phone must be 11 digits" }),
     studentCode: z.string().optional(), // validate manually below
     school: z.string().min(1, { message: "School is required" }),
     email: z.string().email({ message: "Email is required" }),
@@ -128,6 +132,28 @@ export function useStudentSignupEnabledQuery() {
     staleTime: 30_000,
   });
 }
+
+export type PublicStudentAvailability = {
+  studentCodeTaken: boolean;
+  phoneNumberTaken: boolean;
+  emailTaken: boolean;
+};
+
+export const checkPublicStudentAvailability = async (params: {
+  studentCode?: string;
+  phoneNumber?: string;
+  email?: string;
+}) => {
+  const search = new URLSearchParams();
+  if (params.studentCode) search.set("studentCode", params.studentCode);
+  if (params.phoneNumber) search.set("phoneNumber", params.phoneNumber);
+  if (params.email) search.set("email", params.email);
+
+  const res = await api.get<ApiResponse<PublicStudentAvailability>>(
+    `/api/auth/students/availability?${search.toString()}`
+  );
+  return res.data.data;
+};
 
 export function useLogoutMutation() {
   const qrc = useQueryClient();

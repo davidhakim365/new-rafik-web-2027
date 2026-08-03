@@ -2,6 +2,8 @@ using LearnMS.API.Common;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Auth.Contracts;
+using LearnMS.API.Features.Students;
+using LearnMS.API.Features.Students.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +38,28 @@ public sealed class AuthController : Controller
         {
             Data = new { isSignupEnabled = settings?.IsSignupEnabled ?? true },
             Message = "Retrieved signup status successfully"
+        };
+    }
+
+    [HttpGet("students/availability")]
+    [SwaggerOperation(OperationId = "CheckPublicStudentAvailability")]
+    public async Task<ApiWrapper.Success<CheckStudentAvailabilityResult>> CheckStudentAvailability(
+        [FromServices] IStudentsService studentsService,
+        [FromQuery] string? studentCode,
+        [FromQuery] string? phoneNumber,
+        [FromQuery] string? email)
+    {
+        var result = await studentsService.QueryAsync(new CheckStudentAvailabilityQuery
+        {
+            StudentCode = studentCode,
+            PhoneNumber = phoneNumber,
+            Email = email
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = "Availability checked successfully"
         };
     }
 
