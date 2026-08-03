@@ -3,15 +3,9 @@ import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useGetAllStudents } from "@/generated/api";
 import { SingleStudent, StudentLevel } from "@/generated/model";
+import { cn } from "@/lib/utils";
 import { Search, User, X } from "lucide-react";
 import { useState } from "react";
 
@@ -41,12 +35,11 @@ export function StudentPicker({
     { query: { enabled: !selectedStudent } }
   );
 
-  const handleSelectStudent = (studentId: string) => {
-    const student = studentsData?.data?.items?.find((s) => s.id === studentId);
-    if (student) {
-      onSelectStudent(student);
-      setStudentSearch("");
-    }
+  const students = studentsData?.data?.items ?? [];
+
+  const handleSelectStudent = (student: SingleStudent) => {
+    onSelectStudent(student);
+    setStudentSearch("");
   };
 
   return (
@@ -79,39 +72,56 @@ export function StudentPicker({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
               placeholder="Search by name, email, or student ID..."
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
+              autoFocus
             />
           </div>
+
           {studentsLoading ? (
             <Loading />
+          ) : students.length > 0 ? (
+            <ul className="max-h-72 divide-y divide-border/60 overflow-y-auto rounded-xl border border-color2/10">
+              {students.map((student) => (
+                <li key={student.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectStudent(student)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors",
+                      "hover:bg-color2/10 focus-visible:bg-color2/10 focus-visible:outline-none"
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">
+                        {student.fullName}
+                      </p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        ID: {student.studentCode}
+                        {student.email ? ` · ${student.email}` : ""}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 border-color2/20"
+                    >
+                      {levelMap[student.level]}
+                    </Badge>
+                  </button>
+                </li>
+              ))}
+            </ul>
           ) : (
-              <Select onValueChange={handleSelectStudent}>
-                <SelectTrigger className="w-full max-w-md">
-                <SelectValue placeholder="Choose a student from results" />
-              </SelectTrigger>
-              <SelectContent>
-                {studentsData?.data?.items?.length ? (
-                  studentsData.data.items.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.fullName} — {student.studentCode} (
-                      {levelMap[student.level]})
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    {studentSearch
-                      ? "No students found"
-                      : "Type to search for students"}
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <p className="rounded-xl border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
+              {studentSearch.trim()
+                ? "No students found"
+                : "Type a name, email, or student ID to search"}
+            </p>
           )}
         </div>
       )}
