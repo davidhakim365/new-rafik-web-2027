@@ -84,14 +84,7 @@ const materialItems: NavItem[] = [
   },
 ];
 
-const userItems: NavItem[] = [
-  {
-    to: "/dashboard/students/add",
-    label: "Add Students",
-    icon: UserPlus,
-    match: (pathname) => pathname.startsWith("/dashboard/students/add"),
-    permission: Permission.AddStudents,
-  },
+const studentItems: NavItem[] = [
   {
     to: "/dashboard/students",
     label: "Students",
@@ -100,6 +93,13 @@ const userItems: NavItem[] = [
       pathname.startsWith("/dashboard/students") &&
       !pathname.startsWith("/dashboard/students/add"),
     permission: Permission.ManageStudents,
+  },
+  {
+    to: "/dashboard/students/add",
+    label: "Add Students",
+    icon: UserPlus,
+    match: (pathname) => pathname.startsWith("/dashboard/students/add"),
+    permission: Permission.AddStudents,
   },
   {
     to: "/dashboard/call-center",
@@ -122,40 +122,15 @@ const userItems: NavItem[] = [
     match: (pathname) => pathname.startsWith("/dashboard/expiration-time"),
     permission: Permission.ManageExpirationTime,
   },
+];
+
+const teamItems: NavItem[] = [
   {
     to: "/dashboard/assistants",
     label: "Assistants",
     icon: Shield,
     match: (pathname) => pathname.startsWith("/dashboard/assistants"),
     permission: Permission.ManageAssistants,
-  },
-  {
-    to: "/dashboard/assistant-rewards-scanner",
-    label: "Reward Scanner",
-    icon: QrCode,
-    match: (pathname) => pathname.startsWith("/dashboard/assistant-rewards-scanner"),
-    teacherOnly: true,
-  },
-  {
-    to: "/dashboard/reward-system-settings",
-    label: "Reward Settings",
-    icon: SlidersHorizontal,
-    match: (pathname) => pathname.startsWith("/dashboard/reward-system-settings"),
-    teacherOnly: true,
-  },
-  {
-    to: "/dashboard/student-apples-scanner",
-    label: "Apple Scanner",
-    icon: Apple,
-    match: (pathname) => pathname.startsWith("/dashboard/student-apples-scanner"),
-    permission: Permission.ManageStudentApples,
-  },
-  {
-    to: "/dashboard/apple-rewards-store",
-    label: "Apple Rewards Store",
-    icon: Gift,
-    match: (pathname) => pathname.startsWith("/dashboard/apple-rewards-store"),
-    permission: Permission.ManageAppleRewardsStore,
   },
   {
     to: "/dashboard/my-profile",
@@ -172,6 +147,42 @@ const userItems: NavItem[] = [
     assistantOnly: true,
   },
 ];
+
+const rewardsItems: NavItem[] = [
+  {
+    to: "/dashboard/student-apples-scanner",
+    label: "Apple Scanner",
+    icon: Apple,
+    match: (pathname) => pathname.startsWith("/dashboard/student-apples-scanner"),
+    permission: Permission.ManageStudentApples,
+  },
+  {
+    to: "/dashboard/apple-rewards-store",
+    label: "Apple Rewards Store",
+    icon: Gift,
+    match: (pathname) => pathname.startsWith("/dashboard/apple-rewards-store"),
+    permission: Permission.ManageAppleRewardsStore,
+  },
+  {
+    to: "/dashboard/assistant-rewards-scanner",
+    label: "Reward Scanner",
+    icon: QrCode,
+    match: (pathname) => pathname.startsWith("/dashboard/assistant-rewards-scanner"),
+    teacherOnly: true,
+  },
+  {
+    to: "/dashboard/reward-system-settings",
+    label: "Reward Settings",
+    icon: SlidersHorizontal,
+    match: (pathname) => pathname.startsWith("/dashboard/reward-system-settings"),
+    teacherOnly: true,
+  },
+];
+
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
 
 function canSeeNavItem(
   item: NavItem,
@@ -243,10 +254,17 @@ const DashboardSideBar = ({
   const isCollapsed = isMobile ? false : collapsed;
 
   const filterOpts = { isTeacher, hasPermission, hasAnyPermission };
-  const visibleMaterialItems = materialItems.filter((item) =>
-    canSeeNavItem(item, filterOpts)
-  );
-  const visibleUserItems = userItems.filter((item) => canSeeNavItem(item, filterOpts));
+  const sections: NavSection[] = [
+    { title: "Materials", items: materialItems },
+    { title: "Students", items: studentItems },
+    { title: "Team", items: teamItems },
+    { title: "Rewards", items: rewardsItems },
+  ]
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => canSeeNavItem(item, filterOpts)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   const Wrapper = isMobile ? "div" : "aside";
 
@@ -299,14 +317,14 @@ const DashboardSideBar = ({
         </div>
 
         <nav className="flex-1 space-y-6 overflow-y-auto overscroll-contain">
-          {visibleMaterialItems.length > 0 && (
-            <div className="space-y-1">
+          {sections.map((section) => (
+            <div key={section.title} className="space-y-1">
               {!isCollapsed && (
                 <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Materials
+                  {section.title}
                 </p>
               )}
-              {visibleMaterialItems.map((item) => (
+              {section.items.map((item) => (
                 <NavLinkItem
                   key={item.to}
                   item={item}
@@ -315,25 +333,7 @@ const DashboardSideBar = ({
                 />
               ))}
             </div>
-          )}
-
-          {visibleUserItems.length > 0 && (
-            <div className="space-y-1">
-              {!isCollapsed && (
-                <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Users
-                </p>
-              )}
-              {visibleUserItems.map((item) => (
-                <NavLinkItem
-                  key={item.to}
-                  item={item}
-                  collapsed={isCollapsed}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </div>
-          )}
+          ))}
         </nav>
 
         <Button
