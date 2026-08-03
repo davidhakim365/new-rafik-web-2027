@@ -505,6 +505,18 @@
           "level4": "3rd Secondary Adby"
         }
       },
+      "steps": {
+        "studyMode": "Study mode",
+        "studentInfo": "Student info",
+        "account": "Account"
+      },
+      "studyModeHint": "Online students get an ID automatically.",
+      "back": "Back",
+      "next": "Next",
+      "checking": "Checking...",
+      "creatingAccount": "Creating account...",
+      "loggingIn": "Logging in...",
+      "signupDisabledHint": "New accounts are created by assistants only.",
       "forgotPassword": "Forgot Password?",
       "signIn": "Sign In",
       "createAccount": "Create Account",
@@ -512,7 +524,10 @@
         "loginFailed": "Login failed",
         "registrationFailed": "Registration failed",
         "accountCreated": "Account Created Successfully",
-        "welcomeBack": "Welcome back!"
+        "welcomeBack": "Welcome back!",
+        "idTaken": "ID already assigned with another account",
+        "phoneTaken": "Phone number already assigned with another account",
+        "emailTaken": "Email already exists"
       }
     }
   },

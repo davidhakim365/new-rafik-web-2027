@@ -33,9 +33,9 @@ interface RegisterFormProps {
 }
 
 const STEPS = [
-  { id: 0, titleKey: "Study mode" },
-  { id: 1, titleKey: "Student info" },
-  { id: 2, titleKey: "Account" },
+  { id: 0, titleKey: "auth.forms.steps.studyMode" },
+  { id: 1, titleKey: "auth.forms.steps.studentInfo" },
+  { id: 2, titleKey: "auth.forms.steps.account" },
 ] as const;
 
 const stepFields: Record<number, (keyof RegisterRequest)[]> = {
@@ -155,7 +155,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
         if (availability?.studentCodeTaken) {
           registerForm.setError("studentCode", {
             type: "manual",
-            message: "ID already assigned with another account",
+            message: t("auth.forms.errors.idTaken"),
           });
           return;
         }
@@ -168,7 +168,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
         if (availability?.phoneNumberTaken) {
           registerForm.setError("phoneNumber", {
             type: "manual",
-            message: "Phone number already assigned with another account",
+            message: t("auth.forms.errors.phoneTaken"),
           });
           return;
         }
@@ -199,7 +199,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
       if (availability?.studentCodeTaken) {
         registerForm.setError("studentCode", {
           type: "manual",
-          message: "ID already assigned with another account",
+          message: t("auth.forms.errors.idTaken"),
         });
         setStep(0);
         return;
@@ -208,7 +208,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
       if (availability?.phoneNumberTaken) {
         registerForm.setError("phoneNumber", {
           type: "manual",
-          message: "Phone number already assigned with another account",
+          message: t("auth.forms.errors.phoneTaken"),
         });
         setStep(1);
         return;
@@ -217,7 +217,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
       if (availability?.emailTaken) {
         registerForm.setError("email", {
           type: "manual",
-          message: "Email already exists",
+          message: t("auth.forms.errors.emailTaken"),
         });
         return;
       }
@@ -297,7 +297,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
                 {s.id + 1}
               </p>
               <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-100">
-                {s.titleKey}
+                {t(s.titleKey)}
               </p>
             </li>
           );
@@ -312,7 +312,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
                 htmlFor="mode"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Study Mode
+                {t("auth.forms.mode.label")}
               </label>
               <Controller
                 control={registerForm.control}
@@ -320,7 +320,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full px-4 py-3 rounded-lg border bg-white dark:bg-zinc-800">
-                      <SelectValue placeholder="Select study mode" />
+                      <SelectValue placeholder={t("auth.forms.mode.label")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="offline">
@@ -334,7 +334,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
                 )}
               />
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Online students get an ID automatically.
+                {t("auth.forms.studyModeHint")}
               </p>
               {registerErrors?.mode && (
                 <p className="text-sm text-red-400 dark:text-red-300">
@@ -520,7 +520,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
           className="gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back
+          {t("auth.forms.back")}
         </ShadButton>
 
         {step < STEPS.length - 1 ? (
@@ -533,11 +533,11 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
             {checkingAvailability ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Checking...
+                {t("auth.forms.checking")}
               </>
             ) : (
               <>
-                Next
+                {t("auth.forms.next")}
                 <ChevronRight className="w-4 h-4" />
               </>
             )}
@@ -555,11 +555,11 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
             )}
             <span>
               {checkingAvailability
-                ? "Checking..."
+                ? t("auth.forms.checking")
                 : isPending
                   ? loginMutation.isPending
-                    ? "Logging in..."
-                    : "Creating account..."
+                    ? t("auth.forms.loggingIn")
+                    : t("auth.forms.creatingAccount")
                   : t("auth.forms.createAccount")}
             </span>
           </ShadButton>

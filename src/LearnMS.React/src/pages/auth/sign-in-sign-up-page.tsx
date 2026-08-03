@@ -396,7 +396,7 @@ const SignInSignUpPage = () => {
                   </span>
                 ) : (
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    New accounts are created by assistants only.
+                    {t("auth.forms.signupDisabledHint")}
                   </p>
                 )
               ) : (
