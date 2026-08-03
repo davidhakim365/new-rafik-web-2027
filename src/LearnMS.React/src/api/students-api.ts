@@ -77,6 +77,7 @@ export const useCreateStudentMutation = () => {
   const qc = useQueryClient();
 
   return useMutation<ApiResponse<{}>, {}, CreateStudentRequest>({
+    throwOnError: false,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
     },
@@ -159,6 +160,7 @@ export const useUpdateStudentMutation = () => {
     {},
     { id: string; data: UpdateStudentRequest }
   >({
+    throwOnError: false,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
     },
