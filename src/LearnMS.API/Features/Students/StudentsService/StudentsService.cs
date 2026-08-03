@@ -451,4 +451,36 @@ return new PageList<SingleStudentLecture>(
 
         await db.SaveChangesAsync();
     }
+
+    public async Task<CheckStudentAvailabilityResult> QueryAsync(CheckStudentAvailabilityQuery query)
+    {
+        var studentCodeTaken = false;
+        var phoneNumberTaken = false;
+        var emailTaken = false;
+
+        if (!string.IsNullOrWhiteSpace(query.StudentCode))
+        {
+            studentCodeTaken = await db.Students.AnyAsync(x =>
+                x.StudentCode == query.StudentCode.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.PhoneNumber))
+        {
+            var phone = query.PhoneNumber.Trim();
+            phoneNumberTaken = await db.Students.AnyAsync(x => x.PhoneNumber == phone);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Email))
+        {
+            var email = query.Email.Trim().ToLower();
+            emailTaken = await db.Accounts.AnyAsync(x => x.Email.ToLower() == email);
+        }
+
+        return new CheckStudentAvailabilityResult
+        {
+            StudentCodeTaken = studentCodeTaken,
+            PhoneNumberTaken = phoneNumberTaken,
+            EmailTaken = emailTaken
+        };
+    }
 }

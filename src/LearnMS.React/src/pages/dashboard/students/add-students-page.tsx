@@ -1,4 +1,5 @@
 import {
+  checkStudentAvailability,
   CreateStudentRequest,
   useCreateStudentMutation,
 } from "@/api/students-api";
@@ -24,7 +25,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, UserPlus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -66,6 +67,7 @@ type LastCreated = {
 const AddStudentsPage = () => {
   const createStudentMutation = useCreateStudentMutation();
   const [step, setStep] = useState(0);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [lastCreated, setLastCreated] = useState<LastCreated | null>(null);
   const firstFieldRef = useRef<HTMLButtonElement | null>(null);
 
@@ -76,6 +78,7 @@ const AddStudentsPage = () => {
   });
 
   const mode = form.watch("mode");
+  const isBusy = createStudentMutation.isPending || checkingAvailability;
 
   useEffect(() => {
     if (step === 0) {
@@ -86,6 +89,43 @@ const AddStudentsPage = () => {
   const goNext = async () => {
     const valid = await form.trigger(stepFields[step], { shouldFocus: true });
     if (!valid) return;
+
+    const values = form.getValues();
+
+    try {
+      setCheckingAvailability(true);
+
+      if (step === 0 && values.mode === "offline" && values.studentCode) {
+        const availability = await checkStudentAvailability({
+          studentCode: values.studentCode.trim(),
+        });
+        if (availability?.studentCodeTaken) {
+          form.setError("studentCode", {
+            type: "manual",
+            message: "ID already assigned with another account",
+          });
+          return;
+        }
+      }
+
+      if (step === 1 && values.phoneNumber) {
+        const availability = await checkStudentAvailability({
+          phoneNumber: values.phoneNumber.trim(),
+        });
+        if (availability?.phoneNumberTaken) {
+          form.setError("phoneNumber", {
+            type: "manual",
+            message: "Phone number already assigned with another account",
+          });
+          return;
+        }
+      }
+    } catch {
+      return;
+    } finally {
+      setCheckingAvailability(false);
+    }
+
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
 
@@ -97,9 +137,48 @@ const AddStudentsPage = () => {
     requestAnimationFrame(() => firstFieldRef.current?.focus());
   };
 
-  const onSubmit = (data: CreateStudentRequest) => {
+  const onSubmit = async (data: CreateStudentRequest) => {
     const studentCode =
       data.mode === "online" ? generateStudentCode() : data.studentCode ?? "";
+
+    try {
+      setCheckingAvailability(true);
+      const availability = await checkStudentAvailability({
+        studentCode: data.mode === "offline" ? studentCode : undefined,
+        phoneNumber: data.phoneNumber.trim(),
+        email: data.email.trim(),
+      });
+
+      if (availability?.studentCodeTaken) {
+        form.setError("studentCode", {
+          type: "manual",
+          message: "ID already assigned with another account",
+        });
+        setStep(0);
+        return;
+      }
+
+      if (availability?.phoneNumberTaken) {
+        form.setError("phoneNumber", {
+          type: "manual",
+          message: "Phone number already assigned with another account",
+        });
+        setStep(1);
+        return;
+      }
+
+      if (availability?.emailTaken) {
+        form.setError("email", {
+          type: "manual",
+          message: "Email already exists",
+        });
+        return;
+      }
+    } catch {
+      return;
+    } finally {
+      setCheckingAvailability(false);
+    }
 
     createStudentMutation.mutate(
       {
@@ -181,10 +260,7 @@ const AddStudentsPage = () => {
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-5"
             >
-              <fieldset
-                disabled={createStudentMutation.isPending}
-                className="space-y-4"
-              >
+              <fieldset disabled={isBusy} className="space-y-4">
                 {step === 0 && (
                   <>
                     <FormField
@@ -377,7 +453,7 @@ const AddStudentsPage = () => {
                   type="button"
                   variant="outline"
                   onClick={goBack}
-                  disabled={step === 0 || createStudentMutation.isPending}
+                  disabled={step === 0 || isBusy}
                   className="border-color2/20"
                 >
                   <ChevronLeft className="mr-1 size-4" />
@@ -388,20 +464,35 @@ const AddStudentsPage = () => {
                   <Button
                     type="button"
                     onClick={goNext}
+                    disabled={isBusy}
                     className="bg-gradient-to-r from-color1 to-color2 hover:opacity-90"
                   >
-                    Next
-                    <ChevronRight className="ml-1 size-4" />
+                    {checkingAvailability ? (
+                      <>
+                        <Loader2 className="mr-1 size-4 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ChevronRight className="ml-1 size-4" />
+                      </>
+                    )}
                   </Button>
                 ) : (
                   <Button
                     type="submit"
-                    disabled={createStudentMutation.isPending}
+                    disabled={isBusy}
                     className="bg-gradient-to-r from-color1 to-color2 hover:opacity-90"
                   >
-                    {createStudentMutation.isPending
-                      ? "Creating..."
-                      : "Create student"}
+                    {isBusy ? (
+                      <>
+                        <Loader2 className="mr-1 size-4 animate-spin" />
+                        {checkingAvailability ? "Checking..." : "Creating..."}
+                      </>
+                    ) : (
+                      "Create student"
+                    )}
                   </Button>
                 )}
               </div>

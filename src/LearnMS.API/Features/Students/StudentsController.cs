@@ -76,6 +76,28 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpGet("availability")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.AddStudents])]
+    [SwaggerOperation(OperationId = "CheckStudentAvailability")]
+    public async Task<ApiWrapper.Success<CheckStudentAvailabilityResult>> CheckAvailability(
+        [FromQuery] string? studentCode,
+        [FromQuery] string? phoneNumber,
+        [FromQuery] string? email)
+    {
+        var result = await studentsService.QueryAsync(new CheckStudentAvailabilityQuery
+        {
+            StudentCode = studentCode,
+            PhoneNumber = phoneNumber,
+            Email = email
+        });
+
+        return new ApiWrapper.Success<CheckStudentAvailabilityResult>
+        {
+            Data = result,
+            Message = "Availability checked successfully"
+        };
+    }
+
     [HttpPost("{studentId:guid}/credit")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
     [SwaggerOperation(OperationId = "AddStudentCredit")]
