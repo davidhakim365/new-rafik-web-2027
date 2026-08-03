@@ -10,9 +10,32 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return target.isContentEditable;
 }
 
+/** Safari / iOS WebKit report large outer/inner gaps from browser chrome, not DevTools. */
+function isSafariOrIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent;
+  const isIOS =
+    /iPad|iPhone|iPod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  // Chrome/Firefox/Edge on iOS still use WebKit and share the same quirk.
+  if (isIOS) return true;
+
+  // Desktop Safari (exclude Chromium browsers that also include "Safari" in UA).
+  return /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/i.test(ua);
+}
+
 function isDevToolsOpenHeuristic(): boolean {
+  // Size-gap detection is unreliable on Safari/iOS — skip to avoid false locks.
+  if (isSafariOrIOS()) return false;
+
+  // Some browsers report 0 for outer dimensions; treat as unknown / not open.
+  if (!window.outerWidth || !window.outerHeight) return false;
+
   const widthGap = window.outerWidth - window.innerWidth;
   const heightGap = window.outerHeight - window.innerHeight;
+
   return (
     widthGap > DEVTOOLS_SIZE_THRESHOLD || heightGap > DEVTOOLS_SIZE_THRESHOLD
   );
@@ -38,7 +61,8 @@ function isDevToolsShortcut(e: KeyboardEvent): boolean {
 
 /**
  * Soft security lockdown for students: blocks right-click / DevTools shortcuts,
- * discourages copy, and detects docked DevTools via window size heuristic.
+ * discourages copy, and detects docked DevTools via window size heuristic
+ * (disabled on Safari/iOS where that heuristic false-positives).
  */
 export function useStudentSecurityLock(enabled: boolean) {
   const [devToolsOpen, setDevToolsOpen] = useState(false);
