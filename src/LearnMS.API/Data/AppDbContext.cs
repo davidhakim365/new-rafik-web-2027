@@ -33,4 +33,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AppleStoreSettings> AppleStoreSettings => Set<AppleStoreSettings>();
     public DbSet<AppleRewardOrder> AppleRewardOrders => Set<AppleRewardOrder>();
     public DbSet<RewardSystemSettings> RewardSystemSettings => Set<RewardSystemSettings>();
+    public DbSet<StudentRegistrationSettings> StudentRegistrationSettings => Set<StudentRegistrationSettings>();
 }

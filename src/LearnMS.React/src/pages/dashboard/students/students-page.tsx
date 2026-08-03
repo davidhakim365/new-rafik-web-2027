@@ -1,9 +1,14 @@
+import {
+  useStudentRegistrationSettingsQuery,
+  useUpdateStudentRegistrationSettingsMutation,
+} from "@/api/students-api";
 import { DataTable } from "@/components/data-table";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import Loading from "@/components/loading/loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -11,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/use-toast";
 import { useGetAllStudents } from "@/generated/api";
 import { StudentLevel } from "@/generated/model";
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
@@ -27,6 +34,10 @@ const StudentsPage = () => {
   const canScanApples = hasPermission(Permission.ManageStudentApples);
   const { download, isDownloading } = useDownloadFile();
   const [searchParams, setSearchParams] = useSearchParams({});
+  const { data: registrationSettings, isLoading: settingsLoading } =
+    useStudentRegistrationSettingsQuery();
+  const updateRegistrationSettings =
+    useUpdateStudentRegistrationSettingsMutation();
 
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: parseInt(searchParams.get("page") || "1") - 1,
@@ -41,8 +52,27 @@ const StudentsPage = () => {
     level: level as StudentLevel,
   });
 
+  const isSignupEnabled =
+    registrationSettings?.data?.isSignupEnabled ?? true;
+
   const onExport = async () => {
     await download(`/api/students/export?level=${level}`, "students.csv");
+  };
+
+  const onToggleSignup = (enabled: boolean) => {
+    updateRegistrationSettings.mutate(
+      { isSignupEnabled: enabled },
+      {
+        onSuccess: () => {
+          toast({
+            title: enabled ? "Student sign-up enabled" : "Student sign-up disabled",
+            description: enabled
+              ? "Students can create accounts from the website again."
+              : "Students can no longer sign up. Only assistants can add accounts.",
+          });
+        },
+      }
+    );
   };
 
   useEffect(() => {
@@ -60,18 +90,42 @@ const StudentsPage = () => {
       description="Search, manage, and export your student roster."
       icon={Users}
       actions={
-        canScanApples ? (
-          <Button
-            asChild
-            variant="outline"
-            className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
-          >
-            <Link to="/dashboard/student-apples-scanner">
-              <Apple className="size-4" />
-              Apple Scanner
-            </Link>
-          </Button>
-        ) : undefined
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-3 rounded-xl border border-color2/15 bg-background/80 px-3 py-2">
+            <div className="min-w-0">
+              <Label htmlFor="student-signup-toggle" className="text-sm font-medium">
+                Student sign-up
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {isSignupEnabled
+                  ? "Students can create accounts online"
+                  : "Only assistants can add students"}
+              </p>
+            </div>
+            {settingsLoading ? (
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                id="student-signup-toggle"
+                checked={isSignupEnabled}
+                disabled={updateRegistrationSettings.isPending}
+                onCheckedChange={onToggleSignup}
+              />
+            )}
+          </div>
+          {canScanApples && (
+            <Button
+              asChild
+              variant="outline"
+              className="gap-2 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+            >
+              <Link to="/dashboard/student-apples-scanner">
+                <Apple className="size-4" />
+                Apple Scanner
+              </Link>
+            </Button>
+          )}
+        </div>
       }
       fullWidth
     >

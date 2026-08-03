@@ -483,4 +483,47 @@ return new PageList<SingleStudentLecture>(
             EmailTaken = emailTaken
         };
     }
+
+    public async Task<StudentRegistrationSettingsResult> GetRegistrationSettingsAsync()
+    {
+        var settings = await GetOrCreateRegistrationSettingsAsync();
+        return MapRegistrationSettings(settings);
+    }
+
+    public async Task<StudentRegistrationSettingsResult> UpdateRegistrationSettingsAsync(
+        UpdateStudentRegistrationSettingsRequest request)
+    {
+        var settings = await GetOrCreateRegistrationSettingsAsync();
+        settings.IsSignupEnabled = request.IsSignupEnabled;
+        settings.UpdatedAt = DateTime.UtcNow;
+        db.StudentRegistrationSettings.Update(settings);
+        await db.SaveChangesAsync();
+        return MapRegistrationSettings(settings);
+    }
+
+    private async Task<StudentRegistrationSettings> GetOrCreateRegistrationSettingsAsync()
+    {
+        var settings = await db.StudentRegistrationSettings
+            .FirstOrDefaultAsync(x => x.Id == StudentRegistrationSettings.SingletonId);
+
+        if (settings is not null)
+            return settings;
+
+        settings = new StudentRegistrationSettings
+        {
+            Id = StudentRegistrationSettings.SingletonId,
+            IsSignupEnabled = true,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await db.StudentRegistrationSettings.AddAsync(settings);
+        await db.SaveChangesAsync();
+        return settings;
+    }
+
+    private static StudentRegistrationSettingsResult MapRegistrationSettings(
+        StudentRegistrationSettings settings) => new()
+    {
+        IsSignupEnabled = settings.IsSignupEnabled,
+        UpdatedAt = settings.UpdatedAt
+    };
 }

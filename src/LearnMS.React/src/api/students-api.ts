@@ -112,6 +112,40 @@ export const useCreateStudentMutation = () => {
   });
 };
 
+export type StudentRegistrationSettings = {
+  isSignupEnabled: boolean;
+  updatedAt: string;
+};
+
+export const useStudentRegistrationSettingsQuery = () => {
+  return useQuery<ApiResponse<StudentRegistrationSettings>>({
+    queryKey: ["student-registration-settings"],
+    throwOnError: false,
+    queryFn: () =>
+      api.get("/api/students/registration-settings").then((res) => res.data),
+  });
+};
+
+export const useUpdateStudentRegistrationSettingsMutation = () => {
+  const qc = useQueryClient();
+
+  return useMutation<
+    ApiResponse<StudentRegistrationSettings>,
+    {},
+    { isSignupEnabled: boolean }
+  >({
+    throwOnError: false,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["student-registration-settings"] });
+      qc.invalidateQueries({ queryKey: ["student-signup-enabled"] });
+    },
+    mutationFn: (data) =>
+      api
+        .put("/api/students/registration-settings", data)
+        .then((res) => res.data),
+  });
+};
+
 export const AddStudentCreditRequest = z.object({
   amount: z.coerce
     .number()

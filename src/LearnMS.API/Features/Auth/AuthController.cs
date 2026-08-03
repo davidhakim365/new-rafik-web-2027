@@ -1,7 +1,11 @@
 using LearnMS.API.Common;
+using LearnMS.API.Data;
+using LearnMS.API.Entities;
 using LearnMS.API.Features.Auth.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace LearnMS.API.Features.Auth;
 
@@ -17,6 +21,22 @@ public sealed class AuthController : Controller
     public AuthController(IAuthService authService)
     {
         _authService = authService;
+    }
+
+    [HttpGet("students/signup-enabled")]
+    [SwaggerOperation(OperationId = "GetStudentSignupEnabled")]
+    public async Task<ApiWrapper.Success<object>> GetStudentSignupEnabled(
+        [FromServices] AppDbContext dbContext)
+    {
+        var settings = await dbContext.StudentRegistrationSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == StudentRegistrationSettings.SingletonId);
+
+        return new()
+        {
+            Data = new { isSignupEnabled = settings?.IsSignupEnabled ?? true },
+            Message = "Retrieved signup status successfully"
+        };
     }
 
     [HttpGet]

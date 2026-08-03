@@ -19,4 +19,7 @@ public interface IStudentsService
     public IAsyncEnumerable<List<ExportStudentsResult>> QueryAsync(ExportStudentsQuery query);
     public Task<PageList<SingleStudentEvent>> QueryAsync(GetStudentEventsQuery getStudentEventsQuery);
     public Task<CheckStudentAvailabilityResult> QueryAsync(CheckStudentAvailabilityQuery query);
+    public Task<StudentRegistrationSettingsResult> GetRegistrationSettingsAsync();
+    public Task<StudentRegistrationSettingsResult> UpdateRegistrationSettingsAsync(
+        UpdateStudentRegistrationSettingsRequest request);
 }

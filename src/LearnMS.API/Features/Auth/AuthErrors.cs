@@ -11,6 +11,7 @@ public abstract class AuthErrors
     public static readonly ApiError code = new("auth/email-already-code", "ID already assigned with another account", StatusCodes.Status409Conflict);
     public static readonly ApiError PhoneAlreadyExists = new("auth/phone-already-exists", "Phone number already assigned with another account", StatusCodes.Status409Conflict);
     public static readonly ApiError StudentAndParentPhoneSame = new("auth/student-parent-phone-same", "Student phone number must be different from parent phone number", StatusCodes.Status400BadRequest);
+    public static readonly ApiError SignupDisabled = new("auth/signup-disabled", "Student sign-up is currently disabled. Please contact an assistant to create your account.", StatusCodes.Status403Forbidden);
 
     public static readonly ApiError Unauthorized = new("auth/unauthorized", "Cannot access", StatusCodes.Status401Unauthorized);
     public static readonly ApiError Forbidden = new("auth/forbidden", "Cannot access", StatusCodes.Status403Forbidden);

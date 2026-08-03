@@ -3,7 +3,7 @@ import { toast } from "@/components/ui/use-toast";
 import { getGetProfileQueryKey } from "@/generated/api";
 import { components } from "@/lib/api";
 import { ApiError } from "@/lib/axiosCustomInstant";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 export const LoginRequest = z.object({
@@ -116,6 +116,16 @@ export function useRegisterMutation() {
       });
       qrc.invalidateQueries({ queryKey: ["account"] });
     },
+  });
+}
+
+export function useStudentSignupEnabledQuery() {
+  return useQuery<ApiResponse<{ isSignupEnabled: boolean }>>({
+    queryKey: ["student-signup-enabled"],
+    throwOnError: false,
+    queryFn: () =>
+      api.get("/api/auth/students/signup-enabled").then((res) => res.data),
+    staleTime: 30_000,
   });
 }
 

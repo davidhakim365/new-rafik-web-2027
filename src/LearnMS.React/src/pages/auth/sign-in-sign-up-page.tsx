@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, GraduationCap } from "lucide-react";
 import LoginForm from "@/components/auth/login-form";
 import RegisterForm from "@/components/auth/register-form";
+import { useStudentSignupEnabledQuery } from "@/api/auth-api";
 import { useGetProfile } from "@/generated/api";
 import LoadingPage from "@/pages/shared/loading-page";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -22,6 +23,8 @@ const SignInSignUpPage = () => {
   const [hasAcceptedInstructions, setHasAcceptedInstructions] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { data: profile, isFetching: profileFetching } = useGetProfile();
+  const { data: signupStatus } = useStudentSignupEnabledQuery();
+  const isSignupEnabled = signupStatus?.data?.isSignupEnabled ?? true;
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -181,8 +184,19 @@ const SignInSignUpPage = () => {
   }, []);
 
   const handleViewSwitch = (newView: boolean) => {
+    // newView=true means login; false means register
+    if (!newView && !isSignupEnabled) {
+      setIsLoginView(true);
+      return;
+    }
     setIsLoginView(newView);
   };
+
+  useEffect(() => {
+    if (!isSignupEnabled && !isLoginView) {
+      setIsLoginView(true);
+    }
+  }, [isSignupEnabled, isLoginView]);
 
   const handleAcceptInstructions = () => {
     localStorage.setItem("platformInstructionsAccepted", "true");
@@ -368,17 +382,23 @@ const SignInSignUpPage = () => {
               className="mt-6 text-sm font-medium text-center md:mt-8 text-neutral-600 dark:text-neutral-400"
             >
               {isLoginView ? (
-                <span>
-                  {t("auth.noAccount")}&nbsp;
-                  <Button
-                    variant="link"
-                    type="button"
-                    onClick={() => handleViewSwitch(false)}
-                    className="pl-1 text-sm md:text-base"
-                  >
-                    {t("auth.createAccount")}
-                  </Button>
-                </span>
+                isSignupEnabled ? (
+                  <span>
+                    {t("auth.noAccount")}&nbsp;
+                    <Button
+                      variant="link"
+                      type="button"
+                      onClick={() => handleViewSwitch(false)}
+                      className="pl-1 text-sm md:text-base"
+                    >
+                      {t("auth.createAccount")}
+                    </Button>
+                  </span>
+                ) : (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    New accounts are created by assistants only.
+                  </p>
+                )
               ) : (
                 <span>
                   {t("auth.haveAccount")}&nbsp;

@@ -38,6 +38,14 @@ public sealed class AuthService : IAuthService
 
     public async Task<RegisterResult> ExecuteAsync(RegisterStudentCommand command)
     {
+        var registrationSettings = await _dbContext.StudentRegistrationSettings
+            .FirstOrDefaultAsync(x => x.Id == StudentRegistrationSettings.SingletonId);
+
+        if (registrationSettings is not null && !registrationSettings.IsSignupEnabled)
+        {
+            throw new ApiException(AuthErrors.SignupDisabled);
+        }
+
         var account = await _dbContext.Accounts
             .FirstOrDefaultAsync(x => x.Email.ToLower() == command.Email.ToLower());
 

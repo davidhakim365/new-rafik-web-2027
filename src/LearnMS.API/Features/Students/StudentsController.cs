@@ -98,6 +98,35 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpGet("registration-settings")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "GetStudentRegistrationSettings")]
+    public async Task<ApiWrapper.Success<StudentRegistrationSettingsResult>> GetRegistrationSettings()
+    {
+        var result = await studentsService.GetRegistrationSettingsAsync();
+        return new ApiWrapper.Success<StudentRegistrationSettingsResult>
+        {
+            Data = result,
+            Message = "Retrieved registration settings successfully"
+        };
+    }
+
+    [HttpPut("registration-settings")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "UpdateStudentRegistrationSettings")]
+    public async Task<ApiWrapper.Success<StudentRegistrationSettingsResult>> UpdateRegistrationSettings(
+        [FromBody] UpdateStudentRegistrationSettingsRequest request)
+    {
+        var result = await studentsService.UpdateRegistrationSettingsAsync(request);
+        return new ApiWrapper.Success<StudentRegistrationSettingsResult>
+        {
+            Data = result,
+            Message = result.IsSignupEnabled
+                ? "Student sign-up enabled"
+                : "Student sign-up disabled"
+        };
+    }
+
     [HttpPost("{studentId:guid}/credit")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
     [SwaggerOperation(OperationId = "AddStudentCredit")]
