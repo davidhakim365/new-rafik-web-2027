@@ -50,6 +50,16 @@ export const CreateStudentRequest = z
       });
     }
 
+    const phoneDigits = data.phoneNumber.replace(/\D/g, "");
+    const parentPhoneDigits = data.parentPhoneNumber.replace(/\D/g, "");
+    if (phoneDigits && phoneDigits === parentPhoneDigits) {
+      ctx.addIssue({
+        path: ["parentPhoneNumber"],
+        code: "custom",
+        message: "Parent phone must be different from student phone",
+      });
+    }
+
     if (data.mode === "offline") {
       if (!data.studentCode || data.studentCode.length < 6) {
         ctx.addIssue({
@@ -116,19 +126,29 @@ export const useStudentQuery = ({ id }: { id: string }) => {
   });
 };
 
-export const UpdateStudentRequest = z.object({
-  schoolName: z.string().min(1, { message: "School is required" }),
-  fullName: z.string().min(3, { message: "Name is required" }),
-  phoneNumber: z.string(),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters" }),
-  parentPhoneNumber: z.string(),
-  studentCode: z
-    .string(),
-    
-  level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"]),
-});
+export const UpdateStudentRequest = z
+  .object({
+    schoolName: z.string().min(1, { message: "School is required" }),
+    fullName: z.string().min(3, { message: "Name is required" }),
+    phoneNumber: z.string(),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" }),
+    parentPhoneNumber: z.string(),
+    studentCode: z.string(),
+    level: z.enum(["Level0", "Level1", "Level2", "Level3", "Level4"]),
+  })
+  .superRefine((data, ctx) => {
+    const phoneDigits = data.phoneNumber.replace(/\D/g, "");
+    const parentPhoneDigits = data.parentPhoneNumber.replace(/\D/g, "");
+    if (phoneDigits && phoneDigits === parentPhoneDigits) {
+      ctx.addIssue({
+        path: ["parentPhoneNumber"],
+        code: "custom",
+        message: "Parent phone must be different from student phone",
+      });
+    }
+  });
 
 export type UpdateStudentRequest = z.infer<typeof UpdateStudentRequest>;
 

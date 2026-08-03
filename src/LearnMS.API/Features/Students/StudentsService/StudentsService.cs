@@ -32,6 +32,11 @@ public sealed class StudentsService(AppDbContext db, IPasswordHasher passwordHas
             throw new ApiException(AuthErrors.code);
         }
 
+        if (PhoneNumbers.AreSame(command.PhoneNumber, command.ParentPhoneNumber))
+        {
+            throw new ApiException(AuthErrors.StudentAndParentPhoneSame);
+        }
+
         var phone = await db.Students
             .FirstOrDefaultAsync(x => x.PhoneNumber == command.PhoneNumber);
 
@@ -101,6 +106,16 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
 
         if (!string.IsNullOrEmpty(command.FullName))
             student.FullName = command.FullName;
+
+        var nextPhone = !string.IsNullOrEmpty(command.PhoneNumber)
+            ? command.PhoneNumber
+            : student.PhoneNumber;
+        var nextParentPhone = !string.IsNullOrEmpty(command.ParentPhoneNumber)
+            ? command.ParentPhoneNumber
+            : student.ParentPhoneNumber;
+
+        if (PhoneNumbers.AreSame(nextPhone, nextParentPhone))
+            throw new ApiException(AuthErrors.StudentAndParentPhoneSame);
 
         if (!string.IsNullOrEmpty(command.PhoneNumber))
         {

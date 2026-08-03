@@ -38,6 +38,16 @@ public sealed class ProfileService : IProfileService
             student.FullName = command.FullName;
         }
 
+        var nextPhone = !string.IsNullOrWhiteSpace(command.PhoneNumber)
+            ? command.PhoneNumber
+            : student.PhoneNumber;
+        var nextParentPhone = !string.IsNullOrWhiteSpace(command.ParentPhoneNumber)
+            ? command.ParentPhoneNumber
+            : student.ParentPhoneNumber;
+
+        if (PhoneNumbers.AreSame(nextPhone, nextParentPhone))
+            throw new ApiException(AuthErrors.StudentAndParentPhoneSame);
+
         if (!string.IsNullOrWhiteSpace(command.PhoneNumber))
         {
             var phoneTaken = await _dbContext.Students.AnyAsync(x =>

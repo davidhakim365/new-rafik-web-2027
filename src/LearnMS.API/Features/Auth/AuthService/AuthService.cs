@@ -54,6 +54,11 @@ public sealed class AuthService : IAuthService
             throw new ApiException(AuthErrors.code);
         }
 
+        if (PhoneNumbers.AreSame(command.PhoneNumber, command.ParentPhoneNumber))
+        {
+            throw new ApiException(AuthErrors.StudentAndParentPhoneSame);
+        }
+
         var phone = await _dbContext.Students
             .FirstOrDefaultAsync(x => x.PhoneNumber == command.PhoneNumber);
 

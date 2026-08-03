@@ -50,6 +50,16 @@ export const RegisterRequest = z
       });
     }
 
+    const phoneDigits = data.phoneNumber.replace(/\D/g, "");
+    const parentPhoneDigits = data.parentPhoneNumber.replace(/\D/g, "");
+    if (phoneDigits && phoneDigits === parentPhoneDigits) {
+      ctx.addIssue({
+        path: ["parentPhoneNumber"],
+        code: "custom",
+        message: "Parent phone must be different from student phone",
+      });
+    }
+
     // Only require and validate studentCode if offline
     if (data.mode === "offline") {
       if (!data.studentCode || data.studentCode.length < 6) {
