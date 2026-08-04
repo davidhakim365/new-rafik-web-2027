@@ -75,6 +75,55 @@ public sealed class CallCenterController(
         };
     }
 
+    [HttpPost("courses/{courseId:guid}/lectures/{lectureId:guid}/students/{studentId:guid}/notify")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
+    [SwaggerOperation(OperationId = "RecordCallCenterNotify")]
+    public async Task<ApiWrapper.Success<object?>> RecordNotify(
+        Guid courseId,
+        Guid lectureId,
+        Guid studentId,
+        [FromBody] RecordCallCenterNotifyRequest request)
+    {
+        var currentUser = await currentUserService.GetUserAsync()
+            ?? throw new ApiException(AuthErrors.Unauthorized);
+
+        await callCenterService.ExecuteAsync(new RecordCallCenterNotifyCommand
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            StudentId = studentId,
+            Comment = request.Comment,
+            ActorId = currentUser.Id
+        });
+
+        return new()
+        {
+            Message = "Notify recorded successfully"
+        };
+    }
+
+    [HttpGet("courses/{courseId:guid}/lectures/{lectureId:guid}/students/{studentId:guid}/history")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
+    [SwaggerOperation(OperationId = "GetCallCenterStudentHistory")]
+    public async Task<ApiWrapper.Success<IReadOnlyList<CallCenterHistoryItemDto>>> GetHistory(
+        Guid courseId,
+        Guid lectureId,
+        Guid studentId)
+    {
+        var result = await callCenterService.QueryAsync(new GetCallCenterHistoryQuery
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            StudentId = studentId
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = "Call center history retrieved successfully"
+        };
+    }
+
     [HttpGet("courses/{courseId:guid}/lectures/{lectureId:guid}/students/export")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
     [SwaggerOperation(OperationId = "ExportCallCenterStudents")]

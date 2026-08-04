@@ -2,7 +2,9 @@ import {
   CallCenterStudent,
   buildCallCenterWhatsAppMessage,
   openWhatsApp,
+  useCallCenterHistoryQuery,
   useCallCenterStudentsQuery,
+  useRecordCallCenterNotifyMutation,
   useUpsertCallCenterStudentMutation,
 } from "@/api/call-center-api";
 import { useCoursesQuery } from "@/api/courses-api";
@@ -35,7 +37,16 @@ import { useGetCourse } from "@/generated/api";
 import { StudentLevel } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { toast } from "@/lib/utils";
-import { FileSpreadsheet, Loader2, MessageCircle, Phone, Save } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  FileSpreadsheet,
+  History,
+  Loader2,
+  MessageCircle,
+  Phone,
+  Save,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -327,6 +338,12 @@ const CallCenterPage = () => {
   );
 };
 
+function formatHistoryDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
 function CallCenterStudentCard({
   student,
   courseId,
@@ -339,9 +356,16 @@ function CallCenterStudentCard({
   lectureTitle: string;
 }) {
   const upsert = useUpsertCallCenterStudentMutation();
+  const recordNotify = useRecordCallCenterNotifyMutation();
   const [comment, setComment] = useState(student.comment ?? "");
   const [called, setCalled] = useState(student.called);
   const [notifyOpen, setNotifyOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const historyQuery = useCallCenterHistoryQuery(
+    { courseId, lectureId, studentId: student.id },
+    historyOpen
+  );
 
   useEffect(() => {
     setComment(student.comment ?? "");
@@ -410,8 +434,27 @@ function CallCenterStudentCard({
       });
       return;
     }
+
+    recordNotify.mutate(
+      {
+        courseId,
+        lectureId,
+        studentId: student.id,
+        comment,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Notify recorded",
+            description: `Logged WhatsApp notify for ${student.fullName}`,
+          });
+        },
+      }
+    );
     setNotifyOpen(false);
   };
+
+  const historyItems = historyQuery.data?.data ?? [];
 
   return (
     <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
@@ -467,10 +510,24 @@ function CallCenterStudentCard({
             variant="outline"
             className="gap-2"
             onClick={() => setNotifyOpen(true)}
-            disabled={!student.parentPhoneNumber}
+            disabled={!student.parentPhoneNumber || recordNotify.isPending}
           >
             <MessageCircle className="h-4 w-4" />
             Notify
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="gap-2"
+            onClick={() => setHistoryOpen((open) => !open)}
+          >
+            <History className="h-4 w-4" />
+            History
+            {historyOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -479,7 +536,7 @@ function CallCenterStudentCard({
         <Textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Call comment..."
+          placeholder="Call / notify comment..."
           className="min-h-[72px]"
         />
         <Button
@@ -493,13 +550,58 @@ function CallCenterStudentCard({
         </Button>
       </div>
 
+      {historyOpen && (
+        <div className="mt-3 rounded-lg border border-border/60 bg-muted/20 p-3">
+          <p className="mb-2 text-sm font-medium">Call & notify history</p>
+          {historyQuery.isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading history...
+            </div>
+          ) : historyItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No call or notify history yet.
+            </p>
+          ) : (
+            <ul className="max-h-56 space-y-2 overflow-y-auto">
+              {historyItems.map((item) => (
+                <li
+                  key={item.id}
+                  className="rounded-md border border-border/50 bg-background/80 px-3 py-2 text-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={
+                        item.actionType === "Notify"
+                          ? "border-sky-500/40 text-sky-700 dark:text-sky-300"
+                          : "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                      }
+                    >
+                      {item.actionType}
+                    </Badge>
+                    <span className="font-medium">{item.actorName}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatHistoryDate(item.createdAt)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-muted-foreground">
+                    {item.comment?.trim() || "No comment"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <Dialog open={notifyOpen} onOpenChange={setNotifyOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>WhatsApp notify</DialogTitle>
             <DialogDescription>
-              Choose message language. Opens WhatsApp to the parent phone with
-              attendance and scores.
+              Choose message language. Opens WhatsApp to the parent phone and
+              records who notified with the current comment.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

@@ -31,6 +31,37 @@ public sealed record UpsertCallCenterStudentRequest
     public bool? Called { get; init; }
 }
 
+public sealed record RecordCallCenterNotifyCommand
+{
+    public required Guid CourseId { get; init; }
+    public required Guid LectureId { get; init; }
+    public required Guid StudentId { get; init; }
+    public string? Comment { get; init; }
+    public required Guid ActorId { get; init; }
+}
+
+public sealed record RecordCallCenterNotifyRequest
+{
+    public string? Comment { get; init; }
+}
+
+public sealed record GetCallCenterHistoryQuery
+{
+    public required Guid CourseId { get; init; }
+    public required Guid LectureId { get; init; }
+    public required Guid StudentId { get; init; }
+}
+
+public sealed record CallCenterHistoryItemDto
+{
+    [Required] public required Guid Id { get; init; }
+    [Required] public required string ActionType { get; init; }
+    public string? Comment { get; init; }
+    [Required] public required Guid ActorId { get; init; }
+    [Required] public required string ActorName { get; init; }
+    [Required] public required DateTime CreatedAt { get; init; }
+}
+
 public sealed record CallCenterStudentDto
 {
     [Required] public required Guid Id { get; init; }

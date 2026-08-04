@@ -98,6 +98,7 @@ export function useCallCenterStudentsQuery(
 export function useUpsertCallCenterStudentMutation() {
   const qc = useQueryClient();
   return useMutation({
+    throwOnError: false,
     mutationFn: upsertCallCenterStudent,
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({
@@ -110,6 +111,103 @@ export function useUpsertCallCenterStudentMutation() {
             key.lectureId === vars.lectureId
           );
         },
+      });
+      qc.invalidateQueries({
+        queryKey: [
+          "call-center-history",
+          vars.courseId,
+          vars.lectureId,
+          vars.studentId,
+        ],
+      });
+    },
+  });
+}
+
+export type CallCenterHistoryItem = {
+  id: string;
+  actionType: "Call" | "Notify" | string;
+  comment?: string | null;
+  actorId: string;
+  actorName: string;
+  createdAt: string;
+};
+
+export function getCallCenterHistoryQueryKey(vars: {
+  courseId: string;
+  lectureId: string;
+  studentId: string;
+}) {
+  return [
+    "call-center-history",
+    vars.courseId,
+    vars.lectureId,
+    vars.studentId,
+  ] as const;
+}
+
+export const getCallCenterHistory = (vars: {
+  courseId: string;
+  lectureId: string;
+  studentId: string;
+}) =>
+  api
+    .get<ApiSuccess<CallCenterHistoryItem[]>>(
+      `/api/call-center/courses/${vars.courseId}/lectures/${vars.lectureId}/students/${vars.studentId}/history`
+    )
+    .then((res) => res.data);
+
+export function useCallCenterHistoryQuery(
+  vars: { courseId: string; lectureId: string; studentId: string } | null,
+  enabled = false
+) {
+  return useQuery({
+    queryKey: vars
+      ? getCallCenterHistoryQueryKey(vars)
+      : ["call-center-history", "idle"],
+    queryFn: () => getCallCenterHistory(vars!),
+    enabled: !!vars && enabled,
+    throwOnError: false,
+  });
+}
+
+export const recordCallCenterNotify = (vars: {
+  courseId: string;
+  lectureId: string;
+  studentId: string;
+  comment?: string | null;
+}) =>
+  api
+    .post<ApiSuccess<unknown>>(
+      `/api/call-center/courses/${vars.courseId}/lectures/${vars.lectureId}/students/${vars.studentId}/notify`,
+      { comment: vars.comment }
+    )
+    .then((res) => res.data);
+
+export function useRecordCallCenterNotifyMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    throwOnError: false,
+    mutationFn: recordCallCenterNotify,
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({
+        queryKey: ["call-center-students"],
+        predicate: (query) => {
+          const key = query.queryKey[1] as GetCallCenterStudentsParams | undefined;
+          return (
+            !!key &&
+            key.courseId === vars.courseId &&
+            key.lectureId === vars.lectureId
+          );
+        },
+      });
+      qc.invalidateQueries({
+        queryKey: [
+          "call-center-history",
+          vars.courseId,
+          vars.lectureId,
+          vars.studentId,
+        ],
       });
     },
   });
