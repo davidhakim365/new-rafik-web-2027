@@ -103,7 +103,7 @@ public sealed class CallCenterController(
     }
 
     [HttpGet("courses/{courseId:guid}/lectures/{lectureId:guid}/students/{studentId:guid}/history")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ViewCallCenterHistory])]
     [SwaggerOperation(OperationId = "GetCallCenterStudentHistory")]
     public async Task<ApiWrapper.Success<IReadOnlyList<CallCenterHistoryItemDto>>> GetHistory(
         Guid courseId,

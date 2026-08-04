@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useGetCourse } from "@/generated/api";
-import { StudentLevel } from "@/generated/model";
+import { Permission, StudentLevel } from "@/generated/model";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { toast } from "@/lib/utils";
 import {
@@ -355,6 +356,8 @@ function CallCenterStudentCard({
   lectureId: string;
   lectureTitle: string;
 }) {
+  const { hasPermission } = useDashboardPermissions();
+  const canViewHistory = hasPermission(Permission.ViewCallCenterHistory);
   const upsert = useUpsertCallCenterStudentMutation();
   const recordNotify = useRecordCallCenterNotifyMutation();
   const [comment, setComment] = useState(student.comment ?? "");
@@ -364,7 +367,7 @@ function CallCenterStudentCard({
 
   const historyQuery = useCallCenterHistoryQuery(
     { courseId, lectureId, studentId: student.id },
-    historyOpen
+    historyOpen && canViewHistory
   );
 
   useEffect(() => {
@@ -515,20 +518,22 @@ function CallCenterStudentCard({
             <MessageCircle className="h-4 w-4" />
             Notify
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="gap-2"
-            onClick={() => setHistoryOpen((open) => !open)}
-          >
-            <History className="h-4 w-4" />
-            History
-            {historyOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+          {canViewHistory && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="gap-2"
+              onClick={() => setHistoryOpen((open) => !open)}
+            >
+              <History className="h-4 w-4" />
+              History
+              {historyOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -550,7 +555,7 @@ function CallCenterStudentCard({
         </Button>
       </div>
 
-      {historyOpen && (
+      {canViewHistory && historyOpen && (
         <div className="mt-3 rounded-lg border border-border/60 bg-muted/20 p-3">
           <p className="mb-2 text-sm font-medium">Call & notify history</p>
           {historyQuery.isLoading ? (

@@ -19,5 +19,6 @@ public enum Permission
     ManageExpirationTime,
     ManageStudentApples,
     ManageAppleRewardsStore,
-    ManageCallCenter
+    ManageCallCenter,
+    ViewCallCenterHistory
 }
