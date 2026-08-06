@@ -33,7 +33,18 @@ const STEPS = [
   { id: 0, title: "Study mode", description: "Online or offline ID" },
   { id: 1, title: "Student info", description: "Name, phones, school" },
   { id: 2, title: "Account", description: "Email and password" },
+  { id: 3, title: "Review", description: "Confirm before create" },
 ] as const;
+
+const LAST_INPUT_STEP = 2;
+
+const LEVEL_LABELS: Record<string, string> = {
+  Level0: "3rd Prep",
+  Level1: "1st Secondary",
+  Level2: "2nd Secondary",
+  Level3: "3rd Secondary",
+  Level4: "3rd Secondary Adby",
+};
 
 const defaultValues: CreateStudentRequest = {
   email: "",
@@ -56,6 +67,7 @@ const stepFields: Record<number, (keyof CreateStudentRequest)[]> = {
   0: ["mode", "studentCode"],
   1: ["fullName", "phoneNumber", "parentPhoneNumber", "school", "level"],
   2: ["email", "password", "confirmPassword"],
+  3: [],
 };
 
 type LastCreated = {
@@ -78,6 +90,7 @@ const AddStudentsPage = () => {
   });
 
   const mode = form.watch("mode");
+  const previewValues = form.watch();
   const isBusy = createStudentMutation.isPending || checkingAvailability;
 
   useEffect(() => {
@@ -120,10 +133,33 @@ const AddStudentsPage = () => {
           return;
         }
       }
+
+      if (step === LAST_INPUT_STEP && values.email) {
+        const availability = await checkStudentAvailability({
+          email: values.email.trim(),
+        });
+        if (availability?.emailTaken) {
+          form.setError("email", {
+            type: "manual",
+            message: "Email already exists",
+          });
+          return;
+        }
+      }
     } catch {
       return;
     } finally {
       setCheckingAvailability(false);
+    }
+
+    if (
+      step === LAST_INPUT_STEP &&
+      values.mode === "online" &&
+      !values.studentCode?.startsWith("ONL-")
+    ) {
+      form.setValue("studentCode", generateStudentCode(), {
+        shouldDirty: true,
+      });
     }
 
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -138,8 +174,12 @@ const AddStudentsPage = () => {
   };
 
   const onSubmit = async (data: CreateStudentRequest) => {
+    if (step !== STEPS.length - 1) return;
+
     const studentCode =
-      data.mode === "online" ? generateStudentCode() : data.studentCode ?? "";
+      data.mode === "online"
+        ? data.studentCode?.trim() || generateStudentCode()
+        : data.studentCode ?? "";
 
     try {
       setCheckingAvailability(true);
@@ -172,6 +212,7 @@ const AddStudentsPage = () => {
           type: "manual",
           message: "Email already exists",
         });
+        setStep(2);
         return;
       }
     } catch {
@@ -230,7 +271,7 @@ const AddStudentsPage = () => {
         )}
 
         <DashboardCard>
-          <ol className="mb-6 grid grid-cols-3 gap-2">
+          <ol className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {STEPS.map((s) => {
               const active = step === s.id;
               const done = step > s.id;
@@ -444,6 +485,85 @@ const AddStudentsPage = () => {
                         </FormItem>
                       )}
                     />
+                  </div>
+                )}
+
+                {step === 3 && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground">
+                        Review student details
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Confirm everything looks right before creating the account.
+                      </p>
+                    </div>
+                    <dl className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/70 bg-muted/20">
+                      {(
+                        [
+                          {
+                            label: "Study mode",
+                            value:
+                              previewValues.mode === "online"
+                                ? "Online"
+                                : "Offline",
+                          },
+                          {
+                            label: "Student ID",
+                            value:
+                              previewValues.mode === "online"
+                                ? previewValues.studentCode ||
+                                  "Will be assigned automatically"
+                                : previewValues.studentCode,
+                          },
+                          {
+                            label: "Full name",
+                            value: previewValues.fullName,
+                          },
+                          {
+                            label: "Phone number",
+                            value: previewValues.phoneNumber,
+                          },
+                          {
+                            label: "Parent phone",
+                            value: previewValues.parentPhoneNumber,
+                          },
+                          {
+                            label: "School",
+                            value: previewValues.school,
+                          },
+                          {
+                            label: "Level",
+                            value:
+                              LEVEL_LABELS[previewValues.level] ??
+                              previewValues.level,
+                          },
+                          {
+                            label: "Email",
+                            value: previewValues.email,
+                          },
+                          {
+                            label: "Password",
+                            value: "••••••••",
+                          },
+                        ] as const
+                      ).map((item) => (
+                        <div
+                          key={item.label}
+                          className="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4"
+                        >
+                          <dt className="text-sm text-muted-foreground">
+                            {item.label}
+                          </dt>
+                          <dd className="break-words text-sm font-medium text-foreground">
+                            {item.value || "—"}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <p className="text-xs text-muted-foreground">
+                      Use Back to edit any field before creating the student.
+                    </p>
                   </div>
                 )}
               </fieldset>

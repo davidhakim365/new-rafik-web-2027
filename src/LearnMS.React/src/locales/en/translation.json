@@ -508,7 +508,15 @@
       "steps": {
         "studyMode": "Study mode",
         "studentInfo": "Student info",
-        "account": "Account"
+        "account": "Account",
+        "review": "Review"
+      },
+      "review": {
+        "title": "Review your details",
+        "subtitle": "Check everything carefully, then create your account.",
+        "editHint": "Use Back to change any field.",
+        "passwordHidden": "••••••••",
+        "studentIdAuto": "Will be assigned automatically"
       },
       "studyModeHint": "Online students get an ID automatically.",
       "back": "Back",

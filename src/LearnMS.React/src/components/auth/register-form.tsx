@@ -36,12 +36,24 @@ const STEPS = [
   { id: 0, titleKey: "auth.forms.steps.studyMode" },
   { id: 1, titleKey: "auth.forms.steps.studentInfo" },
   { id: 2, titleKey: "auth.forms.steps.account" },
+  { id: 3, titleKey: "auth.forms.steps.review" },
 ] as const;
+
+const LAST_INPUT_STEP = 2;
 
 const stepFields: Record<number, (keyof RegisterRequest)[]> = {
   0: ["mode", "studentCode"],
   1: ["fullName", "phoneNumber", "parentPhoneNumber", "school", "level"],
   2: ["email", "password", "confirmPassword"],
+  3: [],
+};
+
+const levelLabelKey: Record<string, string> = {
+  Level0: "auth.forms.level.options.level0",
+  Level1: "auth.forms.level.options.level1",
+  Level2: "auth.forms.level.options.level2",
+  Level3: "auth.forms.level.options.level3",
+  Level4: "auth.forms.level.options.level4",
 };
 
 const generateStudentCode = () => {
@@ -76,6 +88,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
   });
 
   const mode = registerForm.watch("mode");
+  const previewValues = registerForm.watch();
   const registerErrors = registerForm.formState.errors;
   const isPending = registerMutation.isPending || loginMutation.isPending;
   const isBusy = isPending || checkingAvailability;
@@ -173,10 +186,33 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
           return;
         }
       }
+
+      if (step === LAST_INPUT_STEP && values.email) {
+        const availability = await checkPublicStudentAvailability({
+          email: values.email.trim(),
+        });
+        if (availability?.emailTaken) {
+          registerForm.setError("email", {
+            type: "manual",
+            message: t("auth.forms.errors.emailTaken"),
+          });
+          return;
+        }
+      }
     } catch {
       return;
     } finally {
       setCheckingAvailability(false);
+    }
+
+    if (
+      step === LAST_INPUT_STEP &&
+      values.mode === "online" &&
+      !values.studentCode?.startsWith("ONL-")
+    ) {
+      registerForm.setValue("studentCode", generateStudentCode(), {
+        shouldDirty: true,
+      });
     }
 
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -185,8 +221,12 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
   const onRegister = async (data: RegisterRequest) => {
+    if (step !== STEPS.length - 1) return;
+
     const studentCode =
-      data.mode === "online" ? generateStudentCode() : data.studentCode;
+      data.mode === "online"
+        ? data.studentCode?.trim() || generateStudentCode()
+        : data.studentCode;
 
     try {
       setCheckingAvailability(true);
@@ -219,6 +259,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
           type: "manual",
           message: t("auth.forms.errors.emailTaken"),
         });
+        setStep(2);
         return;
       }
     } catch {
@@ -278,7 +319,7 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
     >
       <motion.ol
         variants={inputVariants}
-        className="grid grid-cols-3 gap-2"
+        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
       >
         {STEPS.map((s) => {
           const active = step === s.id;
@@ -505,6 +546,85 @@ const RegisterForm = ({ setIsLoginView }: RegisterFormProps) => {
               />
             </motion.div>
           </>
+        )}
+
+        {step === 3 && (
+          <motion.div variants={inputVariants} className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                {t("auth.forms.review.title")}
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                {t("auth.forms.review.subtitle")}
+              </p>
+            </div>
+            <dl className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+              {(
+                [
+                  {
+                    label: t("auth.forms.mode.label"),
+                    value:
+                      previewValues.mode === "online"
+                        ? t("auth.forms.mode.options.online")
+                        : t("auth.forms.mode.options.offline"),
+                  },
+                  {
+                    label: t("auth.forms.studentCode.label"),
+                    value:
+                      previewValues.mode === "online"
+                        ? previewValues.studentCode ||
+                          t("auth.forms.review.studentIdAuto")
+                        : previewValues.studentCode,
+                  },
+                  {
+                    label: t("auth.forms.fullName.label"),
+                    value: previewValues.fullName,
+                  },
+                  {
+                    label: t("auth.forms.phoneNumber.label"),
+                    value: previewValues.phoneNumber,
+                  },
+                  {
+                    label: t("auth.forms.parentPhoneNumber.label"),
+                    value: previewValues.parentPhoneNumber,
+                  },
+                  {
+                    label: t("auth.forms.school.label"),
+                    value: previewValues.school,
+                  },
+                  {
+                    label: t("auth.forms.level.label"),
+                    value: levelLabelKey[previewValues.level]
+                      ? t(levelLabelKey[previewValues.level])
+                      : previewValues.level,
+                  },
+                  {
+                    label: t("auth.forms.email.label"),
+                    value: previewValues.email,
+                  },
+                  {
+                    label: t("auth.forms.password.label"),
+                    value: t("auth.forms.review.passwordHidden"),
+                  },
+                ] as const
+              ).map((item) => (
+                <div
+                  key={item.label}
+                  className="grid grid-cols-1 gap-1 bg-white px-4 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4 dark:bg-zinc-900/40"
+                >
+                  <dt className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {item.label}
+                  </dt>
+                  <dd className="break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    {item.value || "—"}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {t("auth.forms.review.editHint")}
+            </p>
+          </motion.div>
         )}
       </fieldset>
 
