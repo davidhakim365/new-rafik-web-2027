@@ -11,6 +11,8 @@ public sealed record GetCallCenterStudentsQuery
     public string? Attendance { get; init; }
     /// <summary>all | called | not-called</summary>
     public string? Called { get; init; }
+    /// <summary>all | online | offline — online IDs start with ONL-</summary>
+    public string? StudyMode { get; init; }
     public int Page { get; init; } = 1;
     public int PageSize { get; init; } = 50;
 }
@@ -66,6 +68,8 @@ public sealed record CallCenterStudentDto
 {
     [Required] public required Guid Id { get; init; }
     [Required] public required string StudentCode { get; init; }
+    /// <summary>online | offline</summary>
+    [Required] public required string StudyMode { get; init; }
     [Required] public required string FullName { get; init; }
     [Required] public required string PhoneNumber { get; init; }
     [Required] public required string ParentPhoneNumber { get; init; }
@@ -86,12 +90,17 @@ public sealed record ExportCallCenterStudentsQuery
     public string? Attendance { get; init; }
     /// <summary>all | called | not-called</summary>
     public string? Called { get; init; }
+    /// <summary>all | online | offline</summary>
+    public string? StudyMode { get; init; }
 }
 
 public sealed record ExportCallCenterStudentRow
 {
     [Name("Student Code")]
     public required string StudentCode { get; init; }
+
+    [Name("Study Mode")]
+    public required string StudyMode { get; init; }
 
     [Name("Full Name")]
     public required string FullName { get; init; }

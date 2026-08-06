@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 export type CallCenterStudent = {
   id: string;
   studentCode: string;
+  /** online | offline — online IDs start with ONL- */
+  studyMode?: "online" | "offline" | string;
   fullName: string;
   phoneNumber: string;
   parentPhoneNumber: string;
@@ -36,6 +38,7 @@ export type GetCallCenterStudentsParams = {
   search?: string;
   attendance?: "all" | "present" | "absent";
   called?: "all" | "called" | "not-called";
+  studyMode?: "all" | "online" | "offline";
   page?: number;
   pageSize?: number;
 };
@@ -52,6 +55,9 @@ export const getCallCenterStudents = (params: GetCallCenterStudentsParams) => {
   }
   if (params.called && params.called !== "all") {
     searchParams.set("called", params.called);
+  }
+  if (params.studyMode && params.studyMode !== "all") {
+    searchParams.set("studyMode", params.studyMode);
   }
   searchParams.set("page", String(params.page ?? 1));
   searchParams.set("pageSize", String(params.pageSize ?? 50));
@@ -229,6 +235,20 @@ export function toWhatsAppDigits(phone: string): string | null {
   return null;
 }
 
+/** Online students have IDs that start with ONL- */
+export function isOnlineStudentCode(studentCode?: string | null): boolean {
+  return !!studentCode?.trim().toUpperCase().startsWith("ONL-");
+}
+
+export function resolveCallCenterStudyMode(
+  student: Pick<CallCenterStudent, "studentCode" | "studyMode">
+): "online" | "offline" {
+  if (student.studyMode === "online" || student.studyMode === "offline") {
+    return student.studyMode;
+  }
+  return isOnlineStudentCode(student.studentCode) ? "online" : "offline";
+}
+
 export function buildCallCenterWhatsAppMessage(
   student: CallCenterStudent,
   lectureTitle: string,
@@ -244,6 +264,15 @@ export function buildCallCenterWhatsAppMessage(
       : student.attended
         ? "Present"
         : "Absent";
+  const studyMode = resolveCallCenterStudyMode(student);
+  const studyModeLabel =
+    language === "ar"
+      ? studyMode === "online"
+        ? "أونلاين (منصة)"
+        : "أوفلاين (سنتر)"
+      : studyMode === "online"
+        ? "Online"
+        : "Offline";
   const comment =
     student.comment?.trim() ||
     (language === "ar" ? "لا يوجد" : "None");
@@ -252,6 +281,7 @@ export function buildCallCenterWhatsAppMessage(
     return [
       `مرحباً، متابعة للطالب/ة: ${student.fullName}`,
       `كود الطالب: ${student.studentCode}`,
+      `نوع الدراسة: ${studyModeLabel}`,
       `المحاضرة: ${lectureTitle}`,
       `الحضور: ${attendance}`,
       `واجب المقال: ${score(student.homeworkScore)}`,
@@ -264,6 +294,7 @@ export function buildCallCenterWhatsAppMessage(
   return [
     `Hello, follow-up for student: ${student.fullName}`,
     `Student code: ${student.studentCode}`,
+    `Study mode: ${studyModeLabel}`,
     `Lecture: ${lectureTitle}`,
     `Attendance: ${attendance}`,
     `Essay homework: ${score(student.homeworkScore)}`,

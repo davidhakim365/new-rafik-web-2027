@@ -2,6 +2,7 @@ import {
   CallCenterStudent,
   buildCallCenterWhatsAppMessage,
   openWhatsApp,
+  resolveCallCenterStudyMode,
   useCallCenterHistoryQuery,
   useCallCenterStudentsQuery,
   useRecordCallCenterNotifyMutation,
@@ -74,6 +75,9 @@ const CallCenterPage = () => {
   const [calledFilter, setCalledFilter] = useState<
     "all" | "called" | "not-called"
   >("all");
+  const [studyModeFilter, setStudyModeFilter] = useState<
+    "all" | "online" | "offline"
+  >("all");
   const [page, setPage] = useState(1);
   const { download, isDownloading } = useDownloadFile();
 
@@ -101,7 +105,7 @@ const CallCenterPage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, attendance, calledFilter, lectureId]);
+  }, [debouncedSearch, attendance, calledFilter, studyModeFilter, lectureId]);
 
   const courses = useMemo(() => {
     const items = coursesData?.data?.items ?? [];
@@ -125,6 +129,7 @@ const CallCenterPage = () => {
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (attendance !== "all") params.set("attendance", attendance);
     if (calledFilter !== "all") params.set("called", calledFilter);
+    if (studyModeFilter !== "all") params.set("studyMode", studyModeFilter);
     const qs = params.toString();
     const safeTitle = selectedLectureTitle
       .replace(/[^\w\-]+/g, "_")
@@ -146,6 +151,7 @@ const CallCenterPage = () => {
           search: debouncedSearch || undefined,
           attendance,
           called: calledFilter,
+          studyMode: studyModeFilter,
           page,
           pageSize: 50,
         }
@@ -271,6 +277,21 @@ const CallCenterPage = () => {
                 <SelectItem value="all">All calls</SelectItem>
                 <SelectItem value="called">Called</SelectItem>
                 <SelectItem value="not-called">Not called</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={studyModeFilter}
+              onValueChange={(value) =>
+                setStudyModeFilter(value as "all" | "online" | "offline")
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Study mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All students</SelectItem>
+                <SelectItem value="online">Online (ONL-)</SelectItem>
+                <SelectItem value="offline">Offline</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -458,6 +479,8 @@ function CallCenterStudentCard({
   };
 
   const historyItems = historyQuery.data?.data ?? [];
+  const studyMode = resolveCallCenterStudyMode(student);
+  const isOnline = studyMode === "online";
 
   return (
     <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
@@ -466,6 +489,16 @@ function CallCenterStudentCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{student.fullName}</h3>
             <Badge variant="outline">{student.studentCode}</Badge>
+            <Badge
+              variant="outline"
+              className={
+                isOnline
+                  ? "border-sky-500/50 text-sky-700 dark:text-sky-300"
+                  : "border-amber-500/50 text-amber-700 dark:text-amber-300"
+              }
+            >
+              {isOnline ? "Online" : "Offline"}
+            </Badge>
             <Badge
               className={
                 student.attended
@@ -605,8 +638,9 @@ function CallCenterStudentCard({
           <DialogHeader>
             <DialogTitle>WhatsApp notify</DialogTitle>
             <DialogDescription>
-              Choose message language. Opens WhatsApp to the parent phone and
-              records who notified with the current comment.
+              {student.fullName} · {student.studentCode} ·{" "}
+              {isOnline ? "Online" : "Offline"}. Opens WhatsApp to the parent
+              phone and records who notified with the current comment.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

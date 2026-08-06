@@ -24,7 +24,8 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             query.LectureId,
             query.Search,
             query.Attendance,
-            query.Called);
+            query.Called,
+            query.StudyMode);
 
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 200);
@@ -39,6 +40,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             {
                 Id = student.Id,
                 StudentCode = student.StudentCode,
+                StudyMode = ResolveStudyMode(student.StudentCode),
                 FullName = student.FullName,
                 PhoneNumber = student.PhoneNumber,
                 ParentPhoneNumber = student.ParentPhoneNumber,
@@ -76,7 +78,8 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             query.LectureId,
             query.Search,
             query.Attendance,
-            query.Called);
+            query.Called,
+            query.StudyMode);
 
         const int chunkSize = 200;
         var total = await studentsQuery.CountAsync();
@@ -92,10 +95,12 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
                 var attendanceRow = student.LectureAttendances.FirstOrDefault();
                 var callLog = student.LectureStudentCallLogs.FirstOrDefault();
                 var attended = attendanceRow is { AttendedAt: not null };
+                var studyMode = ResolveStudyMode(student.StudentCode);
 
                 return new ExportCallCenterStudentRow
                 {
                     StudentCode = student.StudentCode,
+                    StudyMode = studyMode == "online" ? "Online" : "Offline",
                     FullName = student.FullName,
                     ParentPhoneNumber = student.ParentPhoneNumber,
                     PhoneNumber = student.PhoneNumber,
@@ -202,6 +207,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         {
             Id = student.Id,
             StudentCode = student.StudentCode,
+            StudyMode = ResolveStudyMode(student.StudentCode),
             FullName = student.FullName,
             PhoneNumber = student.PhoneNumber,
             ParentPhoneNumber = student.ParentPhoneNumber,
@@ -338,16 +344,29 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         }).ToList();
     }
 
+    private static string ResolveStudyMode(string? studentCode)
+    {
+        return IsOnlineStudentCode(studentCode) ? "online" : "offline";
+    }
+
+    private static bool IsOnlineStudentCode(string? studentCode)
+    {
+        return !string.IsNullOrWhiteSpace(studentCode) &&
+               studentCode.StartsWith("ONL-", StringComparison.OrdinalIgnoreCase);
+    }
+
     private IQueryable<Student> BuildStudentsQuery(
         StudentLevel? level,
         Guid lectureId,
         string? search,
         string? attendance,
-        string? called)
+        string? called,
+        string? studyMode)
     {
         search = search?.Trim().ToLower();
         attendance = attendance?.Trim().ToLowerInvariant();
         called = called?.Trim().ToLowerInvariant();
+        studyMode = studyMode?.Trim().ToLowerInvariant();
 
         var studentsQuery = db.Students
             .AsNoTracking()
@@ -389,6 +408,17 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         {
             studentsQuery = studentsQuery.Where(x =>
                 !x.LectureStudentCallLogs.Any(c => c.LectureId == lectureId && c.Called));
+        }
+
+        if (studyMode is "online")
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                x.StudentCode.ToUpper().StartsWith("ONL-"));
+        }
+        else if (studyMode is "offline")
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                !x.StudentCode.ToUpper().StartsWith("ONL-"));
         }
 
         return studentsQuery;
