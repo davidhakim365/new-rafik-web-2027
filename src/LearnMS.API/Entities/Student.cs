@@ -149,13 +149,15 @@ public class Student : User
 
     public void BuyOrRenewLecture(Course course, Lecture lecture)
     {
+        // Already covered by an active course purchase — treat as success (idempotent).
         if (course.CourseEnrollments.Any(x => x.StudentId == Id && x.ExpiresAt > DateTime.UtcNow))
-            throw new ApiException(CoursesErrors.AlreadyPurchased);
+            return;
 
         var lectureEnrollment = lecture.LectureEnrollments.FirstOrDefault(x => x.StudentId == Id);
 
+        // Already has active lecture access — treat as success (idempotent).
         if (lectureEnrollment?.ExpiresAt > DateTime.UtcNow)
-            throw new ApiException(LecturesErrors.AlreadyPurchased);
+            return;
 
         if (lectureEnrollment != null)
         {

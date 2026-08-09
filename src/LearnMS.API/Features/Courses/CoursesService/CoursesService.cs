@@ -637,9 +637,9 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
-                .Include(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId).Take(1))
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId).Take(1))
-                .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == command.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == command.CourseId && x.IsPublished)
             ?? throw new ApiException(CoursesErrors.NotFound);
 

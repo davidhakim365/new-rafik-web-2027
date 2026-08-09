@@ -32,7 +32,10 @@ import {
   CourseHeaderSkeleton,
 } from "@/components/ui/course-skeleton";
 import { useModalStore } from "@/store/use-modal-store";
-import { isInsufficientBalanceError } from "@/lib/error-utils";
+import {
+  isAlreadyPurchasedError,
+  isInsufficientBalanceError,
+} from "@/lib/error-utils";
 import React, { useState, useRef } from "react";
 import {
   FaSpinner,
@@ -620,17 +623,28 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
             queryClient.invalidateQueries({
               queryKey: getGetStudentCourseDetailsQueryKey(courseId!),
             });
+            navigate(`/courses/${courseId}/lectures/${lecture.id}`);
           },
           onError: (error) => {
             if (isInsufficientBalanceError(error)) {
               openModal("redeem-credit-modal");
-            } else {
-              toast({
-                title: "Error",
-                description: "Failed to purchase lecture. Please try again.",
-                variant: "destructive",
-              });
+              return;
             }
+
+            // Stale UI / double-click: already enrolled — open the lecture.
+            if (isAlreadyPurchasedError(error)) {
+              queryClient.invalidateQueries({
+                queryKey: getGetStudentCourseDetailsQueryKey(courseId!),
+              });
+              navigate(`/courses/${courseId}/lectures/${lecture.id}`);
+              return;
+            }
+
+            toast({
+              title: "Error",
+              description: "Failed to purchase lecture. Please try again.",
+              variant: "destructive",
+            });
           },
         }
       );

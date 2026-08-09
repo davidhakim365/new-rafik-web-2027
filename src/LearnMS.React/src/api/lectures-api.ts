@@ -135,9 +135,10 @@ export const useBuyLectureMutation = () => {
   const qc = useQueryClient();
   return useMutation<
     ApiResponse<{}>,
-    {},
+    Error,
     { lectureId: string; courseId: string }
   >({
+    throwOnError: false,
     onSuccess: (_, { lectureId, courseId }) => {
       qc.invalidateQueries({
         queryKey: ["lecture", { id: lectureId, courseId }],

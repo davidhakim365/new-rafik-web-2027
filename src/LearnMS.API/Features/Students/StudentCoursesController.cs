@@ -224,7 +224,9 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             Assets = l.Assets,
             ExpirationDays = l.ExpirationDays,
             Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),
-            ExpiresAt = courseExpires ?? l.Enrollment?.ExpiresAt,
+            // Prefer the later expiry so an active lecture enrollment is not
+            // hidden behind an expired course enrollment (and vice versa).
+            ExpiresAt = EffectiveEnrollmentExpiresAt(courseExpires, l.Enrollment?.ExpiresAt),
         }).ToList();
 
         var courseDto = new StudentCourseDetailsDto()
@@ -250,5 +252,12 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         {
             Data = courseDto,
         };
+    }
+
+    private static DateTime? EffectiveEnrollmentExpiresAt(DateTime? courseExpiresAt, DateTime? lectureExpiresAt)
+    {
+        if (courseExpiresAt is null) return lectureExpiresAt;
+        if (lectureExpiresAt is null) return courseExpiresAt;
+        return courseExpiresAt > lectureExpiresAt ? courseExpiresAt : lectureExpiresAt;
     }
 }

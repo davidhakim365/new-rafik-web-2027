@@ -120,7 +120,7 @@ public sealed record GetStudentLectureResult : GetLectureResult
         get
         {
             if (ExpiresAt is null) return Enrollment.NotEnrolled;
-            if (DateTime.Now > ExpiresAt) return Enrollment.Expired;
+            if (ExpiresAt < DateTime.UtcNow) return Enrollment.Expired;
             return Enrollment.Active;
         }
     }

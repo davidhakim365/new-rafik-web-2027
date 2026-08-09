@@ -1,5 +1,28 @@
 import { ApiError } from "@/lib/axiosCustomInstant";
 
+export function isAlreadyPurchasedError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    const code = error.code?.toLowerCase() || "";
+    const message = error.message?.toLowerCase() || "";
+    return (
+      code.includes("already-purchased") ||
+      code.includes("already_purchased") ||
+      message.includes("already purchased")
+    );
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message.toLowerCase().includes("already purchased");
+  }
+
+  return false;
+}
+
 export function isInsufficientBalanceError(error: unknown): boolean {
   if (!error) return false;
 
