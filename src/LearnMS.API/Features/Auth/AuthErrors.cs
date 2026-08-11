@@ -16,5 +16,6 @@ public abstract class AuthErrors
     public static readonly ApiError Unauthorized = new("auth/unauthorized", "Cannot access", StatusCodes.Status401Unauthorized);
     public static readonly ApiError Forbidden = new("auth/forbidden", "Cannot access", StatusCodes.Status403Forbidden);
     public static readonly ApiError AlreadyDeviceAssociated = new("auth/already-device-associated", "Another device is linked with this account", StatusCodes.Status401Unauthorized);
+    public static readonly ApiError AccountBlocked = new("auth/account-blocked", "your account is block and please contact web support", StatusCodes.Status403Forbidden);
     public static readonly ApiError InvalidToken = new("auth/invalid-token", "Invalid token", StatusCodes.Status401Unauthorized);
 }

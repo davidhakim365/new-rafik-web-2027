@@ -50,7 +50,8 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
                 QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score,
                 Comment = callLog?.Comment,
                 Called = callLog?.Called ?? false,
-                CalledAt = callLog?.CalledAt
+                CalledAt = callLog?.CalledAt,
+                IsBlocked = student.IsBlocked
             };
         }).ToList();
 
@@ -110,7 +111,8 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
                     QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score.ToString(),
                     Comment = callLog?.Comment,
                     Called = callLog?.Called == true ? "Yes" : "No",
-                    CalledAt = callLog?.CalledAt?.ToString("u")
+                    CalledAt = callLog?.CalledAt?.ToString("u"),
+                    IsBlocked = student.IsBlocked ? "Yes" : "No"
                 };
             }).ToList();
         }
@@ -217,7 +219,50 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score,
             Comment = callLog.Comment,
             Called = callLog.Called,
-            CalledAt = callLog.CalledAt
+            CalledAt = callLog.CalledAt,
+            IsBlocked = student.IsBlocked
+        };
+    }
+
+    public async Task<SetCallCenterStudentBlockedResult> ExecuteAsync(
+        SetCallCenterStudentBlockedCommand command)
+    {
+        var student = await db.Students
+            .FirstOrDefaultAsync(x => x.Id == command.StudentId)
+            ?? throw new ApiException(CallCenterErrors.StudentNotFound);
+
+        if (student.IsBlocked == command.IsBlocked)
+        {
+            return new SetCallCenterStudentBlockedResult
+            {
+                Id = student.Id,
+                FullName = student.FullName,
+                StudentCode = student.StudentCode,
+                IsBlocked = student.IsBlocked
+            };
+        }
+
+        student.IsBlocked = command.IsBlocked;
+        student.Events.Add(new StudentEvent
+        {
+            Message = command.IsBlocked
+                ? command.ActorId is null
+                    ? "Account blocked"
+                    : $"Account blocked by assistant {command.ActorId}"
+                : command.ActorId is null
+                    ? "Account unblocked"
+                    : $"Account unblocked by assistant {command.ActorId}"
+        });
+
+        db.Update(student);
+        await db.SaveChangesAsync();
+
+        return new SetCallCenterStudentBlockedResult
+        {
+            Id = student.Id,
+            FullName = student.FullName,
+            StudentCode = student.StudentCode,
+            IsBlocked = student.IsBlocked
         };
     }
 

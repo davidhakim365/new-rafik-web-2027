@@ -164,4 +164,30 @@ public sealed class CallCenterController(
 
         return new EmptyResult();
     }
+
+    [HttpPut("students/{studentId:guid}/block")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
+    [SwaggerOperation(OperationId = "SetCallCenterStudentBlocked")]
+    public async Task<ApiWrapper.Success<SetCallCenterStudentBlockedResult>> SetBlocked(
+        Guid studentId,
+        [FromBody] SetCallCenterStudentBlockedRequest request)
+    {
+        var currentUser = await currentUserService.GetUserAsync()
+            ?? throw new ApiException(AuthErrors.Unauthorized);
+
+        var result = await callCenterService.ExecuteAsync(new SetCallCenterStudentBlockedCommand
+        {
+            StudentId = studentId,
+            IsBlocked = request.IsBlocked,
+            ActorId = currentUser.Id
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = result.IsBlocked
+                ? "Student account blocked successfully"
+                : "Student account unblocked successfully"
+        };
+    }
 }

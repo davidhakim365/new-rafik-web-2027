@@ -89,6 +89,11 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
 
         if (account.User is Student student)
         {
+            if (student.IsBlocked)
+            {
+                return AuthenticateResult.Fail("your account is block and please contact web support");
+            }
+
             if (!Request.Headers.TryGetValue("DeviceKey", out var deviceKey))
             {
                 return AuthenticateResult.Fail("DeviceKey header was not found.");

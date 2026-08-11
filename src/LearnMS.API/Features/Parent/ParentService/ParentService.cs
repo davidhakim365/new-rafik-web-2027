@@ -43,6 +43,9 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
         if (student is null)
             throw new ApiException(ParentErrors.InvalidCredentials);
 
+        if (student.IsBlocked)
+            throw new ApiException(ParentErrors.AccountBlocked);
+
         return new ParentLoginResult
         {
             Token = CreateParentToken(student.Id),
@@ -60,6 +63,9 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == studentId)
             ?? throw new ApiException(ParentErrors.InvalidToken);
+
+        if (student.IsBlocked)
+            throw new ApiException(ParentErrors.AccountBlocked);
 
         var lectures = await db.Set<Lecture>()
             .AsNoTracking()

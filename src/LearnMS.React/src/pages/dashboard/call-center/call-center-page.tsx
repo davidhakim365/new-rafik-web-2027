@@ -6,6 +6,7 @@ import {
   useCallCenterHistoryQuery,
   useCallCenterStudentsQuery,
   useRecordCallCenterNotifyMutation,
+  useSetCallCenterStudentBlockedMutation,
   useUpsertCallCenterStudentMutation,
 } from "@/api/call-center-api";
 import { useCoursesQuery } from "@/api/courses-api";
@@ -40,6 +41,7 @@ import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { toast } from "@/lib/utils";
 import {
+  Ban,
   ChevronDown,
   ChevronUp,
   FileSpreadsheet,
@@ -48,6 +50,7 @@ import {
   MessageCircle,
   Phone,
   Save,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -381,10 +384,12 @@ function CallCenterStudentCard({
   const canViewHistory = hasPermission(Permission.ViewCallCenterHistory);
   const upsert = useUpsertCallCenterStudentMutation();
   const recordNotify = useRecordCallCenterNotifyMutation();
+  const setBlocked = useSetCallCenterStudentBlockedMutation();
   const [comment, setComment] = useState(student.comment ?? "");
   const [called, setCalled] = useState(student.called);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
 
   const historyQuery = useCallCenterHistoryQuery(
     { courseId, lectureId, studentId: student.id },
@@ -478,9 +483,35 @@ function CallCenterStudentCard({
     setNotifyOpen(false);
   };
 
+  const confirmBlockToggle = () => {
+    const nextBlocked = !student.isBlocked;
+    setBlocked.mutate(
+      { studentId: student.id, isBlocked: nextBlocked },
+      {
+        onSuccess: () => {
+          setBlockConfirmOpen(false);
+          toast({
+            title: nextBlocked ? "Student blocked" : "Student unblocked",
+            description: nextBlocked
+              ? `${student.fullName} can no longer sign in.`
+              : `${student.fullName} can use their account again.`,
+          });
+        },
+        onError: () => {
+          toast({
+            title: nextBlocked ? "Block failed" : "Unblock failed",
+            description: "Could not update student block status.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
   const historyItems = historyQuery.data?.data ?? [];
   const studyMode = resolveCallCenterStudyMode(student);
   const isOnline = studyMode === "online";
+  const isBlocked = student.isBlocked === true;
 
   return (
     <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
@@ -508,6 +539,11 @@ function CallCenterStudentCard({
             >
               {student.attended ? "Present" : "Absent"}
             </Badge>
+            {isBlocked && (
+              <Badge className="bg-zinc-800 hover:bg-zinc-800 text-white">
+                Blocked
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">
             Parent:{" "}
@@ -550,6 +586,22 @@ function CallCenterStudentCard({
           >
             <MessageCircle className="h-4 w-4" />
             Notify
+          </Button>
+          <Button
+            type="button"
+            variant={isBlocked ? "outline" : "destructive"}
+            className="gap-2"
+            onClick={() => setBlockConfirmOpen(true)}
+            disabled={setBlocked.isPending}
+          >
+            {setBlocked.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isBlocked ? (
+              <ShieldCheck className="h-4 w-4" />
+            ) : (
+              <Ban className="h-4 w-4" />
+            )}
+            {isBlocked ? "Unblock" : "Block"}
           </Button>
           {canViewHistory && (
             <Button
@@ -649,6 +701,45 @@ function CallCenterStudentCard({
             </Button>
             <Button type="button" onClick={() => notify("ar")}>
               العربية
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={blockConfirmOpen} onOpenChange={setBlockConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isBlocked ? "Unblock student?" : "Block student?"}
+            </DialogTitle>
+            <DialogDescription>
+              {isBlocked
+                ? `${student.fullName} (${student.studentCode}) will be able to sign in and use their account again.`
+                : `${student.fullName} (${student.studentCode}) will not be able to sign in. They will see: "your account is block and please contact web support".`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBlockConfirmOpen(false)}
+              disabled={setBlocked.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={isBlocked ? "default" : "destructive"}
+              onClick={confirmBlockToggle}
+              disabled={setBlocked.isPending}
+            >
+              {setBlocked.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isBlocked ? (
+                "Unblock"
+              ) : (
+                "Block"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

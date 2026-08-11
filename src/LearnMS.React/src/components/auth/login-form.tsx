@@ -78,6 +78,12 @@ const LoginForm = () => {
             render: () =>
               "Another device is linked with this account, please contact assistants to register this device for you",
           });
+        } else if (error.code === "auth/account-blocked") {
+          openModal("error-modal", {
+            render: () =>
+              error.message ||
+              "your account is block and please contact web support",
+          });
         } else {
           toast({
             title: t("auth.forms.errors.loginFailed"),

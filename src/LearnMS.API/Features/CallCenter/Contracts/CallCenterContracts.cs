@@ -80,6 +80,7 @@ public sealed record CallCenterStudentDto
     public string? Comment { get; init; }
     [Required] public required bool Called { get; init; }
     public DateTime? CalledAt { get; init; }
+    [Required] public required bool IsBlocked { get; init; }
 }
 
 public sealed record ExportCallCenterStudentsQuery
@@ -92,6 +93,26 @@ public sealed record ExportCallCenterStudentsQuery
     public string? Called { get; init; }
     /// <summary>all | online | offline</summary>
     public string? StudyMode { get; init; }
+}
+
+public sealed record SetCallCenterStudentBlockedCommand
+{
+    public required Guid StudentId { get; init; }
+    public required bool IsBlocked { get; init; }
+    public Guid? ActorId { get; init; }
+}
+
+public sealed record SetCallCenterStudentBlockedRequest
+{
+    public required bool IsBlocked { get; init; }
+}
+
+public sealed record SetCallCenterStudentBlockedResult
+{
+    [Required] public required Guid Id { get; init; }
+    [Required] public required string FullName { get; init; }
+    [Required] public required string StudentCode { get; init; }
+    [Required] public required bool IsBlocked { get; init; }
 }
 
 public sealed record ExportCallCenterStudentRow
@@ -131,4 +152,7 @@ public sealed record ExportCallCenterStudentRow
 
     [Name("Called At")]
     public string? CalledAt { get; init; }
+
+    [Name("Blocked")]
+    public required string IsBlocked { get; init; }
 }

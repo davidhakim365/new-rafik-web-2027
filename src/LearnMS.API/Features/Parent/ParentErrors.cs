@@ -18,4 +18,9 @@ public abstract class ParentErrors
         "parent/student-not-found",
         "Student not found",
         StatusCodes.Status404NotFound);
+
+    public static readonly ApiError AccountBlocked = new(
+        "parent/account-blocked",
+        "your account is block and please contact web support",
+        StatusCodes.Status403Forbidden);
 }

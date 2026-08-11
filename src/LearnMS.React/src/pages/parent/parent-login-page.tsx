@@ -48,6 +48,17 @@ const ParentLoginPage = () => {
         });
         navigate("/parent/dashboard");
       },
+      onError: (error) => {
+        toast({
+          title: t("parent.login.submit"),
+          description:
+            error.code === "parent/account-blocked"
+              ? error.message ||
+                "your account is block and please contact web support"
+              : error.message,
+          variant: "destructive",
+        });
+      },
     });
   };
 

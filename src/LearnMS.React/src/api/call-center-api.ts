@@ -16,6 +16,7 @@ export type CallCenterStudent = {
   comment?: string | null;
   called: boolean;
   calledAt?: string | null;
+  isBlocked?: boolean;
 };
 
 export type CallCenterStudentsPage = {
@@ -215,6 +216,35 @@ export function useRecordCallCenterNotifyMutation() {
           vars.studentId,
         ],
       });
+    },
+  });
+}
+
+export type SetCallCenterStudentBlockedResult = {
+  id: string;
+  fullName: string;
+  studentCode: string;
+  isBlocked: boolean;
+};
+
+export const setCallCenterStudentBlocked = (vars: {
+  studentId: string;
+  isBlocked: boolean;
+}) =>
+  api
+    .put<ApiSuccess<SetCallCenterStudentBlockedResult>>(
+      `/api/call-center/students/${vars.studentId}/block`,
+      { isBlocked: vars.isBlocked }
+    )
+    .then((res) => res.data);
+
+export function useSetCallCenterStudentBlockedMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    throwOnError: false,
+    mutationFn: setCallCenterStudentBlocked,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["call-center-students"] });
     },
   });
 }

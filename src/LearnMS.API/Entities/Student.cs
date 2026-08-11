@@ -24,6 +24,8 @@ public class Student : User
     public required string ParentPhoneNumber { get; set; }
     public required string StudentCode { get; set; }
     public string? DeviceKey { get; set; }
+    /// <summary>When true, student (and parent) cannot sign in until unblocked.</summary>
+    public bool IsBlocked { get; set; }
     public required string SchoolName { get; set; }
     public required StudentLevel Level { get; set; }
 

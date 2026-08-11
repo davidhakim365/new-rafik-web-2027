@@ -131,6 +131,11 @@ public sealed class AuthService : IAuthService
             student = s;
         }
 
+        if (student is { IsBlocked: true })
+        {
+            throw new ApiException(AuthErrors.AccountBlocked);
+        }
+
         if (student != null && !string.IsNullOrEmpty(student.DeviceKey) && student.DeviceKey != command.DeviceKey)
         {
             throw new ApiException(AuthErrors.AlreadyDeviceAssociated);
