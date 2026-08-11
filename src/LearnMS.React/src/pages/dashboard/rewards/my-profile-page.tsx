@@ -145,16 +145,18 @@ const MyProfilePage = () => {
                   },
                   {
                     label: "Until next bonus",
-                    value: rewards.sessionsUntilNextBonus,
-                    hint:
-                      rewards.currentSessionValue >= rewards.maxSessionValue
+                    value: rewards.bonusesEnabled ? rewards.sessionsUntilNextBonus : "—",
+                    hint: rewards.bonusesEnabled
+                      ? rewards.currentSessionValue >= rewards.maxSessionValue
                         ? `Capped at ${rewards.maxSessionValue}`
-                        : `+${rewards.sessionBonusIncrement} / ${rewards.sessionsPerMilestone}`,
+                        : `+${rewards.sessionBonusIncrement} / ${rewards.sessionsPerMilestone}`
+                      : "Bonuses disabled",
                     icon: "bonus",
                   },
                 ]}
               />
 
+              {rewards.bonusesEnabled ? (
               <MilestoneRing
                 sessionsAttended={rewards.sessionsAttended}
                 sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
@@ -162,6 +164,7 @@ const MyProfilePage = () => {
                 currentSessionValue={rewards.currentSessionValue}
                 maxSessionValue={rewards.maxSessionValue}
               />
+              ) : null}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-color2/10 bg-card/80 p-4">

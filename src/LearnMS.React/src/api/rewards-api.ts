@@ -26,6 +26,7 @@ export type AssistantRewards = {
   sessionsPerMilestone: number;
   sessionBonusIncrement: number;
   maxSessionValue: number;
+  bonusesEnabled: boolean;
   events: AssistantRewardEvent[];
 };
 
@@ -34,6 +35,7 @@ export type RewardSystemSettings = {
   sessionsPerMilestone: number;
   sessionBonusIncrement: number;
   maxSessionValue: number;
+  bonusesEnabled: boolean;
   updatedAt: string;
 };
 
@@ -78,6 +80,7 @@ export const useUpdateRewardSystemSettingsMutation = () => {
       sessionsPerMilestone: number;
       sessionBonusIncrement: number;
       maxSessionValue: number;
+      bonusesEnabled: boolean;
     }) => api.put("/api/rewards/system-settings", data).then((res) => res.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rewards"] });

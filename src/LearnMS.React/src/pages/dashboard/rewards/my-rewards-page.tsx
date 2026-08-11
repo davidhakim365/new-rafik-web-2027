@@ -38,7 +38,11 @@ const MyRewardsPage = () => {
   return (
     <DashboardPageShell
       title="My Rewards"
-      description="Track your session attendance, apple balance, and progress to the next pay bonus."
+      description={
+        rewards.bonusesEnabled
+          ? "Track your session attendance, apple balance, and progress to the next pay bonus."
+          : "Track your session attendance and apple balance. Milestone bonuses are currently disabled."
+      }
       icon={Apple}
       fullWidth
       decorative
@@ -85,16 +89,18 @@ const MyRewardsPage = () => {
             },
             {
               label: "Until next bonus",
-              value: rewards.sessionsUntilNextBonus,
-              hint:
-                rewards.currentSessionValue >= rewards.maxSessionValue
+              value: rewards.bonusesEnabled ? rewards.sessionsUntilNextBonus : "—",
+              hint: rewards.bonusesEnabled
+                ? rewards.currentSessionValue >= rewards.maxSessionValue
                   ? `Capped at ${rewards.maxSessionValue}`
-                  : `+${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone}`,
+                  : `+${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone}`
+                : "Bonuses disabled",
               icon: "bonus",
             },
           ]}
         />
 
+        {rewards.bonusesEnabled ? (
         <MilestoneRing
           sessionsAttended={rewards.sessionsAttended}
           sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
@@ -102,6 +108,7 @@ const MyRewardsPage = () => {
           currentSessionValue={rewards.currentSessionValue}
           maxSessionValue={rewards.maxSessionValue}
         />
+        ) : null}
 
         <RewardEventTimeline
           events={rewards.events}

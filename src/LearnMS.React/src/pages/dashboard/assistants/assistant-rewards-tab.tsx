@@ -95,7 +95,11 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
         <RewardHeroBanner
         badge="Assistant pay system"
         title={assistant.fullName?.trim() || assistant.email}
-        subtitle={`Code ${rewards.code} · Base ${rewards.baseSessionValue} + ${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone} sessions · Max ${rewards.maxSessionValue}`}
+        subtitle={
+          rewards.bonusesEnabled
+            ? `Code ${rewards.code} · Base ${rewards.baseSessionValue} + ${rewards.sessionBonusIncrement} every ${rewards.sessionsPerMilestone} sessions · Max ${rewards.maxSessionValue}`
+            : `Code ${rewards.code} · Bonuses off · Base ${rewards.baseSessionValue} per session · Attendance still counted`
+        }
       >
         <Button
           onClick={onAttend}
@@ -150,16 +154,18 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
           },
           {
             label: "Until bonus",
-            value: rewards.sessionsUntilNextBonus,
-            hint:
-              rewards.currentSessionValue >= rewards.maxSessionValue
+            value: rewards.bonusesEnabled ? rewards.sessionsUntilNextBonus : "—",
+            hint: rewards.bonusesEnabled
+              ? rewards.currentSessionValue >= rewards.maxSessionValue
                 ? `Capped at ${rewards.maxSessionValue}`
-                : "Sessions remaining",
+                : "Sessions remaining"
+              : "Bonuses disabled",
             icon: "bonus",
           },
         ]}
       />
 
+      {rewards.bonusesEnabled ? (
       <MilestoneRing
         sessionsAttended={rewards.sessionsAttended}
         sessionsUntilNextBonus={rewards.sessionsUntilNextBonus}
@@ -167,6 +173,7 @@ export function AssistantRewardsTab({ assistant }: { assistant: Assistant }) {
         currentSessionValue={rewards.currentSessionValue}
         maxSessionValue={rewards.maxSessionValue}
       />
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <RewardEventTimeline events={rewards.events} />

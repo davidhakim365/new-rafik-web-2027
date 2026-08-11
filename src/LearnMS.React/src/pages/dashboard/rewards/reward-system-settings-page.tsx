@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/utils";
 import { format } from "date-fns";
 import { Loader2, SlidersHorizontal } from "lucide-react";
@@ -22,6 +23,7 @@ const RewardSystemSettingsPage = () => {
   const [sessionsPerMilestone, setSessionsPerMilestone] = useState(20);
   const [sessionBonusIncrement, setSessionBonusIncrement] = useState(20);
   const [maxSessionValue, setMaxSessionValue] = useState(200);
+  const [disableBonuses, setDisableBonuses] = useState(false);
 
   useEffect(() => {
     if (!data?.data) return;
@@ -29,6 +31,7 @@ const RewardSystemSettingsPage = () => {
     setSessionsPerMilestone(data.data.sessionsPerMilestone);
     setSessionBonusIncrement(data.data.sessionBonusIncrement);
     setMaxSessionValue(data.data.maxSessionValue);
+    setDisableBonuses(!data.data.bonusesEnabled);
   }, [data?.data]);
 
   if (isLoading || !data?.data) {
@@ -40,12 +43,14 @@ const RewardSystemSettingsPage = () => {
   }
 
   const settings = data.data;
-  const previewSteps = [
-    baseSessionValue,
-    Math.min(baseSessionValue + sessionBonusIncrement, maxSessionValue),
-    Math.min(baseSessionValue + sessionBonusIncrement * 2, maxSessionValue),
-    maxSessionValue,
-  ];
+  const previewSteps = disableBonuses
+    ? [baseSessionValue, baseSessionValue, baseSessionValue, baseSessionValue]
+    : [
+        baseSessionValue,
+        Math.min(baseSessionValue + sessionBonusIncrement, maxSessionValue),
+        Math.min(baseSessionValue + sessionBonusIncrement * 2, maxSessionValue),
+        maxSessionValue,
+      ];
 
   const onSave = () => {
     if (
@@ -69,12 +74,15 @@ const RewardSystemSettingsPage = () => {
         sessionsPerMilestone,
         sessionBonusIncrement,
         maxSessionValue,
+        bonusesEnabled: !disableBonuses,
       },
       {
         onSuccess: () => {
           toast({
             title: "Settings saved",
-            description: "Assistant session pay and bonus rules were updated.",
+            description: disableBonuses
+              ? "Bonuses disabled. Attendance is still counted; each session pays base value only."
+              : "Assistant session pay and bonus rules were updated.",
           });
         },
       }
@@ -103,6 +111,21 @@ const RewardSystemSettingsPage = () => {
             </Badge>
           </div>
 
+          <div className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-color2/10 bg-muted/30 px-4 py-3">
+            <div>
+              <p className="font-medium">Disable bonus system</p>
+              <p className="text-xs text-muted-foreground">
+                When on, attended sessions keep counting so you can track attendance, but
+                milestone bonuses stop and each session pays base value only.
+              </p>
+            </div>
+            <Switch
+              checked={disableBonuses}
+              onCheckedChange={setDisableBonuses}
+              aria-label="Disable bonus system"
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="base-session-value">Base session pay</Label>
@@ -126,6 +149,7 @@ const RewardSystemSettingsPage = () => {
                 min={1}
                 value={sessionBonusIncrement}
                 onChange={(e) => setSessionBonusIncrement(Number(e.target.value) || 0)}
+                disabled={disableBonuses}
               />
               <p className="text-xs text-muted-foreground">
                 How many apples are added at each bonus milestone
@@ -140,6 +164,7 @@ const RewardSystemSettingsPage = () => {
                 min={1}
                 value={sessionsPerMilestone}
                 onChange={(e) => setSessionsPerMilestone(Number(e.target.value) || 0)}
+                disabled={disableBonuses}
               />
               <p className="text-xs text-muted-foreground">
                 Number of attended sessions before the bonus is added
@@ -154,6 +179,7 @@ const RewardSystemSettingsPage = () => {
                 min={1}
                 value={maxSessionValue}
                 onChange={(e) => setMaxSessionValue(Number(e.target.value) || 0)}
+                disabled={disableBonuses}
               />
               <p className="text-xs text-muted-foreground">
                 Session pay will not go above this amount
@@ -178,30 +204,37 @@ const RewardSystemSettingsPage = () => {
         <DashboardCard>
           <h3 className="text-lg font-semibold">Live preview</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Base {baseSessionValue} + {sessionBonusIncrement} every{" "}
-            {sessionsPerMilestone} sessions, capped at {maxSessionValue}.
+            {disableBonuses
+              ? `Bonuses off — every attended session pays ${baseSessionValue} apples. Session count still increases.`
+              : `Base ${baseSessionValue} + ${sessionBonusIncrement} every ${sessionsPerMilestone} sessions, capped at ${maxSessionValue}.`}
           </p>
 
           <div className="mt-5 space-y-3">
-            {[
-              { label: "First sessions", value: previewSteps[0] },
-              {
-                label: `After ${sessionsPerMilestone} sessions`,
-                value: previewSteps[1],
-              },
-              {
-                label: `After ${sessionsPerMilestone * 2} sessions`,
-                value: previewSteps[2],
-              },
-              { label: "At maximum", value: previewSteps[3] },
-            ].map((row) => (
+            {(disableBonuses
+              ? [
+                  { label: "Any attended session", value: previewSteps[0] },
+                  { label: "Sessions still counted", value: "Yes" as const },
+                ]
+              : [
+                  { label: "First sessions", value: previewSteps[0] },
+                  {
+                    label: `After ${sessionsPerMilestone} sessions`,
+                    value: previewSteps[1],
+                  },
+                  {
+                    label: `After ${sessionsPerMilestone * 2} sessions`,
+                    value: previewSteps[2],
+                  },
+                  { label: "At maximum", value: previewSteps[3] },
+                ]
+            ).map((row) => (
               <div
                 key={row.label}
                 className="flex items-center justify-between rounded-xl border border-color2/10 bg-muted/30 px-4 py-3"
               >
                 <span className="text-sm text-muted-foreground">{row.label}</span>
                 <span className="text-base font-semibold tabular-nums">
-                  {row.value} apples
+                  {typeof row.value === "number" ? `${row.value} apples` : row.value}
                 </span>
               </div>
             ))}
