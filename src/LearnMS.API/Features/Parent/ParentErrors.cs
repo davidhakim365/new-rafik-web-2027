@@ -6,7 +6,7 @@ public abstract class ParentErrors
 {
     public static readonly ApiError InvalidCredentials = new(
         "parent/invalid-credentials",
-        "Student ID or phone numbers do not match our records",
+        "Student or parent phone numbers do not match our records",
         StatusCodes.Status401Unauthorized);
 
     public static readonly ApiError InvalidToken = new(

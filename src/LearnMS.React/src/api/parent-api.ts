@@ -88,8 +88,14 @@ parentApi.interceptors.response.use(
   (error) => {
     if (error.response && error.response?.status >= 400) {
       const data = error.response.data as { code?: string; message?: string };
+      const code = data.code ?? "error";
 
-      if (error.response.status === 401) {
+      // Stale/missing parent sessions must be cleared or /parent keeps bouncing to dashboard.
+      if (
+        error.response.status === 401 ||
+        code === "parent/invalid-token" ||
+        code === "parent/student-not-found"
+      ) {
         clearParentSession();
       }
 
@@ -99,7 +105,7 @@ parentApi.interceptors.response.use(
         variant: "destructive",
       });
 
-      throw new ApiError(data.code ?? "error", data.message ?? error.message);
+      throw new ApiError(code, data.message ?? error.message);
     }
 
     toast({

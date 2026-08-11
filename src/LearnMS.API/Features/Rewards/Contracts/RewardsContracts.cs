@@ -131,6 +131,7 @@ public sealed record AssistantRewardsResult
     public required int SessionsPerMilestone { get; init; }
     public required int SessionBonusIncrement { get; init; }
     public required int MaxSessionValue { get; init; }
+    public required bool BonusesEnabled { get; init; }
     public required List<AssistantRewardEventDto> Events { get; init; }
 }
 
@@ -193,6 +194,7 @@ public sealed record UpsertRewardSystemSettingsRequest
     public required int SessionsPerMilestone { get; init; }
     public required int SessionBonusIncrement { get; init; }
     public required int MaxSessionValue { get; init; }
+    public required bool BonusesEnabled { get; init; }
 }
 
 public sealed record RewardSystemSettingsResult
@@ -201,5 +203,6 @@ public sealed record RewardSystemSettingsResult
     public required int SessionsPerMilestone { get; init; }
     public required int SessionBonusIncrement { get; init; }
     public required int MaxSessionValue { get; init; }
+    public required bool BonusesEnabled { get; init; }
     public required DateTime UpdatedAt { get; init; }
 }

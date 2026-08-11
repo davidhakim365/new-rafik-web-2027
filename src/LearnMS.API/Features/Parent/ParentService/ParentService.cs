@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.RegularExpressions;
 using LearnMS.API.Common;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
@@ -55,10 +54,12 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
     {
         var studentId = ValidateParentToken(token);
 
+        // Missing student means the parent session is no longer valid (deleted student / stale token).
+        // Use InvalidToken (401) so the client clears localStorage instead of looping on dashboard.
         var student = await db.Students
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == studentId)
-            ?? throw new ApiException(ParentErrors.StudentNotFound);
+            ?? throw new ApiException(ParentErrors.InvalidToken);
 
         var lectures = await db.Set<Lecture>()
             .AsNoTracking()
@@ -232,14 +233,16 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
 
     private string CreateParentToken(Guid studentId)
     {
+        // Use short claim types so inbound JWT claim remapping cannot hide the student id.
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, studentId.ToString()),
+            new(JwtRegisteredClaimNames.Sub, studentId.ToString()),
             new(ClaimTypes.Role, "Parent"),
             new(TokenTypeClaim, ParentTokenType)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+        var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
         var token = new JwtSecurityToken(
             issuer: _jwtConfig.Issuer,
             audience: _jwtConfig.Audience,
@@ -248,14 +251,15 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return handler.WriteToken(token);
     }
 
     private Guid ValidateParentToken(string token)
     {
         try
         {
-            var result = new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
+            var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
+            var result = handler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidateAudience = true,
@@ -265,14 +269,19 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
                 ValidAudience = _jwtConfig.Audience,
                 RequireExpirationTime = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Secret)),
-                ClockSkew = TimeSpan.FromMinutes(1)
+                ClockSkew = TimeSpan.FromMinutes(1),
+                NameClaimType = JwtRegisteredClaimNames.Sub
             }, out _);
 
             var tokenType = result.FindFirst(TokenTypeClaim)?.Value;
             if (tokenType != ParentTokenType)
                 throw new ApiException(ParentErrors.InvalidToken);
 
-            var idValue = result.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var idValue =
+                result.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                ?? result.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? result.FindFirst("nameid")?.Value;
+
             if (!Guid.TryParse(idValue, out var studentId))
                 throw new ApiException(ParentErrors.InvalidToken);
 
@@ -288,21 +297,5 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
         }
     }
 
-    private static string NormalizePhone(string? phone)
-    {
-        if (string.IsNullOrWhiteSpace(phone))
-            return string.Empty;
-
-        var digits = Regex.Replace(phone, @"[^\d]", "");
-
-        if (digits.StartsWith("0020") && digits.Length > 4)
-            digits = digits[4..];
-        else if (digits.StartsWith("20") && digits.Length > 10)
-            digits = digits[2..];
-
-        if (digits.StartsWith("0") == false && digits.Length == 10)
-            digits = "0" + digits;
-
-        return digits;
-    }
+    private static string NormalizePhone(string? phone) => PhoneNumbers.Normalize(phone);
 }

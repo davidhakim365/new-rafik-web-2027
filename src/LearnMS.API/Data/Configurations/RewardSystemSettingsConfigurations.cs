@@ -17,6 +17,7 @@ public sealed class RewardSystemSettingsConfigurations : IEntityTypeConfiguratio
             SessionsPerMilestone = 20,
             SessionBonusIncrement = 20,
             MaxSessionValue = 200,
+            BonusesEnabled = true,
             UpdatedAt = new DateTime(2026, 7, 28, 0, 0, 0, DateTimeKind.Utc)
         });
     }

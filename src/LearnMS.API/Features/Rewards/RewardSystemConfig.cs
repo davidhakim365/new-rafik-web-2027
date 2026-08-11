@@ -8,12 +8,16 @@ public sealed class RewardSystemConfig
     public int SessionsPerMilestone { get; init; } = 20;
     public int SessionBonusIncrement { get; init; } = 20;
     public int MaxSessionValue { get; init; } = 200;
+    public bool BonusesEnabled { get; init; } = true;
 }
 
 public static class RewardSessionCalculator
 {
     public static int CalculateSessionValue(RewardSystemConfig config, int sessionsAttended)
     {
+        if (!config.BonusesEnabled)
+            return config.BaseSessionValue;
+
         var milestoneSize = Math.Max(1, config.SessionsPerMilestone);
         var milestones = sessionsAttended / milestoneSize;
         var value = config.BaseSessionValue + milestones * config.SessionBonusIncrement;
@@ -23,13 +27,16 @@ public static class RewardSessionCalculator
 
     public static bool IsAtMaxSessionValue(RewardSystemConfig config, int sessionsAttended)
     {
+        if (!config.BonusesEnabled)
+            return true;
+
         var maxValue = Math.Max(config.BaseSessionValue, config.MaxSessionValue);
         return CalculateSessionValue(config, sessionsAttended) >= maxValue;
     }
 
     public static int SessionsUntilNextBonus(RewardSystemConfig config, int sessionsAttended)
     {
-        if (IsAtMaxSessionValue(config, sessionsAttended))
+        if (!config.BonusesEnabled || IsAtMaxSessionValue(config, sessionsAttended))
             return 0;
 
         var milestoneSize = Math.Max(1, config.SessionsPerMilestone);

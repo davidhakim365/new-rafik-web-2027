@@ -235,6 +235,7 @@ public sealed class RewardsService(
         settings.SessionsPerMilestone = request.SessionsPerMilestone;
         settings.SessionBonusIncrement = request.SessionBonusIncrement;
         settings.MaxSessionValue = request.MaxSessionValue;
+        settings.BonusesEnabled = request.BonusesEnabled;
         settings.UpdatedAt = DateTime.UtcNow;
 
         db.RewardSystemSettings.Update(settings);
@@ -323,7 +324,12 @@ public sealed class RewardsService(
             Math.Max(config.BaseSessionValue, config.MaxSessionValue));
 
         string message;
-        if (atMax)
+        if (!config.BonusesEnabled)
+        {
+            message =
+                $"Added {sessionValue} apples for session attendance. Bonuses are disabled; sessions attended: {assistant.SessionsAttended}.";
+        }
+        else if (atMax)
         {
             message =
                 $"Added {sessionValue} apples for session attendance. Session value is at the maximum of {config.MaxSessionValue}.";
@@ -393,6 +399,7 @@ public sealed class RewardsService(
             SessionsPerMilestone = config.SessionsPerMilestone,
             SessionBonusIncrement = config.SessionBonusIncrement,
             MaxSessionValue = config.MaxSessionValue,
+            BonusesEnabled = config.BonusesEnabled,
             Events = events
         };
     }
@@ -405,7 +412,8 @@ public sealed class RewardsService(
             BaseSessionValue = settings.BaseSessionValue,
             SessionsPerMilestone = settings.SessionsPerMilestone,
             SessionBonusIncrement = settings.SessionBonusIncrement,
-            MaxSessionValue = settings.MaxSessionValue
+            MaxSessionValue = settings.MaxSessionValue,
+            BonusesEnabled = settings.BonusesEnabled
         };
     }
 
@@ -425,6 +433,7 @@ public sealed class RewardsService(
             SessionsPerMilestone = defaults.SessionsPerMilestone,
             SessionBonusIncrement = defaults.SessionBonusIncrement,
             MaxSessionValue = defaults.MaxSessionValue,
+            BonusesEnabled = defaults.BonusesEnabled,
             UpdatedAt = DateTime.UtcNow
         };
         await db.RewardSystemSettings.AddAsync(settings);
@@ -449,6 +458,7 @@ public sealed class RewardsService(
         SessionsPerMilestone = settings.SessionsPerMilestone,
         SessionBonusIncrement = settings.SessionBonusIncrement,
         MaxSessionValue = settings.MaxSessionValue,
+        BonusesEnabled = settings.BonusesEnabled,
         UpdatedAt = settings.UpdatedAt
     };
 }
