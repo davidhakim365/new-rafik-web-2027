@@ -1,5 +1,6 @@
 import {
   useStudentRegistrationSettingsQuery,
+  useStudentRosterStatisticsQuery,
   useUpdateStudentRegistrationSettingsMutation,
 } from "@/api/students-api";
 import { DataTable } from "@/components/data-table";
@@ -24,6 +25,7 @@ import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { Permission } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { studentsColumns } from "@/pages/dashboard/students/columns";
+import { StudentRosterStats } from "@/pages/dashboard/students/student-roster-stats";
 import { PaginationState } from "@tanstack/react-table";
 import { Apple, Download, Loader2, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -51,6 +53,8 @@ const StudentsPage = () => {
     search,
     level: level as StudentLevel,
   });
+  const { data: rosterStats, isLoading: statsLoading } =
+    useStudentRosterStatisticsQuery(level);
 
   const isSignupEnabled =
     registrationSettings?.data?.isSignupEnabled ?? true;
@@ -87,7 +91,7 @@ const StudentsPage = () => {
   return (
     <DashboardPageShell
       title="Students"
-      description="Search, manage, and export your student roster."
+      description="Search, manage, and export your student roster. Overview counts web (ONL-) and center students."
       icon={Users}
       actions={
         <div className="flex flex-wrap items-center gap-2">
@@ -129,6 +133,16 @@ const StudentsPage = () => {
       }
       fullWidth
     >
+      <StudentRosterStats
+        stats={rosterStats?.data}
+        isLoading={statsLoading}
+        selectedLevel={level}
+        onSelectLevel={(nextLevel) => {
+          setLevel(nextLevel);
+          setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+        }}
+      />
+
       <DashboardCard>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">

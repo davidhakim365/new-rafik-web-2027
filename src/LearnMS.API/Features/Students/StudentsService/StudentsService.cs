@@ -218,6 +218,47 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
         );
     }
 
+    public async Task<GetStudentRosterStatisticsResponse> QueryAsync(GetStudentRosterStatisticsQuery query)
+    {
+        var rows = await db.Students
+            .AsNoTracking()
+            .Select(s => new
+            {
+                s.Level,
+                IsOnline = s.StudentCode.ToUpper().StartsWith("ONL-"),
+                DeviceLinked = s.DeviceKey != null && s.DeviceKey != "",
+                s.IsBlocked,
+                HasCredit = s.Credit > 0,
+                HasApples = s.Apples > 0
+            })
+            .ToListAsync();
+
+        var byLevel = rows
+            .GroupBy(s => s.Level)
+            .Select(g => new StudentLevelRosterBucket(
+                g.Key,
+                g.Count(),
+                g.Count(s => s.IsOnline),
+                g.Count(s => !s.IsOnline)))
+            .OrderBy(x => x.Level)
+            .ToList();
+
+        var scoped = query.Level is not null
+            ? rows.Where(s => s.Level == query.Level).ToList()
+            : rows;
+
+        return new GetStudentRosterStatisticsResponse(
+            scoped.Count,
+            scoped.Count(s => s.IsOnline),
+            scoped.Count(s => !s.IsOnline),
+            scoped.Count(s => s.DeviceLinked),
+            scoped.Count(s => s.IsBlocked),
+            scoped.Count(s => s.HasCredit),
+            scoped.Count(s => s.HasApples),
+            byLevel
+        );
+    }
+
     public async Task<GetStudentResult> QueryAsync(GetStudentQuery query)
     {
         var result =

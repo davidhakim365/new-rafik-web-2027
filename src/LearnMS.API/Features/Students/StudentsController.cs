@@ -38,6 +38,24 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpGet("statistics")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents, Permission.ManageGrantedAccess, Permission.ManageExpirationTime, Permission.ManageStudentApples])]
+    [SwaggerOperation(OperationId = "GetStudentRosterStatistics")]
+    public async Task<ApiWrapper.Success<GetStudentRosterStatisticsResponse>> GetStatistics(StudentLevel? level)
+    {
+        var result = await studentsService.QueryAsync(new GetStudentRosterStatisticsQuery
+        {
+            Level = level
+        });
+
+        return new ApiWrapper.Success<GetStudentRosterStatisticsResponse>
+        {
+            Data = result,
+            Message = "Retrieved student statistics successfully"
+        };
+    }
+
     [HttpDelete("{studentId:guid}")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
     [SwaggerOperation(OperationId = "DeleteStudent")]

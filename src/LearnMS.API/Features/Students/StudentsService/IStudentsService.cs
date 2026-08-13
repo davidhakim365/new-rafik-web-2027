@@ -13,6 +13,7 @@ public interface IStudentsService
     public Task ExecuteAsync(UpdateLectureEnrollmentExpirationCommand command);
 
     public Task<PageList<SingleStudent>> QueryAsync(GetStudentsQuery query);
+    public Task<GetStudentRosterStatisticsResponse> QueryAsync(GetStudentRosterStatisticsQuery query);
     public Task<PageList<SingleStudentLecture>> QueryAsync(GetStudentLecturesQuery query);
     public Task<PageList<SingleStudentExam>> QueryAsync(GetStudentExamsQuery query);
     public Task<GetStudentResult> QueryAsync(GetStudentQuery query);

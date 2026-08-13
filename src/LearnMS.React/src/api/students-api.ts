@@ -117,6 +117,38 @@ export type StudentRegistrationSettings = {
   updatedAt: string;
 };
 
+export type StudentLevelRosterBucket = {
+  level: string;
+  total: number;
+  online: number;
+  offline: number;
+};
+
+export type StudentRosterStatistics = {
+  total: number;
+  online: number;
+  offline: number;
+  deviceLinked: number;
+  blocked: number;
+  withCredit: number;
+  withApples: number;
+  byLevel: StudentLevelRosterBucket[];
+};
+
+export const useStudentRosterStatisticsQuery = (level?: string) => {
+  const normalizedLevel = !level || level === "all" ? undefined : level;
+
+  return useQuery<ApiResponse<StudentRosterStatistics>>({
+    queryKey: ["students", "statistics", { level: normalizedLevel ?? "all" }],
+    queryFn: () =>
+      api
+        .get("/api/students/statistics", {
+          params: normalizedLevel ? { level: normalizedLevel } : undefined,
+        })
+        .then((res) => res.data),
+  });
+};
+
 export const useStudentRegistrationSettingsQuery = () => {
   return useQuery<ApiResponse<StudentRegistrationSettings>>({
     queryKey: ["student-registration-settings"],
