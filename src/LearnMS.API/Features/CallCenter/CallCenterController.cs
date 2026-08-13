@@ -126,6 +126,28 @@ public sealed class CallCenterController(
         };
     }
 
+    [HttpGet("courses/{courseId:guid}/lectures/{lectureId:guid}/students/{studentId:guid}/lectures")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
+    [SwaggerOperation(OperationId = "GetCallCenterStudentLectures")]
+    public async Task<ApiWrapper.Success<CallCenterStudentLecturesResult>> GetStudentLectures(
+        Guid courseId,
+        Guid lectureId,
+        Guid studentId)
+    {
+        var result = await callCenterService.QueryAsync(new GetCallCenterStudentLecturesQuery
+        {
+            CourseId = courseId,
+            LectureId = lectureId,
+            StudentId = studentId
+        });
+
+        return new()
+        {
+            Data = result,
+            Message = "Student lecture history retrieved successfully"
+        };
+    }
+
     [HttpGet("courses/{courseId:guid}/lectures/{lectureId:guid}/students/export")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCallCenter])]
     [SwaggerOperation(OperationId = "ExportCallCenterStudents")]

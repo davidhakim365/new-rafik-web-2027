@@ -389,6 +389,90 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         }).ToList();
     }
 
+    public async Task<CallCenterStudentLecturesResult> QueryAsync(GetCallCenterStudentLecturesQuery query)
+    {
+        var lecture = await db.Lectures
+            .AsNoTracking()
+            .Include(x => x.Course)
+            .FirstOrDefaultAsync(x => x.Id == query.LectureId)
+            ?? throw new ApiException(CallCenterErrors.LectureNotFound);
+
+        if (lecture.CourseId != query.CourseId)
+            throw new ApiException(CallCenterErrors.LectureCourseMismatch);
+
+        var student = await db.Students
+            .AsNoTracking()
+            .Select(s => new { s.Id, s.Level })
+            .FirstOrDefaultAsync(x => x.Id == query.StudentId)
+            ?? throw new ApiException(CallCenterErrors.StudentNotFound);
+
+        var items = await db.Lectures
+            .AsNoTracking()
+            .Where(l => l.Course.IsPublished && l.Course.Level == student.Level)
+            .Select(l => new CallCenterStudentLectureDto
+            {
+                Id = l.Id,
+                CourseId = l.CourseId,
+                CourseTitle = l.Course.Title,
+                Title = l.Title,
+                Order = l.Order,
+                IsCurrent = l.Id == query.LectureId,
+                Attended = l.LectureAttendances
+                    .Any(a => a.StudentId == query.StudentId && a.AttendedAt != null),
+                HomeworkScore = l.LectureHomeworks
+                    .Where(h => h.StudentId == query.StudentId)
+                    .Select(h => (decimal?)h.Score)
+                    .FirstOrDefault(),
+                HomeworkFullMark = l.HomeworkFullMark,
+                ChooseHomeworkScore = l.LectureChooseHomeworks
+                    .Where(h => h.StudentId == query.StudentId)
+                    .Select(h => (decimal?)h.Score)
+                    .FirstOrDefault(),
+                ChooseHomeworkFullMark = l.ChooseHomeworkFullMark,
+                QuizScore = l.LectureQuizzes
+                    .Where(q => q.StudentId == query.StudentId)
+                    .Select(q => (decimal?)q.Score)
+                    .FirstOrDefault(),
+                QuizFullMark = l.QuizFullMark,
+                StudentQuizzesScore = l.Quizzes
+                    .Sum(q => q.QuizSubmissions
+                        .Where(sub => sub.StudentId == query.StudentId)
+                        .Select(sub => (decimal?)sub.NumOfCorrect)
+                        .FirstOrDefault()),
+                TotalQuizzesScore = l.Quizzes
+                    .Sum(q => q.QuizSubmissions
+                        .Where(sub => sub.StudentId == query.StudentId)
+                        .Select(sub => (decimal?)sub.NumOfQuestions)
+                        .FirstOrDefault()),
+                EnrollmentStatus = l.LectureEnrollments
+                    .Where(e => e.StudentId == query.StudentId)
+                    .Select(e => e.ExpiresAt >= DateTime.UtcNow ? "Active" : "Expired")
+                    .FirstOrDefault() ?? "NotEnrolled",
+                Called = l.LectureStudentCallLogs
+                    .Any(c => c.StudentId == query.StudentId && c.Called),
+                Comment = l.LectureStudentCallLogs
+                    .Where(c => c.StudentId == query.StudentId)
+                    .Select(c => c.Comment)
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        items = items
+            .OrderBy(x => x.CourseId == query.CourseId ? 0 : 1)
+            .ThenBy(x => x.CourseTitle)
+            .ThenBy(x => x.Order)
+            .ThenBy(x => x.Title)
+            .ToList();
+
+        return new CallCenterStudentLecturesResult
+        {
+            Items = items,
+            PresentCount = items.Count(x => x.Attended),
+            AbsentCount = items.Count(x => !x.Attended),
+            TotalCount = items.Count
+        };
+    }
+
     private static string ResolveStudyMode(string? studentCode)
     {
         return IsOnlineStudentCode(studentCode) ? "online" : "offline";

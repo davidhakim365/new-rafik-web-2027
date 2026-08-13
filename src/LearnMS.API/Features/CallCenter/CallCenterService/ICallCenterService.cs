@@ -10,5 +10,6 @@ public interface ICallCenterService
     Task ExecuteAsync(RecordCallCenterNotifyCommand command);
     Task<SetCallCenterStudentBlockedResult> ExecuteAsync(SetCallCenterStudentBlockedCommand command);
     Task<IReadOnlyList<CallCenterHistoryItemDto>> QueryAsync(GetCallCenterHistoryQuery query);
+    Task<CallCenterStudentLecturesResult> QueryAsync(GetCallCenterStudentLecturesQuery query);
     IAsyncEnumerable<List<ExportCallCenterStudentRow>> ExportAsync(ExportCallCenterStudentsQuery query);
 }

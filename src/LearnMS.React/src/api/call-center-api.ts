@@ -178,6 +178,72 @@ export function useCallCenterHistoryQuery(
   });
 }
 
+export type CallCenterStudentLecture = {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  title: string;
+  order: number;
+  isCurrent: boolean;
+  attended: boolean;
+  homeworkScore?: number | null;
+  homeworkFullMark?: number | null;
+  chooseHomeworkScore?: number | null;
+  chooseHomeworkFullMark?: number | null;
+  quizScore?: number | null;
+  quizFullMark?: number | null;
+  studentQuizzesScore?: number | null;
+  totalQuizzesScore?: number | null;
+  enrollmentStatus?: string | null;
+  called: boolean;
+  comment?: string | null;
+};
+
+export type CallCenterStudentLecturesResult = {
+  items: CallCenterStudentLecture[];
+  presentCount: number;
+  absentCount: number;
+  totalCount: number;
+};
+
+export function getCallCenterStudentLecturesQueryKey(vars: {
+  courseId: string;
+  lectureId: string;
+  studentId: string;
+}) {
+  return [
+    "call-center-student-lectures",
+    vars.courseId,
+    vars.lectureId,
+    vars.studentId,
+  ] as const;
+}
+
+export const getCallCenterStudentLectures = (vars: {
+  courseId: string;
+  lectureId: string;
+  studentId: string;
+}) =>
+  api
+    .get<ApiSuccess<CallCenterStudentLecturesResult>>(
+      `/api/call-center/courses/${vars.courseId}/lectures/${vars.lectureId}/students/${vars.studentId}/lectures`
+    )
+    .then((res) => res.data);
+
+export function useCallCenterStudentLecturesQuery(
+  vars: { courseId: string; lectureId: string; studentId: string } | null,
+  enabled = false
+) {
+  return useQuery({
+    queryKey: vars
+      ? getCallCenterStudentLecturesQueryKey(vars)
+      : ["call-center-student-lectures", "idle"],
+    queryFn: () => getCallCenterStudentLectures(vars!),
+    enabled: !!vars && enabled,
+    throwOnError: false,
+  });
+}
+
 export const recordCallCenterNotify = (vars: {
   courseId: string;
   lectureId: string;

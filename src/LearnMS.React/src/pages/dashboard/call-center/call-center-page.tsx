@@ -1,9 +1,11 @@
 import {
   CallCenterStudent,
+  CallCenterStudentLecture,
   buildCallCenterWhatsAppMessage,
   openWhatsApp,
   resolveCallCenterStudyMode,
   useCallCenterHistoryQuery,
+  useCallCenterStudentLecturesQuery,
   useCallCenterStudentsQuery,
   useRecordCallCenterNotifyMutation,
   useSetCallCenterStudentBlockedMutation,
@@ -42,6 +44,7 @@ import useDownloadFile from "@/hooks/useDownloadFile";
 import { toast } from "@/lib/utils";
 import {
   Ban,
+  BookOpen,
   ChevronDown,
   ChevronUp,
   FileSpreadsheet,
@@ -64,6 +67,23 @@ const LEVEL_LABELS: Record<string, string> = {
 
 function formatScore(value?: number | null) {
   return value == null ? "—" : String(value);
+}
+
+function formatScoreWithMark(
+  value?: number | null,
+  fullMark?: number | null
+) {
+  if (value == null) return "—";
+  if (fullMark == null) return String(value);
+  return `${value} / ${fullMark}`;
+}
+
+function formatOnlineQuizzes(
+  studentScore?: number | null,
+  totalScore?: number | null
+) {
+  if (studentScore == null && totalScore == null) return "—";
+  return `${studentScore ?? 0} / ${totalScore ?? 0}`;
 }
 
 const CallCenterPage = () => {
@@ -389,11 +409,16 @@ function CallCenterStudentCard({
   const [called, setCalled] = useState(student.called);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [lecturesOpen, setLecturesOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
 
   const historyQuery = useCallCenterHistoryQuery(
     { courseId, lectureId, studentId: student.id },
     historyOpen && canViewHistory
+  );
+  const lecturesQuery = useCallCenterStudentLecturesQuery(
+    { courseId, lectureId, studentId: student.id },
+    lecturesOpen
   );
 
   useEffect(() => {
@@ -603,6 +628,20 @@ function CallCenterStudentCard({
             )}
             {isBlocked ? "Unblock" : "Block"}
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="gap-2"
+            onClick={() => setLecturesOpen((open) => !open)}
+          >
+            <BookOpen className="h-4 w-4" />
+            Lectures
+            {lecturesOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
           {canViewHistory && (
             <Button
               type="button"
@@ -639,6 +678,13 @@ function CallCenterStudentCard({
           Save
         </Button>
       </div>
+
+      {lecturesOpen && (
+        <StudentLectureHistoryPanel
+          query={lecturesQuery}
+          courseId={courseId}
+        />
+      )}
 
       {canViewHistory && historyOpen && (
         <div className="mt-3 rounded-lg border border-border/60 bg-muted/20 p-3">
@@ -745,6 +791,205 @@ function CallCenterStudentCard({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function StudentLectureHistoryPanel({
+  query,
+  courseId,
+}: {
+  query: ReturnType<typeof useCallCenterStudentLecturesQuery>;
+  courseId: string;
+}) {
+  const data = query.data?.data;
+  const items = data?.items ?? [];
+  const sameCourse = items.filter((item) => item.courseId === courseId);
+  const otherCourses = items.filter((item) => item.courseId !== courseId);
+  const present = data?.presentCount ?? 0;
+  const absent = data?.absentCount ?? 0;
+  const total = data?.totalCount ?? 0;
+
+  return (
+    <div className="mt-3 rounded-lg border border-border/60 bg-muted/20 p-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium">Lecture history</p>
+        {data && (
+          <div className="flex flex-wrap gap-1.5 text-xs">
+            <Badge className="bg-emerald-600 hover:bg-emerald-600">
+              Present {present}
+            </Badge>
+            <Badge className="bg-red-600 hover:bg-red-600">
+              Absent {absent}
+            </Badge>
+            <Badge variant="outline">{total} lectures</Badge>
+          </div>
+        )}
+      </div>
+      {query.isLoading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading lecture history...
+        </div>
+      ) : query.isError ? (
+        <p className="text-sm text-destructive">
+          Could not load lecture history.
+        </p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No other lectures found for this student.
+        </p>
+      ) : (
+        <div className="max-h-80 overflow-auto rounded-md border border-border/50">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="sticky top-0 bg-muted/80 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
+              <tr>
+                <th className="px-3 py-2 font-medium">Lecture</th>
+                <th className="px-3 py-2 font-medium">Attendance</th>
+                <th className="px-3 py-2 font-medium">Essay</th>
+                <th className="px-3 py-2 font-medium">Choose</th>
+                <th className="px-3 py-2 font-medium">Quiz</th>
+                <th className="px-3 py-2 font-medium">Online quizzes</th>
+                <th className="px-3 py-2 font-medium">Called</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sameCourse.length > 0 && (
+                <LectureHistoryRows
+                  lectures={sameCourse}
+                  groupLabel={sameCourse[0]?.courseTitle}
+                />
+              )}
+              {otherCourses.map((lecture, index) => {
+                const prev = otherCourses[index - 1];
+                const showGroup = lecture.courseId !== prev?.courseId;
+                return (
+                  <LectureHistoryRow
+                    key={lecture.id}
+                    lecture={lecture}
+                    groupLabel={showGroup ? lecture.courseTitle : undefined}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LectureHistoryRows({
+  lectures,
+  groupLabel,
+}: {
+  lectures: CallCenterStudentLecture[];
+  groupLabel?: string;
+}) {
+  return (
+    <>
+      {lectures.map((lecture, index) => (
+        <LectureHistoryRow
+          key={lecture.id}
+          lecture={lecture}
+          groupLabel={index === 0 ? groupLabel : undefined}
+        />
+      ))}
+    </>
+  );
+}
+
+function LectureHistoryRow({
+  lecture,
+  groupLabel,
+}: {
+  lecture: CallCenterStudentLecture;
+  groupLabel?: string;
+}) {
+  return (
+    <>
+      {groupLabel && (
+        <tr className="bg-muted/40">
+          <td
+            colSpan={7}
+            className="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+          >
+            {groupLabel}
+          </td>
+        </tr>
+      )}
+      <tr
+        className={
+          lecture.isCurrent
+            ? "bg-sky-500/10"
+            : "odd:bg-background/60 even:bg-background/30"
+        }
+      >
+        <td className="px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">{lecture.title}</span>
+            {lecture.isCurrent && (
+              <Badge variant="outline" className="text-[10px]">
+                Current
+              </Badge>
+            )}
+            {lecture.enrollmentStatus &&
+              lecture.enrollmentStatus !== "NotEnrolled" && (
+                <Badge
+                  variant="outline"
+                  className={
+                    lecture.enrollmentStatus === "Active"
+                      ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                      : "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                  }
+                >
+                  {lecture.enrollmentStatus}
+                </Badge>
+              )}
+          </div>
+          {lecture.comment?.trim() ? (
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+              {lecture.comment}
+            </p>
+          ) : null}
+        </td>
+        <td className="px-3 py-2">
+          <Badge
+            className={
+              lecture.attended
+                ? "bg-emerald-600 hover:bg-emerald-600"
+                : "bg-red-600 hover:bg-red-600"
+            }
+          >
+            {lecture.attended ? "Present" : "Absent"}
+          </Badge>
+        </td>
+        <td className="px-3 py-2 font-medium">
+          {formatScoreWithMark(lecture.homeworkScore, lecture.homeworkFullMark)}
+        </td>
+        <td className="px-3 py-2 font-medium">
+          {formatScoreWithMark(
+            lecture.chooseHomeworkScore,
+            lecture.chooseHomeworkFullMark
+          )}
+        </td>
+        <td className="px-3 py-2 font-medium">
+          {formatScoreWithMark(lecture.quizScore, lecture.quizFullMark)}
+        </td>
+        <td className="px-3 py-2 font-medium">
+          {formatOnlineQuizzes(
+            lecture.studentQuizzesScore,
+            lecture.totalQuizzesScore
+          )}
+        </td>
+        <td className="px-3 py-2">
+          {lecture.called ? (
+            <Badge variant="outline">Called</Badge>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </td>
+      </tr>
+    </>
   );
 }
 
