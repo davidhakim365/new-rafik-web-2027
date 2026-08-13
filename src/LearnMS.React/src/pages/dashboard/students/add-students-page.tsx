@@ -25,7 +25,15 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronLeft, ChevronRight, Loader2, UserPlus } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  UserPlus,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -81,6 +89,7 @@ const AddStudentsPage = () => {
   const [step, setStep] = useState(0);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [lastCreated, setLastCreated] = useState<LastCreated | null>(null);
+  const [passwordShown, setPasswordShown] = useState(false);
   const firstFieldRef = useRef<HTMLButtonElement | null>(null);
 
   const form = useForm<CreateStudentRequest>({
@@ -169,6 +178,7 @@ const AddStudentsPage = () => {
 
   const resetForNext = () => {
     form.reset(defaultValues);
+    setPasswordShown(false);
     setStep(0);
     requestAnimationFrame(() => firstFieldRef.current?.focus());
   };
@@ -466,7 +476,27 @@ const AddStudentsPage = () => {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" {...field} />
+                            <div className="relative">
+                              <Input
+                                type={passwordShown ? "text" : "password"}
+                                className="pr-10"
+                                {...field}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPasswordShown((shown) => !shown)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label={
+                                  passwordShown ? "Hide password" : "Show password"
+                                }
+                              >
+                                {passwordShown ? (
+                                  <EyeOff size={18} />
+                                ) : (
+                                  <Eye size={18} />
+                                )}
+                              </button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -479,7 +509,27 @@ const AddStudentsPage = () => {
                         <FormItem>
                           <FormLabel>Confirm Password</FormLabel>
                           <FormControl>
-                            <Input type="password" {...field} />
+                            <div className="relative">
+                              <Input
+                                type={passwordShown ? "text" : "password"}
+                                className="pr-10"
+                                {...field}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPasswordShown((shown) => !shown)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label={
+                                  passwordShown ? "Hide password" : "Show password"
+                                }
+                              >
+                                {passwordShown ? (
+                                  <EyeOff size={18} />
+                                ) : (
+                                  <Eye size={18} />
+                                )}
+                              </button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
