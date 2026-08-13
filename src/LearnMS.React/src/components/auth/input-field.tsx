@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -30,8 +30,19 @@ const InputField = ({
   setPasswordShown,
   label,
 }: InputFieldProps) => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const [internalPasswordShown, setInternalPasswordShown] = useState(false);
+  const isPasswordVisible = passwordShown ?? internalPasswordShown;
+
+  const togglePassword = () => {
+    const next = !isPasswordVisible;
+    if (setPasswordShown) {
+      setPasswordShown(next);
+    } else {
+      setInternalPasswordShown(next);
+    }
+  };
 
   return (
     <motion.div
@@ -49,28 +60,19 @@ const InputField = ({
       <div className="relative">
         <input
           id={name}
-          type={isPassword ? (passwordShown ? "text" : "password") : type}
+          type={isPassword ? (isPasswordVisible ? "text" : "password") : type}
           className={cn(
             "w-full px-4 py-3 rounded-lg border transition-all",
             "bg-white dark:bg-zinc-800",
             "text-zinc-900 dark:text-zinc-100",
             "focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600",
             "placeholder:text-zinc-400 dark:placeholder:text-zinc-500",
+            "[&::-ms-reveal]:hidden [&::-ms-clear]:hidden",
             error
               ? "border-destructive"
               : "border-zinc-200 dark:border-zinc-700",
-            // Add padding based on RTL and icons
-            isRTL
-              ? icon
-                ? "pr-12"
-                : isPassword
-                ? "pr-12"
-                : ""
-              : icon
-              ? "pl-12"
-              : isPassword
-              ? "pr-12"
-              : ""
+            icon && (isRTL ? "pr-12" : "pl-12"),
+            isPassword && (isRTL ? "pl-12" : "pr-12")
           )}
           placeholder={placeholder}
           {...register(name)}
@@ -78,7 +80,7 @@ const InputField = ({
         {icon && (
           <div
             className={cn(
-              "absolute transform -translate-y-1/2 top-1/2",
+              "absolute transform -translate-y-1/2 top-1/2 pointer-events-none",
               isRTL ? "right-3" : "left-3",
               "text-zinc-400 dark:text-zinc-500"
             )}
@@ -86,16 +88,22 @@ const InputField = ({
             {icon}
           </div>
         )}
-        {isPassword && setPasswordShown && (
+        {isPassword && (
           <button
             type="button"
-            onClick={() => setPasswordShown(!passwordShown)}
+            onClick={togglePassword}
             className={cn(
-              "absolute transition-colors -translate-y-1/2 text-zinc-400 dark:text-zinc-500 top-1/2 hover:text-zinc-600 dark:hover:text-zinc-300",
-              isRTL ? "left-3" : "right-3"
+              "absolute z-10 flex h-8 w-8 items-center justify-center rounded-md transition-colors -translate-y-1/2 top-1/2",
+              "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200",
+              isRTL ? "left-2" : "right-2"
             )}
+            aria-label={
+              isPasswordVisible
+                ? t("auth.forms.password.hide", { defaultValue: "Hide password" })
+                : t("auth.forms.password.show", { defaultValue: "Show password" })
+            }
           >
-            {passwordShown ? <EyeOff size={20} /> : <Eye size={20} />}
+            {isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
         )}
       </div>

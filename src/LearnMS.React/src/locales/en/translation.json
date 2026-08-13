@@ -461,7 +461,9 @@
       },
       "password": {
         "label": "Password",
-        "placeholder": "Enter your password"
+        "placeholder": "Enter your password",
+        "show": "Show password",
+        "hide": "Hide password"
       },
       "confirmPassword": {
         "label": "Confirm Password",
