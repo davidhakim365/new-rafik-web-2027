@@ -257,6 +257,21 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpPost("unlink-all-devices")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "UnlinkAllStudentDevices")]
+    public async Task<ApiWrapper.Success<UnlinkAllStudentDevicesResult>> UnlinkAllDevices()
+    {
+        var result = await studentsService.ExecuteAsync(new UnlinkAllStudentDevicesCommand());
+        return new ApiWrapper.Success<UnlinkAllStudentDevicesResult>
+        {
+            Data = result,
+            Message = result.UnlinkedCount > 0
+                ? $"Unlinked {result.UnlinkedCount} device(s) successfully"
+                : "No linked devices found"
+        };
+    }
+
 
 
     [HttpGet("{studentId:guid}/lectures")]

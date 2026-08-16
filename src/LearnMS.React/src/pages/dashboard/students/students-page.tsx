@@ -1,8 +1,10 @@
 import {
   useStudentRegistrationSettingsQuery,
   useStudentRosterStatisticsQuery,
+  useUnlinkAllStudentDevicesMutation,
   useUpdateStudentRegistrationSettingsMutation,
 } from "@/api/students-api";
+import Confirmation from "@/components/confirmation";
 import { DataTable } from "@/components/data-table";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
@@ -27,7 +29,7 @@ import useDownloadFile from "@/hooks/useDownloadFile";
 import { studentsColumns } from "@/pages/dashboard/students/columns";
 import { StudentRosterStats } from "@/pages/dashboard/students/student-roster-stats";
 import { PaginationState } from "@tanstack/react-table";
-import { Apple, Download, Loader2, Search, Users } from "lucide-react";
+import { Apple, Download, Loader2, Network, Search, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -40,6 +42,7 @@ const StudentsPage = () => {
     useStudentRegistrationSettingsQuery();
   const updateRegistrationSettings =
     useUpdateStudentRegistrationSettingsMutation();
+  const unlinkAllDevices = useUnlinkAllStudentDevicesMutation();
 
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: parseInt(searchParams.get("page") || "1") - 1,
@@ -61,6 +64,23 @@ const StudentsPage = () => {
 
   const onExport = async () => {
     await download(`/api/students/export?level=${level}`, "students.csv");
+  };
+
+  const linkedDeviceCount = rosterStats?.data?.deviceLinked ?? 0;
+
+  const onUnlinkAllDevices = () => {
+    unlinkAllDevices.mutate(undefined, {
+      onSuccess: (res) => {
+        const count = res.data?.unlinkedCount ?? 0;
+        toast({
+          title: count > 0 ? "All devices unlinked" : "No linked devices",
+          description:
+            count > 0
+              ? `Unlinked ${count} student device${count === 1 ? "" : "s"}. Students will need to log in again.`
+              : "There were no linked devices to unlink.",
+        });
+      },
+    });
   };
 
   const onToggleSignup = (enabled: boolean) => {
@@ -155,6 +175,30 @@ const StudentsPage = () => {
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Confirmation
+              title="Unlink all student devices?"
+              description={
+                level === "all" && linkedDeviceCount > 0
+                  ? `This will unlink ${linkedDeviceCount} linked device${linkedDeviceCount === 1 ? "" : "s"} across all students. They will need to log in again.`
+                  : "This will unlink every linked student device, not just the current page or level. Students will need to log in again."
+              }
+              disabled={unlinkAllDevices.isPending}
+              onConfirm={onUnlinkAllDevices}
+              button={
+                <Button
+                  disabled={unlinkAllDevices.isPending}
+                  variant="outline"
+                  className="border-red-500/30 text-red-600 hover:bg-red-500 hover:text-white dark:text-red-400"
+                >
+                  {unlinkAllDevices.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Network className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">Unlink All Devices</span>
+                </Button>
+              }
+            />
             <Button
               disabled={isDownloading}
               variant="outline"

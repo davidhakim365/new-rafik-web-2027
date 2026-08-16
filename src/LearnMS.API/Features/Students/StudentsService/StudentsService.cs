@@ -177,6 +177,19 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
         await db.SaveChangesAsync();
     }
 
+    public async Task<UnlinkAllStudentDevicesResult> ExecuteAsync(UnlinkAllStudentDevicesCommand _)
+    {
+        string? emptyDeviceKey = null;
+        var unlinkedCount = await db.Set<Student>()
+            .Where(x => x.DeviceKey != null && x.DeviceKey != "")
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.DeviceKey, emptyDeviceKey));
+
+        return new UnlinkAllStudentDevicesResult
+        {
+            UnlinkedCount = unlinkedCount
+        };
+    }
+
     public async Task<PageList<SingleStudent>> QueryAsync(GetStudentsQuery query)
     {
         string? search = null;

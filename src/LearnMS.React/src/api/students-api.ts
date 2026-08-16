@@ -212,6 +212,23 @@ export const useDeleteStudentMutation = () => {
   });
 };
 
+export type UnlinkAllStudentDevicesResult = {
+  unlinkedCount: number;
+};
+
+export const useUnlinkAllStudentDevicesMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<ApiResponse<UnlinkAllStudentDevicesResult>, {}, void>({
+    throwOnError: false,
+    mutationFn: () =>
+      api.post("/api/students/unlink-all-devices").then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["/api/students"] });
+    },
+  });
+};
+
 export const useStudentQuery = ({ id }: { id: string }) => {
   return useQuery<ApiResponse<Student>>({
     queryKey: ["student", { id }],
