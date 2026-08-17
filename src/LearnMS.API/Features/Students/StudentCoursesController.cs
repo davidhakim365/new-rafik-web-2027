@@ -230,7 +230,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                 Order = l.Order,
                 ImageUrl = l.ImageUrl,
                 HomeworkVideoUrl = l.HomeworkVideoUrl,
-                ChooseHomeworkFormUrl = GoogleFontsPrefill.ApplyPrefill(
+                ChooseHomeworkFormUrl = GoogleFormsPrefill.ApplyPrefill(
                     l.ChooseHomeworkFormUrl,
                     l.ChooseHomeworkStudentIdEntryId,
                     l.ChooseHomeworkNameEntryId,

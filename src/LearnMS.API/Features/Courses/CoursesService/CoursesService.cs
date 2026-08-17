@@ -2085,7 +2085,7 @@ public sealed class CoursesService : ICoursesService
         {
             Id = lecture.Id,
             Title = lecture.Title,
-            Description = lecture.Description,
+            Description = lecture.Description ?? "",
             CourseId = lecture.CourseId,
             ExpiresAt = expiresAt,
             Enrollment = EnrollmentStatus.FromExpiresAt(expiresAt),
