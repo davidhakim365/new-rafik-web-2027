@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useGetStudentCourses } from "@/generated/api";
 import { StudentCourseDto, StudentLevel } from "@/generated/model";
 import { CoursesGridSkeleton } from "@/components/ui/course-skeleton";
+import { resolveEnrollment } from "@/lib/enrollment";
 
 export const StudentCoursesPage = () => {
   const { t, i18n } = useTranslation();
@@ -116,6 +117,7 @@ export const StudentCoursesPage = () => {
 function CourseCard({ course }: { course: StudentCourseDto }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const enrollment = resolveEnrollment(course.enrollment, course.expiresAt);
 
   const getLevelDisplayName = (level: string) => {
     switch (level) {
@@ -189,7 +191,7 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
             </div>
 
             <div className="absolute top-5 right-5 sm:top-6 sm:right-6">
-              {getEnrollmentBadge(course.enrollment)}
+              {getEnrollmentBadge(enrollment)}
             </div>
           </div>
 
@@ -254,7 +256,7 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
                   </div>
                 )}
 
-                {course.enrollment === "Expired" && course.expiresAt && (
+                {enrollment === "Expired" && course.expiresAt && (
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="flex items-center justify-center w-6 h-6 bg-red-100 rounded-full sm:w-8 sm:h-8 dark:bg-red-900/20">
                       <Calendar className="w-3 h-3 text-red-600 sm:w-4 sm:h-4 dark:text-red-400" />
@@ -266,7 +268,7 @@ function CourseCard({ course }: { course: StudentCourseDto }) {
                   </div>
                 )}
 
-                {course.enrollment === "Active" && course.expirationDays && (
+                {enrollment === "Active" && course.expirationDays && (
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="flex items-center justify-center w-6 h-6 bg-orange-100 rounded-full sm:w-8 sm:h-8 dark:bg-orange-900/20">
                       <Clock className="w-3 h-3 text-orange-600 sm:w-4 sm:h-4 dark:text-orange-400" />

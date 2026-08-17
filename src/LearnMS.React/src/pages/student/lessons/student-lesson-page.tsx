@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { resolveEnrollment } from "@/lib/enrollment";
 
 const StudentLessonPage = () => {
   const { lessonId, lectureId, courseId } = useParams();
@@ -99,7 +100,16 @@ const StudentLessonPage = () => {
     });
   };
 
-  if (data?.data.enrollment === "NotEnrolled") {
+  if (!data?.data) {
+    return null;
+  }
+
+  const enrollment = resolveEnrollment(
+    data.data.enrollment,
+    data.data.expiresAt
+  );
+
+  if (enrollment === "NotEnrolled") {
     return (
       <div className="flex items-center justify-center min-h-screen px-4 pt-16 bg-gradient-to-br from-background via-background to-muted/10">
         <Card className="w-full max-w-2xl border-primary/20 bg-primary/5">
@@ -148,7 +158,7 @@ const StudentLessonPage = () => {
     );
   }
 
-  if (data?.data.enrollment === "Expired") {
+  if (enrollment === "Expired") {
     return (
       <div className="flex items-center justify-center min-h-screen px-4 pt-16 bg-gradient-to-br from-background via-background to-muted/10">
         <Card className="w-full max-w-2xl border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">

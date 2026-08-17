@@ -54,16 +54,6 @@ public record GetStudentLessonResult : GetLessonResult
 {
     public DateTime? ExpiresAt { get; init; }
     [Required]
-    public string Enrollment
-    {
-        get
-        {
-            // Unlimited lessons skip the start-session gate.
-            if (ExpirationHours == 0) return "Active";
-            if (ExpiresAt is null) return "NotEnrolled";
-            if (ExpiresAt < DateTime.UtcNow) return "Expired";
-            return "Active";
-        }
-    }
+    public string Enrollment { get; init; } = "NotEnrolled";
     public required VideoOTP? VideoOTP { get; init; }
 }

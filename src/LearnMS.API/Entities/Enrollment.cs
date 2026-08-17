@@ -6,3 +6,11 @@ public enum Enrollment
     Expired,
     NotEnrolled
 }
+
+public static class EnrollmentStatus
+{
+    public static Enrollment FromExpiresAt(DateTime? expiresAt) =>
+        expiresAt is null ? Enrollment.NotEnrolled
+        : expiresAt >= DateTime.UtcNow ? Enrollment.Active
+        : Enrollment.Expired;
+}

@@ -20,6 +20,7 @@ import {
   SingleLectureItem,
 } from "@/generated/model";
 import { cn } from "@/lib/utils";
+import { resolveEnrollment } from "@/lib/enrollment";
 import { useModalStore } from "@/store/use-modal-store";
 import { isInsufficientBalanceError } from "@/lib/error-utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -64,9 +65,18 @@ const StudentLecturePage = () => {
   )
     return;
 
+  const enrolledLecture = {
+    ...lecture,
+    enrollment: resolveEnrollment(lecture.enrollment, lecture.expiresAt),
+  };
+  const enrolledCourse = {
+    ...course,
+    enrollment: resolveEnrollment(course.enrollment, course.expiresAt),
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <LectureHeader lecture={lecture} course={course} />
+      <LectureHeader lecture={enrolledLecture} course={enrolledCourse} />
       <div className="w-full px-4 py-8 sm:px-6 lg:px-8 sm:py-12">
         <div className="max-w-6xl mx-auto space-y-6">
           {lecture.homeworkVideoUrl && (
@@ -103,8 +113,8 @@ const StudentLecturePage = () => {
           <div className="space-y-4">
             {lecture.items.map((item) => {
               const enrollmentLocked =
-                course.enrollment !== "Active" &&
-                lecture.enrollment !== "Active";
+                enrolledCourse.enrollment !== "Active" &&
+                enrolledLecture.enrollment !== "Active";
               const quizLocked = !!(item as any).isLockedByQuiz;
               return (
               <LectureItem

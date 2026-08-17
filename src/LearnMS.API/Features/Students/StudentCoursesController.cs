@@ -22,6 +22,14 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         [Required] StudentLevel level)
     {
         CurrentUser? user = await currentUserService.GetUserAsync();
+        Guid? studentId = user == null
+            ? null
+            : await context.Students
+                .AsNoTracking()
+                .Where(s => s.Id == user.Id || s.Accounts.Any(a => a.Id == user.Id))
+                .Select(s => (Guid?)s.Id)
+                .FirstOrDefaultAsync();
+
         var result = await context.Courses
             .Where(c => c.Level == level && c.IsPublished)
             .Select(c => new
@@ -36,12 +44,13 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                     LecturesCount = c.Lectures.Count(l => l.IsPublished),
                     c.ExpirationDays,
                     ExamsCount = c.Exams.Count,
-                    Enrollment = user == null
+                    ExpiresAt = studentId == null
                         ? null
-                        : c.CourseEnrollments.OrderByDescending(es => es.ExpiresAt)
-                            .Take(1)
-                            .FirstOrDefault(es =>
-                                es.StudentId == user.Id)
+                        : c.CourseEnrollments
+                            .Where(es => es.StudentId == studentId)
+                            .OrderByDescending(es => es.ExpiresAt)
+                            .Select(es => (DateTime?)es.ExpiresAt)
+                            .FirstOrDefault()
                 }
             )
             .ToListAsync();
@@ -57,8 +66,11 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             c.LecturesCount,
             c.ExamsCount,
             c.ExpirationDays,
-            c.Enrollment?.ExpiresAt
-        )).ToList();
+            c.ExpiresAt
+        )
+        {
+            Enrollment = EnrollmentStatus.FromExpiresAt(c.ExpiresAt)
+        }).ToList();
 
         return new ApiWrapper.Success<List<StudentCourseDto>>()
         {
@@ -78,8 +90,9 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             : await context.Students
                 .AsNoTracking()
                 .Where(s => s.Id == user.Id || s.Accounts.Any(a => a.Id == user.Id))
-                .Select(s => new { s.FullName, s.StudentCode })
+                .Select(s => new { s.Id, s.FullName, s.StudentCode })
                 .FirstOrDefaultAsync();
+        Guid? studentId = studentInfo?.Id;
 
         var course = await context.Courses
             .Where(c => c.IsPublished && c.Id == courseId)
@@ -93,13 +106,13 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                     c.RenewalPrice,
                     c.Level,
                     c.ExpirationDays,
-                    Enrollment = user == null
+                    ExpiresAt = studentId == null
                         ? null
                         : c.CourseEnrollments
+                            .Where(es => es.StudentId == studentId)
                             .OrderByDescending(es => es.ExpiresAt)
-                            .Take(1)
-                            .FirstOrDefault(es =>
-                                es.StudentId == user.Id),
+                            .Select(es => (DateTime?)es.ExpiresAt)
+                            .FirstOrDefault(),
                     Lectures = c.Lectures
                         .Where(l => l.IsPublished)
                         .Select(l => new
@@ -116,13 +129,13 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             l.ChooseHomeworkFormUrl,
                             l.ChooseHomeworkStudentIdEntryId,
                             l.ChooseHomeworkNameEntryId,
-                            Enrollment = user == null
+                            ExpiresAt = studentId == null
                                 ? null
                                 : l.LectureEnrollments
+                                    .Where(es => es.StudentId == studentId)
                                     .OrderByDescending(es => es.ExpiresAt)
-                                    .Take(1)
-                                    .FirstOrDefault(es =>
-                                        es.StudentId == user.Id),
+                                    .Select(es => (DateTime?)es.ExpiresAt)
+                                    .FirstOrDefault(),
                             Assets = l.Assets.Select(a => new StudentAssetDto()
                             {
                                 Id = a.Id,
@@ -148,24 +161,24 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                                     Description = q.Description,
                                     Order = q.Order,
                                     QuestionsCount = q.Questions.Count,
-                                    IsSubmitted = user != null && q.QuizSubmissions.Any(s => s.StudentId == user.Id),
-                                    NumOfCorrect = user == null
+                                    IsSubmitted = studentId != null && q.QuizSubmissions.Any(s => s.StudentId == studentId),
+                                    NumOfCorrect = studentId == null
                                         ? null
                                         : q.QuizSubmissions
-                                            .Where(s => s.StudentId == user.Id)
+                                            .Where(s => s.StudentId == studentId)
                                             .Select(s => (int?)s.NumOfCorrect)
                                             .FirstOrDefault(),
-                                    NumOfQuestions = user == null
+                                    NumOfQuestions = studentId == null
                                         ? null
                                         : q.QuizSubmissions
-                                            .Where(s => s.StudentId == user.Id)
+                                            .Where(s => s.StudentId == studentId)
                                             .Select(s => (int?)s.NumOfQuestions)
                                             .FirstOrDefault(),
                                     PassCount = q.PassCount,
-                                    IsPassed = user == null
+                                    IsPassed = studentId == null
                                         ? null
                                         : q.QuizSubmissions
-                                            .Where(s => s.StudentId == user.Id)
+                                            .Where(s => s.StudentId == studentId)
                                             .Select(s => (bool?)(s.NumOfCorrect >= q.PassCount))
                                             .FirstOrDefault(),
                                 })
@@ -182,13 +195,13 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             Price = e.Price,
                             RetakePrice = e.RetakePrice,
                             ExpiryHours = e.ExpiryHours,
-                            IsPurchased = user != null && e.ExamEnrollments.Any(en => en.StudentId == user.Id),
-                            IsSubmitted = user != null && e.ExamEnrollments
-                                .Any(en => en.StudentId == user.Id && en.Submission != null),
-                            ExpiresAt = user == null
+                            IsPurchased = studentId != null && e.ExamEnrollments.Any(en => en.StudentId == studentId),
+                            IsSubmitted = studentId != null && e.ExamEnrollments
+                                .Any(en => en.StudentId == studentId && en.Submission != null),
+                            ExpiresAt = studentId == null
                                 ? null
                                 : e.ExamEnrollments
-                                    .Where(en => en.StudentId == user.Id)
+                                    .Where(en => en.StudentId == studentId)
                                     .Select(en => (DateTime?)en.ExpiresAt)
                                     .FirstOrDefault(),
                         })
@@ -202,31 +215,34 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             throw new ApiException(CoursesErrors.NotFound);
         }
 
-        DateTime? courseExpires = course.Enrollment?.ExpiresAt;
+        DateTime? courseExpires = course.ExpiresAt;
 
-        List<StudentLectureDto> lectures = course.Lectures.Select(l => new StudentLectureDto()
+        List<StudentLectureDto> lectures = course.Lectures.Select(l =>
         {
-            Id = l.Id,
-            Title = l.Title,
-            Description = l.Description,
-            Price = l.Price!.Value,
-            RenewalPrice = l.RenewalPrice!.Value,
-            Order = l.Order,
-            ImageUrl = l.ImageUrl,
-            HomeworkVideoUrl = l.HomeworkVideoUrl,
-            ChooseHomeworkFormUrl = GoogleFormsPrefill.ApplyPrefill(
-                l.ChooseHomeworkFormUrl,
-                l.ChooseHomeworkStudentIdEntryId,
-                l.ChooseHomeworkNameEntryId,
-                studentInfo?.StudentCode,
-                studentInfo?.FullName
-            ),
-            Assets = l.Assets,
-            ExpirationDays = l.ExpirationDays,
-            Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),
-            // Prefer the later expiry so an active lecture enrollment is not
-            // hidden behind an expired course enrollment (and vice versa).
-            ExpiresAt = EffectiveEnrollmentExpiresAt(courseExpires, l.Enrollment?.ExpiresAt),
+            var expiresAt = EffectiveEnrollmentExpiresAt(courseExpires, l.ExpiresAt);
+            return new StudentLectureDto()
+            {
+                Id = l.Id,
+                Title = l.Title,
+                Description = l.Description,
+                Price = l.Price!.Value,
+                RenewalPrice = l.RenewalPrice!.Value,
+                Order = l.Order,
+                ImageUrl = l.ImageUrl,
+                HomeworkVideoUrl = l.HomeworkVideoUrl,
+                ChooseHomeworkFormUrl = GoogleFontsPrefill.ApplyPrefill(
+                    l.ChooseHomeworkFormUrl,
+                    l.ChooseHomeworkStudentIdEntryId,
+                    l.ChooseHomeworkNameEntryId,
+                    studentInfo?.StudentCode,
+                    studentInfo?.FullName
+                ),
+                Assets = l.Assets,
+                ExpirationDays = l.ExpirationDays,
+                Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),
+                ExpiresAt = expiresAt,
+                Enrollment = EnrollmentStatus.FromExpiresAt(expiresAt),
+            };
         }).ToList();
 
         var courseDto = new StudentCourseDetailsDto()
@@ -238,7 +254,8 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             Price = course.Price!.Value,
             RenewalPrice = course.RenewalPrice!.Value,
             Level = course.Level!.Value,
-            ExpiresAt = course.Enrollment?.ExpiresAt,
+            ExpiresAt = courseExpires,
+            Enrollment = EnrollmentStatus.FromExpiresAt(courseExpires),
             ExpirationDays = course.ExpirationDays,
             Items = lectures
                 .Cast<StudentCourseItemDto>()

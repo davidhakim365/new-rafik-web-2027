@@ -1832,19 +1832,24 @@ public sealed class CoursesService : ICoursesService
             .CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
             ?.ExpiresAt;
 
-        var lectures = course.Lectures.Select(l => new SingleStudentCourseItem
+        var lectures = course.Lectures.Select(l =>
         {
-            ExpiresAt = EffectiveEnrollmentExpiresAt(
+            var expiresAt = EffectiveEnrollmentExpiresAt(
                 courseExpiresAt,
                 l.LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)?.ExpiresAt
-            ),
-            Id = l.Id,
-            ImageUrl = l.ImageUrl,
-            Order = l.Order,
-            Description = l.Description,
-            Title = l.Title,
-            Type = CourseItemType.Lecture,
-            IsImportant = l.IsImportant
+            );
+            return new SingleStudentCourseItem
+            {
+                ExpiresAt = expiresAt,
+                Enrollment = EnrollmentStatus.FromExpiresAt(expiresAt).ToString(),
+                Id = l.Id,
+                ImageUrl = l.ImageUrl,
+                Order = l.Order,
+                Description = l.Description,
+                Title = l.Title,
+                Type = CourseItemType.Lecture,
+                IsImportant = l.IsImportant
+            };
         });
 
         var exams = course.Exams.Select(e => new SingleStudentCourseItem
@@ -1870,6 +1875,7 @@ public sealed class CoursesService : ICoursesService
             Price = course.Price!.Value,
             RenewalPrice = course.RenewalPrice!.Value,
             ExpiresAt = courseExpiresAt,
+            Enrollment = EnrollmentStatus.FromExpiresAt(courseExpiresAt),
             Items = items
         };
     }
@@ -2029,10 +2035,19 @@ public sealed class CoursesService : ICoursesService
             };
         });
 
-        var expiresAt = EffectiveEnrollmentExpiresAt(
-            course.CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)?.ExpiresAt,
-            lecture.LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)?.ExpiresAt
-        );
+        var lectureExpiresAt = await _context.Set<LectureEnrollment>()
+            .Where(x => x.LectureId == query.LectureId && x.StudentId == query.StudentId)
+            .OrderByDescending(x => x.ExpiresAt)
+            .Select(x => (DateTime?)x.ExpiresAt)
+            .FirstOrDefaultAsync();
+
+        var courseExpiresAt = await _context.Set<CourseEnrollment>()
+            .Where(x => x.CourseId == query.CourseId && x.StudentId == query.StudentId)
+            .OrderByDescending(x => x.ExpiresAt)
+            .Select(x => (DateTime?)x.ExpiresAt)
+            .FirstOrDefaultAsync();
+
+        var expiresAt = EffectiveEnrollmentExpiresAt(courseExpiresAt, lectureExpiresAt);
 
         // Assets: show only after all quizzes in this lecture are passed (or no quizzes / attended)
         var hasQuizzes = lecture.Quizzes.Any();
@@ -2073,6 +2088,7 @@ public sealed class CoursesService : ICoursesService
             Description = lecture.Description,
             CourseId = lecture.CourseId,
             ExpiresAt = expiresAt,
+            Enrollment = EnrollmentStatus.FromExpiresAt(expiresAt),
             ImageUrl = lecture.ImageUrl!,
             HomeworkVideoUrl = lecture.HomeworkVideoUrl,
             ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
@@ -2137,7 +2153,15 @@ public sealed class CoursesService : ICoursesService
 
         var sessionIsActive =
             lesson.ExpirationHours == 0
-            || (attendance?.ExpirationDate is { } expiresAt && expiresAt > DateTime.UtcNow);
+            || (attendance?.ExpirationDate is { } sessionExpiresAt && sessionExpiresAt > DateTime.UtcNow);
+
+        var enrollment = lesson.ExpirationHours == 0
+            ? "Active"
+            : attendance?.ExpirationDate is null
+                ? "NotEnrolled"
+                : attendance.ExpirationDate < DateTime.UtcNow
+                    ? "Expired"
+                    : "Active";
 
         return new GetStudentLessonResult()
         {
@@ -2149,6 +2173,7 @@ public sealed class CoursesService : ICoursesService
                 : null,
             ExpirationHours = lesson.ExpirationHours,
             ExpiresAt = attendance?.ExpirationDate,
+            Enrollment = enrollment,
             RenewalPrice = lesson.RenewalPrice
         };
     }

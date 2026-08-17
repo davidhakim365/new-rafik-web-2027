@@ -115,13 +115,5 @@ public sealed record GetStudentLectureResult : GetLectureResult
     public required bool? IsPublished {get; set;}
     public required DateTime? ExpiresAt { get; set; }
     [Required]
-    public Enrollment Enrollment
-    {
-        get
-        {
-            if (ExpiresAt is null) return Enrollment.NotEnrolled;
-            if (ExpiresAt < DateTime.UtcNow) return Enrollment.Expired;
-            return Enrollment.Active;
-        }
-    }
+    public Enrollment Enrollment { get; init; }
 }

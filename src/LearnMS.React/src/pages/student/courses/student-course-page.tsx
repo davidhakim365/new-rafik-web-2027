@@ -69,6 +69,7 @@ import {
 import { MarkdownWrapper } from "@/components/ui/markdown-wrapper";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { cn } from "@/lib/utils";
+import { resolveEnrollment } from "@/lib/enrollment";
 import { BookOpen, Coins, AlertTriangle, ArrowLeft } from "lucide-react";
 
 export const StudentCoursePage = () => {
@@ -102,13 +103,26 @@ export const StudentCoursePage = () => {
     );
   }
 
+  const course = {
+    ...data.data,
+    enrollment: resolveEnrollment(data.data.enrollment, data.data.expiresAt),
+    items: (data.data.items || []).map((item) =>
+      item.$type === "StudentLectureDto"
+        ? {
+            ...item,
+            enrollment: resolveEnrollment(item.enrollment, item.expiresAt),
+          }
+        : item
+    ),
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <CourseHeader course={data.data} />
+      <CourseHeader course={course} />
       <CourseAccordion
         ref={accordionRef}
-        items={data.data.items || []}
-        course={data.data}
+        items={course.items || []}
+        course={course}
       />
     </div>
   );

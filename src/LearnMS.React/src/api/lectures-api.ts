@@ -3,6 +3,7 @@ import {
   getGetLectureQueryKey,
   getGetLectureStudentsQueryKey,
   getGetProfileQueryKey,
+  getGetStudentCourseDetailsQueryKey,
 } from "@/generated/api";
 import { LectureDetails, SingleLectureStudent } from "@/types/lectures";
 import { PageList } from "@/types/page-list";
@@ -146,6 +147,9 @@ export const useBuyLectureMutation = () => {
       qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
       qc.invalidateQueries({ queryKey: ["courses"] });
       qc.invalidateQueries({ queryKey: getGetProfileQueryKey() });
+      qc.invalidateQueries({
+        queryKey: getGetStudentCourseDetailsQueryKey(courseId),
+      });
     },
     mutationFn: ({ lectureId, courseId }) =>
       api

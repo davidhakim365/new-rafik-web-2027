@@ -88,15 +88,7 @@ public sealed record GetStudentCourseResult : GetCourseResult
     [Required]
     public required decimal Price { get; init; }
     [Required]
-    public Enrollment Enrollment
-    {
-        get
-        {
-            if (ExpiresAt is null) return Enrollment.NotEnrolled;
-            if (ExpiresAt < DateTime.UtcNow) return Enrollment.Expired;
-            return Enrollment.Active;
-        }
-    }
+    public Enrollment Enrollment { get; init; }
     [Required]
     public required decimal RenewalPrice { get; init; }
     [Required]
@@ -128,15 +120,7 @@ public sealed record SingleStudentCourseItem
     [Required]
     public string? ImageUrl { get; init; }
     [Required]
-    public string Enrollment
-    {
-        get
-        {
-            if (ExpiresAt is null) return "NotEnrolled";
-            if (ExpiresAt < DateTime.UtcNow) return "Expired";
-            return "Active";
-        }
-    }
+    public string Enrollment { get; init; } = "NotEnrolled";
     [Required]
     public DateTime? ExpiresAt { get; init; }
 }
