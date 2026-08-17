@@ -715,14 +715,14 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
-                .Include(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
                 .ThenInclude(x =>
                     x.Lessons.Where(x => x.Id == command.LessonId && x.VideoId != null)
                 )
-                .ThenInclude(x => x.AttendedStudents.Where(x => x.Id == command.StudentId))
+                .ThenInclude(x => x.LessonAttendances.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
-                .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == command.StudentId))
                 .FirstOrDefaultAsync(x => x.Id == command.CourseId && x.IsPublished)
             ?? throw new ApiException(CoursesErrors.NotFound);
 
@@ -755,14 +755,14 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
-                .Include(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
                 .ThenInclude(x =>
                     x.Lessons.Where(x => x.Id == command.LessonId && x.VideoId != null)
                 )
-                .ThenInclude(x => x.AttendedStudents.Where(x => x.Id == command.StudentId))
+                .ThenInclude(x => x.LessonAttendances.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
-                .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == command.StudentId))
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId))
                 .ThenInclude(x => x.Quizzes)
                 .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == command.StudentId))
@@ -795,23 +795,23 @@ public sealed class CoursesService : ICoursesService
         }
 
         if (
-            lesson.LessonAttendances.FirstOrDefault(x => x.StudentId == command.StudentId)
-            is not null
+            lesson.LessonAttendances.Any(x => x.StudentId == command.StudentId)
+            || await _context.Set<LessonAttendance>().AnyAsync(x =>
+                x.LessonId == command.LessonId && x.StudentId == command.StudentId)
         )
             throw new ApiException(LessonsErrors.AlreadyAcceptedExpirationRule);
 
-        lesson.LessonAttendances.Add(
+        _context.Set<LessonAttendance>().Add(
             new LessonAttendance
             {
+                LessonId = command.LessonId,
+                StudentId = command.StudentId,
                 ExpirationDate =
                     lesson.ExpirationHours == 0
                         ? null
-                        : DateTime.UtcNow.AddHours(lesson.ExpirationHours),
-                StudentId = command.StudentId
+                        : DateTime.UtcNow.AddHours(lesson.ExpirationHours)
             }
         );
-
-        _context.Update(course);
 
         await _context.SaveChangesAsync();
     }
@@ -1820,19 +1820,24 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
-                .Include(x => x.EnrolledStudents.Where(x => x.Id == query.StudentId))
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures)
-                .ThenInclude(x => x.EnrolledStudents)
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Exams)
                 .FirstOrDefaultAsync(x =>
                     x.Id == query.Id && x.IsPublished && x.Level == student.Level
                 ) ?? throw new ApiException(CoursesErrors.NotFound);
 
+        var courseExpiresAt = course
+            .CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
+            ?.ExpiresAt;
+
         var lectures = course.Lectures.Select(l => new SingleStudentCourseItem
         {
-            ExpiresAt = l
-                .LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
-                ?.ExpiresAt,
+            ExpiresAt = EffectiveEnrollmentExpiresAt(
+                courseExpiresAt,
+                l.LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)?.ExpiresAt
+            ),
             Id = l.Id,
             ImageUrl = l.ImageUrl,
             Order = l.Order,
@@ -1864,9 +1869,7 @@ public sealed class CoursesService : ICoursesService
             ImageUrl = course.ImageUrl!,
             Price = course.Price!.Value,
             RenewalPrice = course.RenewalPrice!.Value,
-            ExpiresAt = course
-                .CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
-                ?.ExpiresAt,
+            ExpiresAt = courseExpiresAt,
             Items = items
         };
     }
@@ -1946,11 +1949,10 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
-                .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == query.StudentId))
-                // added
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
-                // added
                 .ThenInclude(x => x.LectureAttendances.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Assets)
@@ -2027,9 +2029,10 @@ public sealed class CoursesService : ICoursesService
             };
         });
 
-        var expiresAt = lecture
-            .LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
-            ?.ExpiresAt;
+        var expiresAt = EffectiveEnrollmentExpiresAt(
+            course.CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)?.ExpiresAt,
+            lecture.LectureEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)?.ExpiresAt
+        );
 
         // Assets: show only after all quizzes in this lecture are passed (or no quizzes / attended)
         var hasQuizzes = lecture.Quizzes.Any();
@@ -2089,12 +2092,12 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
-                .Include(x => x.EnrolledStudents.Where(x => x.Id == query.StudentId))
+                .Include(x => x.CourseEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Lessons.Where(x => x.Id == query.LessonId && x.VideoId != null))
-                .ThenInclude(x => x.AttendedStudents.Where(x => x.Id == query.StudentId))
+                .ThenInclude(x => x.LessonAttendances.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
-                .ThenInclude(x => x.EnrolledStudents.Where(x => x.Id == query.StudentId))
+                .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes)
                 .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == query.StudentId))
@@ -2127,24 +2130,27 @@ public sealed class CoursesService : ICoursesService
             )
                 throw new ApiException(LessonsErrors.Blocked);
 
-        var attendance = lesson
-            .LessonAttendances
-            .FirstOrDefault(x => x.StudentId == query.StudentId);
+        var attendance =
+            lesson.LessonAttendances.FirstOrDefault(x => x.StudentId == query.StudentId)
+            ?? await _context.Set<LessonAttendance>().FirstOrDefaultAsync(x =>
+                x.LessonId == query.LessonId && x.StudentId == query.StudentId);
+
+        var sessionIsActive =
+            lesson.ExpirationHours == 0
+            || (attendance?.ExpirationDate is { } expiresAt && expiresAt > DateTime.UtcNow);
 
         return new GetStudentLessonResult()
         {
             Id = lesson.Id,
             Title = lesson.Title,
             Description = lesson.Description,
-            VideoOTP =
-                lesson.ExpirationHours == 0 || attendance?.ExpirationDate > DateTime.UtcNow
-                    ? await _vdoService.GetVideoOTPAsync(lesson.VideoId!)
-                    : null,
+            VideoOTP = sessionIsActive
+                ? await _vdoService.GetVideoOTPAsync(lesson.VideoId!)
+                : null,
             ExpirationHours = lesson.ExpirationHours,
             ExpiresAt = attendance?.ExpirationDate,
             RenewalPrice = lesson.RenewalPrice
         };
-        ;
     }
 
     public async Task<GetDashboardLessonResult> QueryAsync(GetLessonQuery query)
@@ -2745,5 +2751,12 @@ public sealed class CoursesService : ICoursesService
 
             yield return result;
         }
+    }
+
+    private static DateTime? EffectiveEnrollmentExpiresAt(DateTime? courseExpiresAt, DateTime? lectureExpiresAt)
+    {
+        if (courseExpiresAt is null) return lectureExpiresAt;
+        if (lectureExpiresAt is null) return courseExpiresAt;
+        return courseExpiresAt > lectureExpiresAt ? courseExpiresAt : lectureExpiresAt;
     }
 }

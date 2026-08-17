@@ -58,9 +58,11 @@ public record GetStudentLessonResult : GetLessonResult
     {
         get
         {
-            if (VideoOTP != null) return "Active";
-            if (ExpiresAt < DateTime.Now) return "Expired";
-            return "NotEnrolled";
+            // Unlimited lessons skip the start-session gate.
+            if (ExpirationHours == 0) return "Active";
+            if (ExpiresAt is null) return "NotEnrolled";
+            if (ExpiresAt < DateTime.UtcNow) return "Expired";
+            return "Active";
         }
     }
     public required VideoOTP? VideoOTP { get; init; }

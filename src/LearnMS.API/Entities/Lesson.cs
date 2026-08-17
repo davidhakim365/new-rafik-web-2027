@@ -18,6 +18,6 @@ public class Lesson : IOrdered
     [JsonIgnore]
     public Lecture Lecture { get; set; } = null!;
 
-    public List<Student> AttendedStudents = [];
-    public List<LessonAttendance> LessonAttendances = [];
+    public List<Student> AttendedStudents { get; } = [];
+    public List<LessonAttendance> LessonAttendances { get; } = [];
 }
