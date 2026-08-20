@@ -99,7 +99,7 @@ const addStudentCredit = useAddStudentCredit({
       qc.invalidateQueries({ queryKey: getGetAllStudentsQueryKey() });
       toast({
         title: "Credit Added",
-        description: `Added 90 credits to ${student.fullName}.`,
+        description: `Added 100 credits to ${student.fullName}.`,
       });
     },
     onError: () => {
@@ -115,7 +115,7 @@ const addStudentCredit = useAddStudentCredit({
 const onQuickAddCredit = () => {
   addStudentCredit.mutate({
     studentId: student.id,
-    data: { amount: 90 }, // your constant value here
+    data: { amount: 100 }, // your constant value here
   });
 };
     
@@ -138,7 +138,7 @@ const onQuickAddCredit = () => {
               size="sm"
             >
               <CreditCard className="w-3 h-3" />
-              +90
+              +100
             </Button>
           </div>
 
@@ -159,8 +159,8 @@ const onQuickAddCredit = () => {
               size="sm"
             >
               <CreditCard className="w-4 h-4" />
-              <span className="hidden lg:inline">+90</span>
-              <span className="lg:hidden">+90</span>
+              <span className="hidden lg:inline">+100</span>
+              <span className="lg:hidden">+100</span>
             </Button>
           </div>
 
