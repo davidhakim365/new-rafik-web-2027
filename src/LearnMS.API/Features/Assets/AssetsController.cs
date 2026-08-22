@@ -1,5 +1,6 @@
 using LearnMS.API.Common;
 using LearnMS.API.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LearnMS.API.Features.Assets;
@@ -42,6 +43,7 @@ public sealed class AssetsController(IAssetsService assetsService) : ControllerB
     }
 
     [HttpGet("{fileId}")]
+    [AllowAnonymous]
     public async Task GetAsset(string fileId)
     {
         await assetsService.QueryAsync(new GetAssetQuery

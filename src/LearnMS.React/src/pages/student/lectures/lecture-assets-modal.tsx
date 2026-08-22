@@ -1,3 +1,4 @@
+import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Asset } from "@/types/assets";
 import React from "react";
@@ -10,8 +11,6 @@ interface Props {
 }
 
 const LectureAssetsModal: React.FC<Props> = ({ onClose, assets }) => {
-  const href = (asset: Asset) => asset.url || `/api/assets/${asset.id}`;
-
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
@@ -26,19 +25,19 @@ const LectureAssetsModal: React.FC<Props> = ({ onClose, assets }) => {
                 className="p-5 rounded-xl w-52 h-fit bg-card/85"
               >
                 {asset.type === "Image" && (
-                  <a href={href(asset)} target="_blank" rel="noreferrer">
+                  <PdfOpenButton asset={asset} className="w-full">
                     <FaImage className="w-full h-full text-primary/40" />
-                  </a>
+                  </PdfOpenButton>
                 )}
                 {asset.type === "Pdf" && (
-                  <a href={href(asset)} target="_blank" rel="noreferrer">
+                  <PdfOpenButton asset={asset} className="w-full">
                     <FaFilePdf className="w-full h-full text-primary/40" />
-                  </a>
+                  </PdfOpenButton>
                 )}
                 {asset.type === "Unknown" && (
-                  <a href={href(asset)} target="_blank" rel="noreferrer">
+                  <PdfOpenButton asset={asset} className="w-full">
                     <FaFile className="w-full h-full text-primary/40" />
-                  </a>
+                  </PdfOpenButton>
                 )}
                 <p className="mt-2 font-medium">{asset.name}</p>
               </div>

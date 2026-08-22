@@ -1,10 +1,14 @@
 using System.Text.RegularExpressions;
 using Google.Apis.Auth.OAuth2;
+using Google.Apis.Drive.v3;
 using Google.Apis.Forms.v1;
 using Google.Apis.Forms.v1.Data;
 using Google.Apis.Services;
+using Google.Apis.Upload;
 using LearnMS.API.Common;
 using Microsoft.Extensions.Options;
+using DriveFile = Google.Apis.Drive.v3.Data.File;
+using DrivePermission = Google.Apis.Drive.v3.Data.Permission;
 
 namespace LearnMS.API.ThirdParties.GoogleForms;
 
@@ -15,6 +19,11 @@ public interface IGoogleFormsService
     Task<IReadOnlyList<GoogleFormResponseScore>> ListResponseScoresAsync(
         string formId,
         string studentIdQuestionId,
+        CancellationToken cancellationToken = default
+    );
+    Task<GoogleDriveUploadResult> UploadPublicPdfAsync(
+        Stream content,
+        string fileName,
         CancellationToken cancellationToken = default
     );
 }
@@ -169,6 +178,63 @@ public sealed class GoogleFormsService : IGoogleFormsService
         return bestByCode.Values.ToList();
     }
 
+    public async Task<GoogleDriveUploadResult> UploadPublicPdfAsync(
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EnsureConfigured();
+
+        var safeName = string.IsNullOrWhiteSpace(fileName) ? "document.pdf" : fileName.Trim();
+        if (!safeName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            safeName += ".pdf";
+
+        var metadata = new DriveFile
+        {
+            Name = safeName,
+            MimeType = "application/pdf"
+        };
+
+        if (!string.IsNullOrWhiteSpace(_config.DriveFolderId))
+            metadata.Parents = [_config.DriveFolderId];
+
+        var service = CreateDriveService();
+        var create = service.Files.Create(metadata, content, "application/pdf");
+        create.Fields = "id";
+        create.SupportsAllDrives = true;
+
+        var upload = await create.UploadAsync(cancellationToken);
+        if (upload.Status != UploadStatus.Completed || string.IsNullOrWhiteSpace(create.ResponseBody?.Id))
+        {
+            var detail = upload.Exception?.Message ?? upload.Status.ToString();
+            throw new ApiException(
+                new ApiError(
+                    "google-drive/upload-failed",
+                    $"Failed to upload the PDF to Google Drive. {detail}",
+                    StatusCodes.Status502BadGateway
+                )
+            );
+        }
+
+        var fileId = create.ResponseBody.Id;
+        var permission = new DrivePermission
+        {
+            Type = "anyone",
+            Role = "reader",
+            AllowFileDiscovery = false
+        };
+
+        var share = service.Permissions.Create(permission, fileId);
+        share.SupportsAllDrives = true;
+        await share.ExecuteAsync(cancellationToken);
+
+        return new GoogleDriveUploadResult(
+            fileId,
+            $"https://drive.google.com/file/d/{fileId}/preview"
+        );
+    }
+
     public static string? TryParseFormId(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -204,15 +270,31 @@ public sealed class GoogleFormsService : IGoogleFormsService
         }
     }
 
-    private FormsService CreateService()
+    private ServiceAccountCredential CreateCredential(params string[] scopes)
     {
         var privateKey = _config.PrivateKey.Replace("\\n", "\n", StringComparison.Ordinal);
-        var credential = new ServiceAccountCredential(
+        return new ServiceAccountCredential(
             new ServiceAccountCredential.Initializer(_config.ClientEmail)
             {
-                Scopes = Scopes
+                Scopes = scopes
             }.FromPrivateKey(privateKey)
         );
+    }
+
+    private DriveService CreateDriveService()
+    {
+        return new DriveService(
+            new BaseClientService.Initializer
+            {
+                HttpClientInitializer = CreateCredential(DriveService.Scope.Drive),
+                ApplicationName = "LearnMS"
+            }
+        );
+    }
+
+    private FormsService CreateService()
+    {
+        var credential = CreateCredential(Scopes);
 
         return new FormsService(
             new BaseClientService.Initializer

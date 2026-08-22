@@ -8,7 +8,12 @@ public static class LecturesErrors
     public static readonly ApiError NotPublishable = new ApiError("lecture/not-publishable", "Lecture is not publishable, please complete lecture creation", StatusCodes.Status403Forbidden);
     public static readonly ApiError AlreadyPurchased = new ApiError("lecture/already-purchased", "Lecture already purchased", StatusCodes.Status403Forbidden);
     public static readonly ApiError NotAccessible = new ApiError("lecture/not-accessible", "Lecture is not accessible, please pass all previous exams", StatusCodes.Status403Forbidden);
-    public static readonly ApiError InvalidPdfLink = new ApiError("lecture/invalid-pdf-link", "Each PDF requires a title and a valid Google Drive link", StatusCodes.Status400BadRequest);
+    public static readonly ApiError InvalidPdfLink = new ApiError("lecture/invalid-pdf-link", "Each PDF requires a title and a valid link", StatusCodes.Status400BadRequest);
+    public static readonly ApiError InvalidPdfFile = new ApiError("lecture/invalid-pdf-file", "Upload a PDF file (max 50MB)", StatusCodes.Status400BadRequest);
+    public static readonly ApiError GoogleDriveUploadFailed = new ApiError(
+        "lecture/google-drive-upload-failed",
+        "Could not upload the PDF to Google Drive. Enable the Drive API and share a folder with the service account if needed.",
+        StatusCodes.Status502BadGateway);
     public static readonly ApiError HomeworkFullMarkRequired = new ApiError(
         "lecture/homework-full-mark-required",
         "Set the essay homework full mark before entering scores",

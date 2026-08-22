@@ -17,3 +17,5 @@ public sealed record GoogleFormResponseScore(
     decimal TotalScore,
     DateTimeOffset LastSubmittedTime
 );
+
+public sealed record GoogleDriveUploadResult(string FileId, string ViewerUrl);

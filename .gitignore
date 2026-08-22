@@ -1,4 +1,5 @@
 src/LearnMS.API/bin/
+src/LearnMS.API/App_Data/
 src/LearnMS.API/LearnMS.db
 obj/
 .idea

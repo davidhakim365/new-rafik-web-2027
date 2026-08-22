@@ -54,7 +54,10 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
 
         foreach (var asset in assets)
         {
-            if (string.IsNullOrEmpty(asset.Url))
+            var hostedLocally = string.IsNullOrEmpty(asset.Url) ||
+                !asset.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+
+            if (hostedLocally)
             {
                 try
                 {
@@ -63,6 +66,19 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
                 catch
                 {
                     // Disk file may already be missing
+                }
+
+                var uploadedPdf = GetUploadedPdfPath(asset.Id);
+                if (File.Exists(uploadedPdf))
+                {
+                    try
+                    {
+                        File.Delete(uploadedPdf);
+                    }
+                    catch
+                    {
+                        // Disk file may already be missing
+                    }
                 }
             }
         }
@@ -77,9 +93,24 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == query.FileId, ct);
 
-        if (asset is not null && !string.IsNullOrEmpty(asset.Url))
+        if (asset is not null &&
+            !string.IsNullOrEmpty(asset.Url) &&
+            Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
         {
-            query.Response.Redirect(asset.Url);
+            query.Response.Redirect(PdfViewerUrls.ToPublicViewerUrl(asset.Url));
+            return;
+        }
+
+        var uploadedPdf = GetUploadedPdfPath(query.FileId);
+        if (File.Exists(uploadedPdf))
+        {
+            await WriteInlineFileAsync(
+                query.Response,
+                uploadedPdf,
+                asset?.Name ?? "document.pdf",
+                "application/pdf",
+                ct);
             return;
         }
 
@@ -89,14 +120,30 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
 
         var metadata = await file.GetMetadataAsync(ct);
 
-        query.Response.ContentType = metadata.ContainsKey("contentType")
-            ? metadata["contentType"].GetString(System.Text.Encoding.UTF8)
-            : "application/octet-stream";
+        var contentType = metadata.ContainsKey("contentType")
+            ? metadata["contentType"].GetString(Encoding.UTF8)
+            : metadata.ContainsKey("type")
+                ? metadata["type"].GetString(Encoding.UTF8)
+                : null;
 
+        if (string.IsNullOrWhiteSpace(contentType))
+            contentType = asset?.Type == AssetType.Pdf ? "application/pdf" : "application/octet-stream";
+
+        query.Response.ContentType = contentType;
+
+        var downloadName = asset?.Name;
         if (metadata.ContainsKey("name"))
+            downloadName = metadata["name"].GetString(Encoding.UTF8);
+        else if (metadata.ContainsKey("filename"))
+            downloadName = metadata["filename"].GetString(Encoding.UTF8);
+
+        if (!string.IsNullOrWhiteSpace(downloadName))
         {
-            var name = metadata["name"].GetString(System.Text.Encoding.UTF8);
-            query.Response.Headers.Append("Content-Disposition", new[] { $"attachment; filename=\"{name}\"" });
+            if (contentType == "application/pdf" &&
+                !downloadName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                downloadName += ".pdf";
+
+            query.Response.Headers.ContentDisposition = $"inline; filename=\"{downloadName}\"";
         }
 
         using (var fileStream = await file.GetContentAsync(ct))
@@ -120,5 +167,27 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
         }
 
         return await PageList<Asset>.CreateAsync(assets, query.Page, query.PageSize);
+    }
+
+    private string GetUploadedPdfPath(string assetId) =>
+        Path.Combine(options.Value.AssetsDirectory, "pdfs", $"{assetId}.pdf");
+
+    private static async Task WriteInlineFileAsync(
+        HttpResponse response,
+        string path,
+        string name,
+        string contentType,
+        CancellationToken ct)
+    {
+        response.ContentType = contentType;
+        var fileName = Path.GetFileName(name);
+        if (string.IsNullOrWhiteSpace(fileName))
+            fileName = "document.pdf";
+        if (contentType == "application/pdf" &&
+            !fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            fileName += ".pdf";
+
+        response.Headers.ContentDisposition = $"inline; filename=\"{fileName}\"";
+        await response.SendFileAsync(path, cancellationToken: ct);
     }
 }

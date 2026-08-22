@@ -2,6 +2,7 @@ import { useBuyLectureMutation } from "@/api/lectures-api";
 import { ChooseHomeworkFormEmbed } from "@/components/choose-homework-form-embed";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
+import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { YoutubeEmbed } from "@/components/youtube-embed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import { useModalStore } from "@/store/use-modal-store";
 import { isInsufficientBalanceError } from "@/lib/error-utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { FaClock, FaPlay, FaQuestionCircle, FaLock } from "react-icons/fa";
+import { FaClock, FaFilePdf, FaPlay, FaQuestionCircle, FaLock } from "react-icons/fa";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MarkdownWrapper } from "@/components/ui/markdown-wrapper";
@@ -102,6 +103,28 @@ const StudentLecturePage = () => {
                 {t("lectures.chooseHomeworkForm")}
               </h2>
               <ChooseHomeworkFormEmbed formUrl={lecture.chooseHomeworkFormUrl} />
+            </div>
+          )}
+          {lecture.assets && lecture.assets.length > 0 && (
+            <div className="space-y-3">
+              <h2
+                dir={isRTL ? "rtl" : "ltr"}
+                className="text-xl font-bold sm:text-2xl text-foreground"
+              >
+                {t("courses.attachments")}
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {lecture.assets.map((asset) => (
+                  <PdfOpenButton
+                    key={asset.id}
+                    asset={asset}
+                    className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/50 p-3 text-left hover:bg-card/70"
+                  >
+                    <FaFilePdf className="h-5 w-5 shrink-0 text-red-500" />
+                    <span className="truncate font-medium">{asset.name}</span>
+                  </PdfOpenButton>
+                ))}
+              </div>
             </div>
           )}
           <h2

@@ -1,10 +1,8 @@
-import { Button } from "@/components/ui/button";
+import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Asset } from "@/types/assets";
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { FaFile, FaFileImage, FaFilePdf } from "react-icons/fa";
-
-const assetHref = (asset: Asset) => asset.url || `/api/assets/${asset.id}`;
 
 // Define the columns
 export const assetsColumns: ColumnDef<Asset>[] = [
@@ -42,13 +40,14 @@ export const assetsColumns: ColumnDef<Asset>[] = [
       const type = row.original.type;
 
       return (
-        <Button size="icon" asChild>
-          <a href={assetHref(row.original)} target="_blank" rel="noreferrer">
-            {type === "Pdf" && <FaFilePdf className="w-8 h-8" />}
-            {type === "Image" && <FaFileImage className="w-8 h-8" />}
-            {type === "Unknown" && <FaFile className="w-8 h-8" />}
-          </a>
-        </Button>
+        <PdfOpenButton
+          asset={row.original}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground"
+        >
+          {type === "Pdf" && <FaFilePdf className="w-8 h-8" />}
+          {type === "Image" && <FaFileImage className="w-8 h-8" />}
+          {type === "Unknown" && <FaFile className="w-8 h-8" />}
+        </PdfOpenButton>
       );
     },
   },

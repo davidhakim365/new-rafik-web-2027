@@ -330,11 +330,93 @@ export const AddLecturePdfLinkItem = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   url: z
     .string()
-    .url({ message: "Enter a valid Google Drive link" })
-    .min(1, { message: "Google Drive link is required" }),
+    .url({ message: "Enter a valid PDF link" })
+    .min(1, { message: "PDF link is required" }),
 });
 
 export type AddLecturePdfLinkItem = z.infer<typeof AddLecturePdfLinkItem>;
+
+export async function uploadLecturePdf({
+  courseId,
+  lectureId,
+  file,
+  title,
+  onProgress,
+}: {
+  courseId: string;
+  lectureId: string;
+  file: File;
+  title?: string;
+  onProgress: (percent: number) => void;
+}) {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  if (title?.trim()) {
+    formData.append("title", title.trim());
+  }
+
+  const token = localStorage.getItem("token");
+  const deviceKey = localStorage.getItem("deviceKey");
+
+  return new Promise<{ id: string; name: string }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const body = JSON.parse(xhr.responseText) as {
+            data?: { asset?: { id?: string; name?: string } };
+            message?: string;
+          };
+          const asset = body.data?.asset;
+          if (!asset?.id) {
+            reject(new Error("Upload succeeded but no PDF was returned."));
+            return;
+          }
+          resolve({ id: asset.id, name: asset.name ?? file.name });
+        } catch {
+          reject(new Error("Upload succeeded but the server response was invalid."));
+        }
+        return;
+      }
+
+      try {
+        const err = JSON.parse(xhr.responseText) as { message?: string };
+        reject(new Error(err.message || `Upload failed with status ${xhr.status}`));
+      } catch {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Could not reach the server during upload."));
+    });
+
+    xhr.addEventListener("abort", () => {
+      reject(new Error("Upload was cancelled."));
+    });
+
+    xhr.open(
+      "POST",
+      `/api/courses/${courseId}/lectures/${lectureId}/pdfs`
+    );
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+    if (deviceKey) {
+      xhr.setRequestHeader("DeviceKey", deviceKey);
+    }
+
+    xhr.send(formData);
+  });
+}
 
 export const useAddLecturePdfLinksMutation = () => {
   const qc = useQueryClient();

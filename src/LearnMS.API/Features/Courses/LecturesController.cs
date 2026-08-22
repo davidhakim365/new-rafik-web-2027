@@ -9,6 +9,7 @@ using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Students;
 using LearnMS.API.Security;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -375,6 +376,35 @@ public sealed class LecturesController : ControllerBase
         {
             Data = result,
             Message = "PDF links added successfully"
+        };
+    }
+
+    [HttpPost("{lectureId:guid}/pdfs")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [RequestSizeLimit(50L * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 50L * 1024 * 1024)]
+    [SwaggerOperation(OperationId = "UploadLecturePdf")]
+    public async Task<ApiWrapper.Success<UploadLecturePdfResult>> UploadPdf(
+        IFormFile file,
+        [FromForm] string? title,
+        Guid lectureId,
+        Guid courseId
+    )
+    {
+        var result = await _coursesService.ExecuteAsync(
+            new UploadLecturePdfCommand
+            {
+                CourseId = courseId,
+                LectureId = lectureId,
+                File = file,
+                Title = title
+            }
+        );
+
+        return new ApiWrapper.Success<UploadLecturePdfResult>
+        {
+            Data = result,
+            Message = "PDF uploaded successfully"
         };
     }
 

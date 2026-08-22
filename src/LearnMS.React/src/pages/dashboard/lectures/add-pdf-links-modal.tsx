@@ -1,5 +1,6 @@
 import {
   AddLecturePdfLinkItem,
+  uploadLecturePdf,
   useAddLecturePdfLinksMutation,
 } from "@/api/lectures-api";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/use-toast";
-import { Plus, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import { getGetLectureQueryKey } from "@/generated/api";
+import { FileText, Plus, Trash2, Upload } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import React, { useCallback, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
-type PdfLinkRow = {
+type UploadRow = {
+  id: string;
+  file: File;
+  title: string;
+  progress: number;
+  status: "ready" | "uploading" | "done" | "error";
+  error?: string;
+};
+
+type LinkRow = {
   id: string;
   title: string;
   url: string;
@@ -29,7 +43,7 @@ type AddPdfLinksModalProps = {
   lectureId: string;
 };
 
-const createRow = (): PdfLinkRow => ({
+const createLinkRow = (): LinkRow => ({
   id: crypto.randomUUID(),
   title: "",
   url: "",
@@ -40,125 +54,389 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
   courseId,
   lectureId,
 }) => {
-  const [rows, setRows] = useState<PdfLinkRow[]>([createRow()]);
+  const [rows, setRows] = useState<UploadRow[]>([]);
+  const [linkRows, setLinkRows] = useState<LinkRow[]>([]);
+  const [showLinks, setShowLinks] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const addPdfLinksMutation = useAddLecturePdfLinksMutation();
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const updateRow = (id: string, field: "title" | "url", value: string) => {
+  const refreshLecture = () => {
+    qc.invalidateQueries({
+      queryKey: ["lecture", { id: lectureId, courseId }],
+    });
+    qc.invalidateQueries({
+      queryKey: getGetLectureQueryKey(courseId, lectureId),
+    });
+    qc.invalidateQueries({ queryKey: ["assets"] });
+  };
+
+  const addFiles = useCallback((files: File[]) => {
+    const pdfs = files.filter(
+      (file) =>
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf")
+    );
+
+    if (pdfs.length === 0) {
+      toast({
+        title: "PDF required",
+        description: "Please choose one or more PDF files.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRows((prev) => [
+      ...prev,
+      ...pdfs.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        title: file.name.replace(/\.pdf$/i, ""),
+        progress: 0,
+        status: "ready" as const,
+      })),
+    ]);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: addFiles,
+    accept: { "application/pdf": [".pdf"] },
+    multiple: true,
+    disabled: isUploading,
+    noClick: true,
+  });
+
+  const updateTitle = (id: string, title: string) => {
     setRows((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+      prev.map((row) => (row.id === id ? { ...row, title } : row))
     );
   };
 
   const removeRow = (id: string) => {
-    setRows((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== id)));
+    setRows((prev) => prev.filter((row) => row.id !== id));
   };
 
-  const onSubmit = () => {
-    const data: AddLecturePdfLinkItem[] = [];
-
-    for (const row of rows) {
-      const parsed = AddLecturePdfLinkItem.safeParse({
-        title: row.title.trim(),
-        url: row.url.trim(),
-      });
-
-      if (!parsed.success) {
-        toast({
-          title: "Invalid PDF link",
-          description: parsed.error.errors[0]?.message ?? "Check title and Google Drive link",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      data.push(parsed.data);
-    }
-
-    addPdfLinksMutation.mutate(
-      { courseId, lectureId, data },
-      {
-        onSuccess: (res) => {
-          toast({
-            title: "PDF links added",
-            description: res.message,
-          });
-          onClose();
-        },
-      }
+  const updateLinkRow = (id: string, field: "title" | "url", value: string) => {
+    setLinkRows((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
     );
   };
+
+  const onSubmit = async () => {
+    const pendingUploads = rows.filter((row) => row.status !== "done");
+    const pendingLinks = showLinks
+      ? linkRows.filter((row) => row.title.trim() || row.url.trim())
+      : [];
+
+    if (pendingUploads.length === 0 && pendingLinks.length === 0) {
+      toast({
+        title: "No PDFs selected",
+        description: "Choose a PDF file or paste a public link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (pendingUploads.length > 0) {
+      setIsUploading(true);
+      let failed = false;
+
+      for (const row of pendingUploads) {
+        setRows((prev) =>
+          prev.map((item) =>
+            item.id === row.id
+              ? { ...item, status: "uploading", progress: 0, error: undefined }
+              : item
+          )
+        );
+
+        try {
+          await uploadLecturePdf({
+            courseId,
+            lectureId,
+            file: row.file,
+            title: row.title,
+            onProgress: (percent) => {
+              setRows((prev) =>
+                prev.map((item) =>
+                  item.id === row.id ? { ...item, progress: percent } : item
+                )
+              );
+            },
+          });
+
+          setRows((prev) =>
+            prev.map((item) =>
+              item.id === row.id
+                ? { ...item, status: "done", progress: 100 }
+                : item
+            )
+          );
+        } catch (error) {
+          failed = true;
+          const message =
+            error instanceof Error ? error.message : "Upload failed";
+          setRows((prev) =>
+            prev.map((item) =>
+              item.id === row.id
+                ? { ...item, status: "error", error: message }
+                : item
+            )
+          );
+        }
+      }
+
+      setIsUploading(false);
+      refreshLecture();
+
+      if (failed) {
+        toast({
+          title: "Some PDFs failed to upload",
+          description: "Fix the failed files and try again.",
+          variant: "destructive",
+        });
+        if (pendingLinks.length === 0) return;
+      } else if (pendingLinks.length === 0) {
+        refreshLecture();
+        toast({
+          title: "PDF uploaded to Google Drive",
+          description: "Students can open the viewer link without requesting access.",
+        });
+        onClose();
+        return;
+      }
+    }
+
+    if (pendingLinks.length > 0) {
+      const data: AddLecturePdfLinkItem[] = [];
+
+      for (const row of pendingLinks) {
+        const parsed = AddLecturePdfLinkItem.safeParse({
+          title: row.title.trim(),
+          url: row.url.trim(),
+        });
+
+        if (!parsed.success) {
+          toast({
+            title: "Invalid PDF link",
+            description:
+              parsed.error.errors[0]?.message ?? "Check title and link",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        data.push(parsed.data);
+      }
+
+      addPdfLinksMutation.mutate(
+        { courseId, lectureId, data },
+        {
+          onSuccess: (res) => {
+            toast({
+              title: "PDFs added",
+              description: res.message,
+            });
+            onClose();
+          },
+        }
+      );
+    }
+  };
+
+  const busy = isUploading || addPdfLinksMutation.isPending;
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl text-foreground">
         <DialogHeader>
-          <DialogTitle>Add PDF links</DialogTitle>
+          <DialogTitle>Add PDF</DialogTitle>
           <DialogDescription>
-            Paste Google Drive links with a title for each PDF. They will appear
-            in this lecture and in Files for reuse.
+            Upload a PDF from here. It is sent to Google Drive as a public
+            viewer link, so students can open it without requesting access.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-1">
-          {rows.map((row, index) => (
-            <div
-              key={row.id}
-              className="space-y-3 rounded-lg border border-border/60 p-3"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">PDF {index + 1}</p>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  disabled={rows.length === 1}
-                  onClick={() => removeRow(row.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`pdf-title-${row.id}`}>Title</Label>
-                <Input
-                  id={`pdf-title-${row.id}`}
-                  placeholder="e.g. Chapter 1 notes"
-                  value={row.title}
-                  onChange={(e) => updateRow(row.id, "title", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`pdf-url-${row.id}`}>Google Drive link</Label>
-                <Input
-                  id={`pdf-url-${row.id}`}
-                  placeholder="https://drive.google.com/..."
-                  value={row.url}
-                  onChange={(e) => updateRow(row.id, "url", e.target.value)}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => setRows((prev) => [...prev, createRow()])}
+        <div
+          {...getRootProps()}
+          className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 transition-colors ${
+            isDragActive
+              ? "border-primary bg-primary/10"
+              : "border-border/70 hover:border-primary/60"
+          } ${busy ? "opacity-60" : ""}`}
         >
-          <Plus className="mr-2 h-4 w-4" />
-          Add another PDF
-        </Button>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+          <input {...getInputProps()} />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            className="hidden"
+            disabled={busy}
+            onChange={(e) => {
+              addFiles(Array.from(e.target.files ?? []));
+              e.target.value = "";
+            }}
+          />
+          <Upload className="h-8 w-8 text-muted-foreground" />
+          <div className="text-center">
+            <p className="font-medium">
+              {isDragActive ? "Drop PDFs here" : "Drag & drop PDFs, or browse"}
+            </p>
+            <p className="text-sm text-muted-foreground">PDF only, up to 50MB each</p>
+          </div>
           <Button
             type="button"
-            onClick={onSubmit}
-            disabled={addPdfLinksMutation.isPending}
+            variant="outline"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
           >
-            {addPdfLinksMutation.isPending ? "Saving..." : "Save PDFs"}
+            Choose PDFs
+          </Button>
+        </div>
+
+        {rows.length > 0 && (
+          <div className="max-h-[32vh] space-y-3 overflow-y-auto pr-1">
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                className="space-y-2 rounded-lg border border-border/60 p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className="h-4 w-4 shrink-0 text-red-500" />
+                    <p className="truncate text-sm text-muted-foreground">
+                      {row.file.name} · {(row.file.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => removeRow(row.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`pdf-title-${row.id}`}>Title</Label>
+                  <Input
+                    id={`pdf-title-${row.id}`}
+                    value={row.title}
+                    disabled={busy}
+                    onChange={(e) => updateTitle(row.id, e.target.value)}
+                  />
+                </div>
+                {(row.status === "uploading" || row.status === "done") && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>
+                        {row.status === "done"
+                          ? "Uploaded to Google Drive"
+                          : row.progress < 100
+                            ? `Uploading... ${row.progress}%`
+                            : "Saving to Google Drive..."}
+                      </span>
+                      <span>{row.progress}%</span>
+                    </div>
+                    <Progress value={row.progress} className="h-2" />
+                  </div>
+                )}
+                {row.status === "error" && (
+                  <p className="text-sm text-destructive">{row.error}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="text-left text-sm text-muted-foreground underline-offset-2 hover:underline"
+          onClick={() => {
+            setShowLinks((prev) => {
+              const next = !prev;
+              if (next && linkRows.length === 0) {
+                setLinkRows([createLinkRow()]);
+              }
+              return next;
+            });
+          }}
+        >
+          {showLinks ? "Hide link option" : "Or paste a public PDF link"}
+        </button>
+
+        {showLinks && (
+          <div className="max-h-[24vh] space-y-3 overflow-y-auto pr-1">
+            {linkRows.map((row, index) => (
+              <div
+                key={row.id}
+                className="space-y-3 rounded-lg border border-border/60 p-3"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Link {index + 1}</p>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    disabled={busy || linkRows.length === 1}
+                    onClick={() =>
+                      setLinkRows((prev) =>
+                        prev.length === 1 ? prev : prev.filter((r) => r.id !== row.id)
+                      )
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`pdf-link-title-${row.id}`}>Title</Label>
+                  <Input
+                    id={`pdf-link-title-${row.id}`}
+                    placeholder="e.g. Chapter 1 notes"
+                    value={row.title}
+                    disabled={busy}
+                    onChange={(e) => updateLinkRow(row.id, "title", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`pdf-link-url-${row.id}`}>PDF link</Label>
+                  <Input
+                    id={`pdf-link-url-${row.id}`}
+                    placeholder="https://..."
+                    value={row.url}
+                    disabled={busy}
+                    onChange={(e) => updateLinkRow(row.id, "url", e.target.value)}
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={busy}
+              onClick={() => setLinkRows((prev) => [...prev, createLinkRow()])}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add another link
+            </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={onSubmit} disabled={busy}>
+            {isUploading
+              ? "Uploading..."
+              : addPdfLinksMutation.isPending
+                ? "Saving..."
+                : "Add PDFs"}
           </Button>
         </DialogFooter>
       </DialogContent>

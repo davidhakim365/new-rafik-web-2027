@@ -1,6 +1,7 @@
 import { useBuyLectureMutation } from "@/api/lectures-api";
 import { useBuyExamMutation } from "@/api/exams-api";
 import { ChooseHomeworkFormEmbed } from "@/components/choose-homework-form-embed";
+import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { YoutubeEmbed } from "@/components/youtube-embed";
 import {
   Accordion,
@@ -991,11 +992,6 @@ function AttachmentsSection({
     }
   };
 
-  const handleAssetClick = (asset: StudentAssetDto) => {
-    const href = asset.url || `/api/assets/${asset.id}`;
-    window.open(href, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
@@ -1021,10 +1017,10 @@ function AttachmentsSection({
           {attachments && attachments.length > 0 ? (
             <div className="space-y-2">
               {attachments.map((asset) => (
-                <div
+                <PdfOpenButton
                   key={asset.id}
-                  onClick={() => handleAssetClick(asset)}
-                  className="flex items-center gap-3 p-3 transition-all duration-200 border rounded-lg cursor-pointer bg-card/50 border-border/50 hover:bg-card/70 hover:border-border/70"
+                  asset={asset}
+                  className="flex w-full items-center gap-3 p-3 transition-all duration-200 border rounded-lg cursor-pointer bg-card/50 border-border/50 hover:bg-card/70 hover:border-border/70 text-left"
                 >
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted/50">
                     {getAssetIcon(asset.type)}
@@ -1038,7 +1034,7 @@ function AttachmentsSection({
                     </p>
                   </div>
                   <FaDownload className="w-4 h-4 transition-colors text-muted-foreground hover:text-primary" />
-                </div>
+                </PdfOpenButton>
               ))}
             </div>
           ) : (

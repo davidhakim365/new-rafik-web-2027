@@ -85,6 +85,7 @@ import { GetLectureDashboardResult, StudentGradeItem } from "@/generated/model";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { createLectureStudentsColumns } from "@/pages/dashboard/lectures/lecture-students-columns";
 import { LectureStudentStats } from "@/pages/dashboard/lectures/lecture-student-stats";
+import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { useAssetsStore } from "@/store/use-assets-store";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1371,9 +1372,6 @@ function LectureAssetsFrom({
     addAssets(oldAssets ?? []);
   }, [oldAssetIds]);
 
-  const assetHref = (asset: (typeof assets)[number]) =>
-    asset.url || `/api/assets/${asset.id}`;
-
   return (
     <div className='w-full h-full'>
       <div className='flex items-center justify-between m-4 text-2xl'>
@@ -1419,19 +1417,19 @@ function LectureAssetsFrom({
               <Delete />
             </Button>
             {asset.type === "Image" && (
-              <a href={assetHref(asset)} target='_blank' rel='noreferrer'>
+              <PdfOpenButton asset={asset} className='w-full'>
                 <FaImage className='w-full h-full text-primary/40' />
-              </a>
+              </PdfOpenButton>
             )}
             {asset.type === "Pdf" && (
-              <a href={assetHref(asset)} target='_blank' rel='noreferrer'>
+              <PdfOpenButton asset={asset} className='w-full'>
                 <FaFilePdf className='w-full h-full text-primary/40' />
-              </a>
+              </PdfOpenButton>
             )}
             {asset.type === "Unknown" && (
-              <a href={assetHref(asset)} target='_blank' rel='noreferrer'>
+              <PdfOpenButton asset={asset} className='w-full'>
                 <FaFile className='w-full h-full text-primary/40' />
-              </a>
+              </PdfOpenButton>
             )}
             <p className='mt-2 font-medium break-words'>{asset.name}</p>
             {asset.lectureName && (

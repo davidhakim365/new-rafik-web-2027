@@ -1194,7 +1194,7 @@ public sealed class CoursesService : ICoursesService
                 Id = Guid.NewGuid().ToString(),
                 Name = title,
                 Type = AssetType.Pdf,
-                Url = url,
+                Url = PdfViewerUrls.ToPublicViewerUrl(url),
                 LectureName = lecture.Title
             };
 
@@ -1207,6 +1207,70 @@ public sealed class CoursesService : ICoursesService
         await _context.SaveChangesAsync();
 
         return new AddLecturePdfLinksResult { Assets = created };
+    }
+
+    public async Task<UploadLecturePdfResult> ExecuteAsync(UploadLecturePdfCommand command)
+    {
+        const long maxBytes = 50L * 1024 * 1024;
+        var file = command.File;
+
+        if (file is null || file.Length == 0 || file.Length > maxBytes || !IsPdfFile(file))
+            throw new ApiException(LecturesErrors.InvalidPdfFile);
+
+        var lecture =
+            await _context
+                .Set<Lecture>()
+                .Include(x => x.Assets)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.LectureId && x.CourseId == command.CourseId
+                ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        var assetId = Guid.NewGuid().ToString();
+        var title = command.Title?.Trim();
+        if (string.IsNullOrWhiteSpace(title))
+            title = Path.GetFileNameWithoutExtension(file.FileName);
+
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ApiException(LecturesErrors.InvalidPdfFile);
+
+        await using var stream = file.OpenReadStream();
+        GoogleDriveUploadResult driveFile;
+        try
+        {
+            driveFile = await _googleFormsService.UploadPublicPdfAsync(stream, $"{title}.pdf");
+        }
+        catch (ApiException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            throw new ApiException(LecturesErrors.GoogleDriveUploadFailed);
+        }
+
+        var asset = new Asset
+        {
+            Id = assetId,
+            Name = title,
+            Type = AssetType.Pdf,
+            Url = driveFile.ViewerUrl,
+            LectureName = lecture.Title
+        };
+
+        await _context.AddAsync(asset);
+        lecture.Assets.Add(asset);
+        _context.Update(lecture);
+        await _context.SaveChangesAsync();
+
+        return new UploadLecturePdfResult { Asset = asset };
+    }
+
+    private static bool IsPdfFile(IFormFile file)
+    {
+        var contentType = file.ContentType ?? "";
+        var name = file.FileName ?? "";
+        return contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase)
+            || name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<UpdateExamResult> ExecuteAsync(UpdateExamCommand command)
