@@ -1,4 +1,10 @@
 import {
+  getGoogleDriveAuthorizeUrl,
+  getGoogleDriveStatus,
+  saveGoogleSharedDriveId,
+  type GoogleDriveStatus,
+} from "@/api/google-drive-api";
+import {
   AddLecturePdfLinkItem,
   uploadLecturePdf,
   useAddLecturePdfLinksMutation,
@@ -19,7 +25,7 @@ import { toast } from "@/components/ui/use-toast";
 import { getGetLectureQueryKey } from "@/generated/api";
 import { FileText, Plus, Trash2, Upload } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
 type UploadRow = {
@@ -61,6 +67,67 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
   const addPdfLinksMutation = useAddLecturePdfLinksMutation();
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [driveStatus, setDriveStatus] = useState<GoogleDriveStatus | null>(null);
+  const [sharedDriveId, setSharedDriveId] = useState("");
+  const [savingDrive, setSavingDrive] = useState(false);
+
+  const refreshDriveStatus = useCallback(async () => {
+    try {
+      const res = await getGoogleDriveStatus();
+      setDriveStatus(res.data);
+      if (res.data.sharedDriveId) {
+        setSharedDriveId(res.data.sharedDriveId);
+      }
+    } catch {
+      setDriveStatus(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshDriveStatus();
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.data === "drive-connected") {
+        refreshDriveStatus();
+        toast({
+          title: "Google Drive connected",
+          description: "You can upload PDFs from this lecture now.",
+        });
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [refreshDriveStatus]);
+
+  const connectGoogleDrive = async () => {
+    const res = await getGoogleDriveAuthorizeUrl();
+    const url = res.data?.url;
+    if (!url) {
+      toast({
+        title: "Cannot connect Google Drive",
+        description: "Add DriveClientId and DriveClientSecret, or use a Shared Drive ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+    window.open(url, "google-drive-oauth", "width=520,height=720");
+  };
+
+  const saveSharedDrive = async () => {
+    if (!sharedDriveId.trim()) return;
+    setSavingDrive(true);
+    try {
+      const res = await saveGoogleSharedDriveId(sharedDriveId.trim());
+      setDriveStatus(res.data);
+      toast({
+        title: "Shared Drive saved",
+        description: "PDFs will upload there with a public viewer link.",
+      });
+    } finally {
+      setSavingDrive(false);
+    }
+  };
 
   const refreshLecture = () => {
     qc.invalidateQueries({
@@ -254,10 +321,55 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
         <DialogHeader>
           <DialogTitle>Add PDF</DialogTitle>
           <DialogDescription>
-            Upload a PDF from here. It is sent to Google Drive as a public
+            Upload a PDF from here. It is sent to your Google Drive as a public
             viewer link, so students can open it without requesting access.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-3 rounded-lg border border-border/60 p-3">
+          <p className="text-sm font-medium">Google Drive</p>
+          {driveStatus?.canUpload ? (
+            <p className="text-sm text-muted-foreground">
+              {driveStatus.mode === "user" && driveStatus.email
+                ? `Connected as ${driveStatus.email}. Uploads use your Drive storage.`
+                : driveStatus.sharedDriveId
+                  ? `Uploading to Shared Drive ${driveStatus.sharedDriveId}.`
+                  : "Google Drive is ready for uploads."}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Google service accounts cannot store files. Connect your Google
+              account, or paste a Shared Drive ID after adding the service
+              account as Content manager.
+            </p>
+          )}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              placeholder="Shared Drive ID or folder URL"
+              value={sharedDriveId}
+              onChange={(e) => setSharedDriveId(e.target.value)}
+              disabled={busy || savingDrive}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy || savingDrive || !sharedDriveId.trim()}
+              onClick={saveSharedDrive}
+            >
+              {savingDrive ? "Saving..." : "Save Drive"}
+            </Button>
+          </div>
+          {driveStatus?.canConnectOAuth && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={connectGoogleDrive}
+            >
+              Connect Google account
+            </Button>
+          )}
+        </div>
 
         <div
           {...getRootProps()}

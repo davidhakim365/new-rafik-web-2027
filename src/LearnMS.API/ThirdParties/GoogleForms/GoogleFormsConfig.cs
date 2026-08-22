@@ -7,15 +7,32 @@ public sealed class GoogleFormsConfig
     public string PrivateKey { get; set; } = "";
     public string? ProjectId { get; set; }
 
-    /// <summary>
-    /// Optional Drive folder ID. Share that folder with ClientEmail as Editor
-    /// so uploaded lecture PDFs appear in your Google Drive.
-    /// </summary>
+    /// <summary>Optional folder inside My Drive or a Shared Drive.</summary>
     public string? DriveFolderId { get; set; }
+
+    /// <summary>
+    /// Shared Drive ID. Service accounts can only store files here, not in My Drive.
+    /// </summary>
+    public string? SharedDriveId { get; set; }
+
+    /// <summary>
+    /// Workspace user to impersonate with domain-wide delegation.
+    /// </summary>
+    public string? ImpersonateUser { get; set; }
+
+    public string? DriveClientId { get; set; }
+    public string? DriveClientSecret { get; set; }
+    public string? DriveRedirectUri { get; set; }
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ClientEmail)
         && ClientEmail != "*"
         && !string.IsNullOrWhiteSpace(PrivateKey)
         && PrivateKey != "*";
+
+    public bool HasOAuthClient =>
+        !string.IsNullOrWhiteSpace(DriveClientId)
+        && DriveClientId != "*"
+        && !string.IsNullOrWhiteSpace(DriveClientSecret)
+        && DriveClientSecret != "*";
 }

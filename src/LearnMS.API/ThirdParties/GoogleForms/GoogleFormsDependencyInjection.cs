@@ -8,6 +8,7 @@ public static class GoogleFormsDependencyInjection
     )
     {
         services.Configure<GoogleFormsConfig>(cfg.GetSection(GoogleFormsConfig.Section));
+        services.AddSingleton<GoogleDriveSettingsStore>();
         services.AddSingleton<IGoogleFormsService, GoogleFormsService>();
         return services;
     }
