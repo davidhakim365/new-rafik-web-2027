@@ -87,13 +87,36 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
     refreshDriveStatus();
 
     const onMessage = (event: MessageEvent) => {
-      if (event.data === "drive-connected") {
-        refreshDriveStatus();
-        toast({
-          title: "Google Drive connected",
-          description: "You can upload PDFs from this lecture now.",
-        });
+      const data = event.data as
+        | string
+        | { type?: string; refreshToken?: string }
+        | undefined;
+      const connected =
+        data === "drive-connected" ||
+        (typeof data === "object" && data?.type === "drive-connected");
+      if (!connected) return;
+
+      const token =
+        typeof data === "object" && data.refreshToken
+          ? data.refreshToken
+          : undefined;
+      if (token) {
+        setDriveStatus((prev) => ({
+          canUpload: true,
+          canConnectOAuth: prev?.canConnectOAuth ?? true,
+          email: prev?.email ?? null,
+          sharedDriveId: prev?.sharedDriveId ?? null,
+          mode: prev?.mode && prev.mode !== "none" ? prev.mode : "user",
+          refreshToken: token,
+        }));
       }
+      void refreshDriveStatus();
+      toast({
+        title: "Google Drive connected",
+        description: token
+          ? "Copy the refresh token shown below into env so you never connect again."
+          : "You can upload PDFs from this lecture now.",
+      });
     };
 
     window.addEventListener("message", onMessage);
@@ -111,7 +134,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       });
       return;
     }
-    window.open(url, "google-drive-oauth", "width=520,height=720");
+    window.open(url, "google-drive-oauth", "width=640,height=780");
   };
 
   const saveSharedDrive = async () => {
@@ -366,7 +389,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
                 Saved refresh token. Put this in env so you never connect again:
               </p>
               <p className="break-all font-mono text-xs">
-                GoogleAPIs__DriveRefreshToken={driveStatus.refreshToken}
+                GoogleForms__DriveRefreshToken={driveStatus.refreshToken}
               </p>
               <Button
                 type="button"
@@ -374,7 +397,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
                 variant="outline"
                 onClick={async () => {
                   await navigator.clipboard.writeText(
-                    `GoogleAPIs__DriveRefreshToken=${driveStatus.refreshToken}`
+                    `GoogleForms__DriveRefreshToken=${driveStatus.refreshToken}`
                   );
                   toast({
                     title: "Refresh token copied",

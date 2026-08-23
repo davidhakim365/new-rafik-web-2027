@@ -31,7 +31,7 @@ public interface IGoogleFormsService
     );
     GoogleDriveConnectionStatus GetDriveStatus();
     string CreateDriveAuthorizationUrl(string redirectUri, string state);
-    Task CompleteDriveAuthorizationAsync(string code, string redirectUri, CancellationToken cancellationToken = default);
+    Task<string> CompleteDriveAuthorizationAsync(string code, string redirectUri, CancellationToken cancellationToken = default);
     void SaveSharedDriveId(string? sharedDriveId);
 }
 
@@ -303,7 +303,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
         return request.Build().AbsoluteUri;
     }
 
-    public async Task CompleteDriveAuthorizationAsync(
+    public async Task<string> CompleteDriveAuthorizationAsync(
         string code,
         string redirectUri,
         CancellationToken cancellationToken = default
@@ -338,6 +338,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
         var about = await aboutRequest.ExecuteAsync(cancellationToken);
         local.Email = about.User?.EmailAddress;
         _driveSettings.Write(local);
+        return local.RefreshToken!;
     }
 
     public void SaveSharedDriveId(string? sharedDriveId)
