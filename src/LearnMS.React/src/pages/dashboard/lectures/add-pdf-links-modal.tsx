@@ -360,6 +360,32 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           >
             {driveStatus?.canUpload ? "Reconnect Google account" : "Connect Google account"}
           </Button>
+          {driveStatus?.refreshToken && (
+            <div className="space-y-2 rounded-md bg-muted/40 p-2">
+              <p className="text-xs text-muted-foreground">
+                Saved refresh token. Put this in env so you never connect again:
+              </p>
+              <p className="break-all font-mono text-xs">
+                GoogleAPIs__DriveRefreshToken={driveStatus.refreshToken}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(
+                    `GoogleAPIs__DriveRefreshToken=${driveStatus.refreshToken}`
+                  );
+                  toast({
+                    title: "Refresh token copied",
+                    description: "Paste it into your env, then restart the API.",
+                  });
+                }}
+              >
+                Copy refresh token
+              </Button>
+            </div>
+          )}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               placeholder="Shared Drive ID or folder URL (optional)"

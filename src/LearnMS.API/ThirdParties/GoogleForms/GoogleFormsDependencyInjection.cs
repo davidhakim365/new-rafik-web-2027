@@ -35,5 +35,8 @@ public static class GoogleFormsDependencyInjection
         config.SharedDriveId = First(
             config.SharedDriveId,
             Env("GoogleForms__SharedDriveId", "GoogleAPIs__SharedDriveId", "DRIVE_SHARED_DRIVE_ID"));
+        config.DriveRefreshToken = First(
+            config.DriveRefreshToken,
+            Env("GoogleAPIs__DriveRefreshToken", "GoogleAPIs__DriveRefreshToken", "DRIVE_REFRESH_TOKEN"));
     }
 }

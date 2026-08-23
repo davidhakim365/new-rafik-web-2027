@@ -40,7 +40,8 @@ public sealed record GoogleDriveConnectionStatus(
     bool CanConnectOAuth,
     string? Email,
     string? SharedDriveId,
-    string Mode
+    string Mode,
+    string? RefreshToken
 );
 
 public sealed class GoogleFormsService : IGoogleFormsService
@@ -228,7 +229,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
         else if (!HasUserRefreshToken(local) && !HasImpersonateUser() && !string.IsNullOrWhiteSpace(sharedDriveId))
             metadata.Parents = [sharedDriveId];
 
-        var service = CreateDriveService();
+        var service = await CreateDriveServiceAsync(cancellationToken);
         var create = service.Files.Create(metadata, content, "application/pdf");
         create.Fields = "id";
         create.SupportsAllDrives = true;
@@ -270,14 +271,15 @@ public sealed class GoogleFormsService : IGoogleFormsService
         var sharedDriveId = FirstNonEmpty(local.SharedDriveId, _config.SharedDriveId);
         var email = local.Email;
 
-        if (HasUserRefreshToken(local))
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user");
+        var refreshToken = EffectiveRefreshToken(local);
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", refreshToken);
         if (HasImpersonateUser())
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, _config.ImpersonateUser, sharedDriveId, "impersonate");
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, _config.ImpersonateUser, sharedDriveId, "impersonate", null);
         if (!string.IsNullOrWhiteSpace(sharedDriveId) && IsConfigured)
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, null, sharedDriveId, "shared-drive");
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, null, sharedDriveId, "shared-drive", null);
 
-        return new GoogleDriveConnectionStatus(false, _config.HasOAuthClient, null, sharedDriveId, "none");
+        return new GoogleDriveConnectionStatus(false, _config.HasOAuthClient, null, sharedDriveId, "none", null);
     }
 
     public string CreateDriveAuthorizationUrl(string redirectUri, string state)
@@ -322,6 +324,8 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
         var local = _driveSettings.Read();
         local.RefreshToken = token.RefreshToken;
+        local.AccessToken = token.AccessToken;
+        local.AccessTokenIssuedUtc = DateTime.UtcNow;
 
         var credential = new UserCredential(flow, "drive-user", token);
         var service = new DriveService(new BaseClientService.Initializer
@@ -445,19 +449,37 @@ public sealed class GoogleFormsService : IGoogleFormsService
         return new ServiceAccountCredential(initializer.FromPrivateKey(privateKey));
     }
 
-    private DriveService CreateDriveService()
+    private async Task<DriveService> CreateDriveServiceAsync(CancellationToken cancellationToken)
     {
         var local = _driveSettings.Read();
         IConfigurableHttpClientInitializer initializer;
+        var refreshToken = EffectiveRefreshToken(local);
 
-        if (HasUserRefreshToken(local) && _config.HasOAuthClient)
+        if (!string.IsNullOrWhiteSpace(refreshToken) && _config.HasOAuthClient)
         {
             var flow = CreateAuthFlow();
-            initializer = new UserCredential(
+            var credential = new UserCredential(
                 flow,
                 "drive-user",
-                new TokenResponse { RefreshToken = local.RefreshToken }
+                new TokenResponse
+                {
+                    RefreshToken = refreshToken,
+                    AccessToken = local.AccessToken,
+                    IssuedUtc = local.AccessTokenIssuedUtc ?? DateTime.UtcNow.AddHours(-2)
+                }
             );
+
+            if (string.IsNullOrWhiteSpace(credential.Token.AccessToken) || credential.Token.IsStale)
+            {
+                await credential.RefreshTokenAsync(cancellationToken);
+                local.AccessToken = credential.Token.AccessToken;
+                local.AccessTokenIssuedUtc = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(credential.Token.RefreshToken))
+                    local.RefreshToken = credential.Token.RefreshToken;
+                _driveSettings.Write(local);
+            }
+
+            initializer = credential;
         }
         else
         {
@@ -500,8 +522,11 @@ public sealed class GoogleFormsService : IGoogleFormsService
         );
     }
 
+    private string? EffectiveRefreshToken(GoogleDriveLocalSettings local) =>
+        FirstNonEmpty(local.RefreshToken, _config.DriveRefreshToken);
+
     private bool HasUserRefreshToken(GoogleDriveLocalSettings local) =>
-        !string.IsNullOrWhiteSpace(local.RefreshToken);
+        !string.IsNullOrWhiteSpace(EffectiveRefreshToken(local));
 
     private bool HasImpersonateUser() =>
         !string.IsNullOrWhiteSpace(_config.ImpersonateUser) && _config.ImpersonateUser != "*";

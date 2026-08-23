@@ -23,6 +23,7 @@ public sealed class GoogleFormsConfig
     public string? DriveClientId { get; set; }
     public string? DriveClientSecret { get; set; }
     public string? DriveRedirectUri { get; set; }
+    public string? DriveRefreshToken { get; set; }
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ClientEmail)

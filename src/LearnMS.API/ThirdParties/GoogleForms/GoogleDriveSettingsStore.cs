@@ -8,6 +8,8 @@ public sealed class GoogleDriveLocalSettings
     public string? RefreshToken { get; set; }
     public string? Email { get; set; }
     public string? SharedDriveId { get; set; }
+    public string? AccessToken { get; set; }
+    public DateTime? AccessTokenIssuedUtc { get; set; }
 }
 
 public sealed class GoogleDriveSettingsStore

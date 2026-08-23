@@ -6,6 +6,7 @@ export type GoogleDriveStatus = {
   email?: string | null;
   sharedDriveId?: string | null;
   mode: "user" | "shared-drive" | "impersonate" | "none" | string;
+  refreshToken?: string | null;
 };
 
 export async function getGoogleDriveStatus() {
