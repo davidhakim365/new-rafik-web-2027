@@ -400,6 +400,17 @@ public sealed class GoogleFormsService : IGoogleFormsService
         if (status.CanUpload)
             return;
 
+        if (_config.HasOAuthClient)
+        {
+            throw new ApiException(
+                new ApiError(
+                    "google-drive/not-connected",
+                    "Google Drive is not connected yet. Open Add PDF and click Connect Google account, then sign in with your Gmail. Setting env vars alone is not enough.",
+                    StatusCodes.Status400BadRequest
+                )
+            );
+        }
+
         throw new ApiException(
             new ApiError(
                 "google-drive/not-connected",

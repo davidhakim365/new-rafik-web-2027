@@ -197,6 +197,16 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       ? linkRows.filter((row) => row.title.trim() || row.url.trim())
       : [];
 
+    if (pendingUploads.length > 0 && !driveStatus?.canUpload) {
+      toast({
+        title: "Connect Google Drive first",
+        description:
+          "Click Connect Google account and sign in with your Gmail. Env vars only enable that button.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (pendingUploads.length === 0 && pendingLinks.length === 0) {
       toast({
         title: "No PDFs selected",
@@ -338,14 +348,21 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Google service accounts cannot store files. Connect your Google
-              account, or paste a Shared Drive ID after adding the service
-              account as Content manager.
+              Env vars are not enough. Click Connect Google account and sign in
+              with your Gmail once. After that, uploads go to your Drive.
             </p>
           )}
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy}
+            onClick={connectGoogleDrive}
+          >
+            {driveStatus?.canUpload ? "Reconnect Google account" : "Connect Google account"}
+          </Button>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
-              placeholder="Shared Drive ID or folder URL"
+              placeholder="Shared Drive ID or folder URL (optional)"
               value={sharedDriveId}
               onChange={(e) => setSharedDriveId(e.target.value)}
               disabled={busy || savingDrive}
@@ -359,16 +376,6 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
               {savingDrive ? "Saving..." : "Save Drive"}
             </Button>
           </div>
-          {driveStatus?.canConnectOAuth && (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={busy}
-              onClick={connectGoogleDrive}
-            >
-              Connect Google account
-            </Button>
-          )}
         </div>
 
         <div
