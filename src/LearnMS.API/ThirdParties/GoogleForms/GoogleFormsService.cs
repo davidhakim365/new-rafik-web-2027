@@ -33,7 +33,11 @@ public interface IGoogleFormsService
     string CreateDriveAuthorizationUrl(string redirectUri, string state);
     Task<string> CompleteDriveAuthorizationAsync(string code, string redirectUri, CancellationToken cancellationToken = default);
     void SaveSharedDriveId(string? sharedDriveId);
+    Task<IReadOnlyList<GoogleDriveFolder>> ListDriveFoldersAsync(CancellationToken cancellationToken = default);
+    void SaveDriveFolder(string? folderId, string? folderName);
 }
+
+public sealed record GoogleDriveFolder(string Id, string Name, string Path);
 
 public sealed record GoogleDriveConnectionStatus(
     bool CanUpload,
@@ -41,7 +45,9 @@ public sealed record GoogleDriveConnectionStatus(
     string? Email,
     string? SharedDriveId,
     string Mode,
-    string? RefreshToken
+    string? RefreshToken,
+    string? FolderId = null,
+    string? FolderName = null
 );
 
 public sealed class GoogleFormsService : IGoogleFormsService
@@ -216,7 +222,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
         var local = _driveSettings.Read();
         var sharedDriveId = FirstNonEmpty(local.SharedDriveId, _config.SharedDriveId);
-        var folderId = _config.DriveFolderId;
+        var folderId = EffectiveFolderId(local);
 
         var metadata = new DriveFile
         {
@@ -272,14 +278,18 @@ public sealed class GoogleFormsService : IGoogleFormsService
         var email = local.Email;
 
         var refreshToken = EffectiveRefreshToken(local);
+        var folderId = EffectiveFolderId(local);
+        var folderName = string.IsNullOrWhiteSpace(local.FolderName)
+            ? (string.IsNullOrWhiteSpace(folderId) ? "My Drive" : folderId)
+            : local.FolderName;
         if (!string.IsNullOrWhiteSpace(refreshToken))
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", refreshToken);
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", refreshToken, folderId, folderName);
         if (HasImpersonateUser())
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, _config.ImpersonateUser, sharedDriveId, "impersonate", null);
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, _config.ImpersonateUser, sharedDriveId, "impersonate", null, folderId, folderName);
         if (!string.IsNullOrWhiteSpace(sharedDriveId) && IsConfigured)
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, null, sharedDriveId, "shared-drive", null);
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, null, sharedDriveId, "shared-drive", null, folderId, folderName);
 
-        return new GoogleDriveConnectionStatus(false, _config.HasOAuthClient, null, sharedDriveId, "none", null);
+        return new GoogleDriveConnectionStatus(false, _config.HasOAuthClient, null, sharedDriveId, "none", null, folderId, folderName);
     }
 
     public string CreateDriveAuthorizationUrl(string redirectUri, string state)
@@ -345,6 +355,86 @@ public sealed class GoogleFormsService : IGoogleFormsService
     {
         var local = _driveSettings.Read();
         local.SharedDriveId = ParseDriveId(sharedDriveId);
+        _driveSettings.Write(local);
+    }
+
+    public async Task<IReadOnlyList<GoogleDriveFolder>> ListDriveFoldersAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var service = await CreateDriveServiceAsync(cancellationToken);
+        var files = new List<DriveFile>();
+        string? pageToken = null;
+        var pages = 0;
+
+        do
+        {
+            var request = service.Files.List();
+            request.Q = "mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+            request.Fields = "nextPageToken, files(id, name, parents)";
+            request.PageSize = 100;
+            request.PageToken = pageToken;
+            request.SupportsAllDrives = true;
+            request.IncludeItemsFromAllDrives = true;
+            request.Spaces = "drive";
+            var result = await request.ExecuteAsync(cancellationToken);
+            if (result.Files is { Count: > 0 })
+                files.AddRange(result.Files);
+            pageToken = result.NextPageToken;
+            pages++;
+        } while (!string.IsNullOrWhiteSpace(pageToken) && pages < 10);
+
+        var byId = files
+            .Where(file => !string.IsNullOrWhiteSpace(file.Id))
+            .GroupBy(file => file.Id!)
+            .ToDictionary(group => group.Key, group => group.First());
+
+        string PathOf(DriveFile folder)
+        {
+            var parts = new List<string>();
+            var current = folder;
+            var seen = new HashSet<string>();
+            while (current is { Id: { Length: > 0 } } && seen.Add(current.Id))
+            {
+                parts.Add(string.IsNullOrWhiteSpace(current.Name) ? "Untitled" : current.Name);
+                var parentId = current.Parents?.FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(parentId) || !byId.TryGetValue(parentId, out current))
+                    break;
+            }
+
+            parts.Reverse();
+            return "My Drive / " + string.Join(" / ", parts);
+        }
+
+        var folders = files
+            .Where(file => !string.IsNullOrWhiteSpace(file.Id))
+            .Select(file => new GoogleDriveFolder(
+                file.Id!,
+                string.IsNullOrWhiteSpace(file.Name) ? "Untitled" : file.Name,
+                PathOf(file)
+            ))
+            .OrderBy(file => file.Path, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        folders.Insert(0, new GoogleDriveFolder("root", "My Drive", "My Drive (root)"));
+        return folders;
+    }
+
+    public void SaveDriveFolder(string? folderId, string? folderName)
+    {
+        var local = _driveSettings.Read();
+        var parsed = ParseDriveId(folderId);
+        if (string.IsNullOrWhiteSpace(parsed) || parsed == "root")
+        {
+            local.FolderId = null;
+            local.FolderName = "My Drive";
+        }
+        else
+        {
+            local.FolderId = parsed;
+            local.FolderName = string.IsNullOrWhiteSpace(folderName) ? parsed : folderName.Trim();
+        }
+
         _driveSettings.Write(local);
     }
 
@@ -525,6 +615,14 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
     private string? EffectiveRefreshToken(GoogleDriveLocalSettings local) =>
         FirstNonEmpty(local.RefreshToken, _config.DriveRefreshToken);
+
+    private string? EffectiveFolderId(GoogleDriveLocalSettings local)
+    {
+        var selected = local.FolderId;
+        if (string.Equals(selected, "root", StringComparison.OrdinalIgnoreCase))
+            selected = null;
+        return FirstNonEmpty(selected, _config.DriveFolderId);
+    }
 
     private bool HasUserRefreshToken(GoogleDriveLocalSettings local) =>
         !string.IsNullOrWhiteSpace(EffectiveRefreshToken(local));

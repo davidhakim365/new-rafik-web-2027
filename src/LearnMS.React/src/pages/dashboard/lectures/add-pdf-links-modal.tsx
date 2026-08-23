@@ -1,7 +1,10 @@
 import {
   getGoogleDriveAuthorizeUrl,
+  getGoogleDriveFolders,
   getGoogleDriveStatus,
+  saveGoogleDriveFolder,
   saveGoogleSharedDriveId,
+  type GoogleDriveFolder,
   type GoogleDriveStatus,
 } from "@/api/google-drive-api";
 import {
@@ -70,6 +73,28 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
   const [driveStatus, setDriveStatus] = useState<GoogleDriveStatus | null>(null);
   const [sharedDriveId, setSharedDriveId] = useState("");
   const [savingDrive, setSavingDrive] = useState(false);
+  const [folders, setFolders] = useState<GoogleDriveFolder[]>([]);
+  const [folderId, setFolderId] = useState("root");
+  const [folderQuery, setFolderQuery] = useState("");
+  const [loadingFolders, setLoadingFolders] = useState(false);
+  const [savingFolder, setSavingFolder] = useState(false);
+
+  const loadFolders = useCallback(async () => {
+    setLoadingFolders(true);
+    try {
+      const res = await getGoogleDriveFolders();
+      setFolders(res.data ?? []);
+    } catch {
+      setFolders([]);
+      toast({
+        title: "Could not load Drive folders",
+        description: "Reconnect Google account, then try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingFolders(false);
+    }
+  }, []);
 
   const refreshDriveStatus = useCallback(async () => {
     try {
@@ -78,10 +103,14 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       if (res.data.sharedDriveId) {
         setSharedDriveId(res.data.sharedDriveId);
       }
+      setFolderId(res.data.folderId || "root");
+      if (res.data.canUpload) {
+        void loadFolders();
+      }
     } catch {
       setDriveStatus(null);
     }
-  }, []);
+  }, [loadFolders]);
 
   useEffect(() => {
     refreshDriveStatus();
@@ -108,6 +137,8 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           sharedDriveId: prev?.sharedDriveId ?? null,
           mode: prev?.mode && prev.mode !== "none" ? prev.mode : "user",
           refreshToken: token,
+          folderId: prev?.folderId ?? null,
+          folderName: prev?.folderName ?? null,
         }));
       }
       void refreshDriveStatus();
@@ -149,6 +180,29 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       });
     } finally {
       setSavingDrive(false);
+    }
+  };
+
+  const saveUploadFolder = async (nextFolderId: string) => {
+    const folder =
+      folders.find((item) => item.id === nextFolderId) ??
+      ({
+        id: nextFolderId,
+        name: nextFolderId === "root" ? "My Drive" : nextFolderId,
+        path: nextFolderId === "root" ? "My Drive (root)" : nextFolderId,
+      } satisfies GoogleDriveFolder);
+    setFolderId(nextFolderId);
+    setSavingFolder(true);
+    try {
+      const res = await saveGoogleDriveFolder(folder.id, folder.path);
+      setDriveStatus(res.data);
+      setFolderId(res.data.folderId || "root");
+      toast({
+        title: "Upload folder saved",
+        description: `PDFs will upload to ${folder.path}.`,
+      });
+    } finally {
+      setSavingFolder(false);
     }
   };
 
@@ -347,6 +401,14 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
   };
 
   const busy = isUploading || addPdfLinksMutation.isPending;
+  const visibleFolders = folders.filter(
+    (folder) =>
+      folder.id === folderId ||
+      folder.id === "root" ||
+      !folderQuery.trim() ||
+      folder.path.toLowerCase().includes(folderQuery.toLowerCase()) ||
+      folder.name.toLowerCase().includes(folderQuery.toLowerCase())
+  );
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -364,7 +426,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           {driveStatus?.canUpload ? (
             <p className="text-sm text-muted-foreground">
               {driveStatus.mode === "user" && driveStatus.email
-                ? `Connected as ${driveStatus.email}. Uploads use your Drive storage.`
+                ? `Connected as ${driveStatus.email}. Choose the Drive folder for PDF uploads.`
                 : driveStatus.sharedDriveId
                   ? `Uploading to Shared Drive ${driveStatus.sharedDriveId}.`
                   : "Google Drive is ready for uploads."}
@@ -372,7 +434,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           ) : (
             <p className="text-sm text-muted-foreground">
               Env vars are not enough. Click Connect Google account and sign in
-              with your Gmail once. After that, uploads go to your Drive.
+              with your Gmail once. After that, pick a folder for uploads.
             </p>
           )}
           <Button
@@ -407,6 +469,66 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
               >
                 Copy refresh token
               </Button>
+            </div>
+          )}
+          {driveStatus?.canUpload && (
+            <div className="space-y-2">
+              <Label htmlFor="drive-folder">Upload folder</Label>
+              <Input
+                id="drive-folder-search"
+                placeholder="Search folders"
+                value={folderQuery}
+                onChange={(e) => setFolderQuery(e.target.value)}
+                disabled={busy || loadingFolders || savingFolder}
+              />
+              <select
+                id="drive-folder"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={folderId}
+                disabled={busy || loadingFolders || savingFolder}
+                onChange={(e) => {
+                  void saveUploadFolder(e.target.value);
+                }}
+              >
+                {visibleFolders.length === 0 ? (
+                  <option value={folderId}>
+                    {loadingFolders
+                      ? "Loading folders..."
+                      : driveStatus.folderName || "My Drive (root)"}
+                  </option>
+                ) : (
+                  visibleFolders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.path}
+                    </option>
+                  ))
+                )}
+              </select>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {savingFolder
+                    ? "Saving folder..."
+                    : loadingFolders
+                      ? "Loading your Drive folders..."
+                      : `PDFs will upload to ${
+                          folders.find((folder) => folder.id === folderId)
+                            ?.path ??
+                          driveStatus.folderName ??
+                          "My Drive (root)"
+                        }.`}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy || loadingFolders || savingFolder}
+                  onClick={() => {
+                    void loadFolders();
+                  }}
+                >
+                  Refresh folders
+                </Button>
+              </div>
             </div>
           )}
           <div className="flex flex-col gap-2 sm:flex-row">

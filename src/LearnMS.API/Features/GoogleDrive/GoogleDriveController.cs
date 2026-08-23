@@ -58,6 +58,34 @@ public sealed class GoogleDriveController(
         };
     }
 
+    [HttpGet("folders")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    public async Task<ApiWrapper.Success<IReadOnlyList<GoogleDriveFolder>>> GetFolders(
+        CancellationToken cancellationToken
+    )
+    {
+        var folders = await googleAPIs.ListDriveFoldersAsync(cancellationToken);
+        return new()
+        {
+            Data = folders,
+            Message = "Retrieved Google Drive folders"
+        };
+    }
+
+    [HttpPost("folder")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    public ApiWrapper.Success<GoogleDriveConnectionStatus> SaveFolder(
+        [FromBody] SaveDriveFolderRequest request
+    )
+    {
+        googleAPIs.SaveDriveFolder(request.FolderId, request.FolderName);
+        return new()
+        {
+            Data = googleAPIs.GetDriveStatus(),
+            Message = "Upload folder saved"
+        };
+    }
+
     [HttpGet("callback")]
     [AllowAnonymous]
     public async Task<IActionResult> Callback(
@@ -149,4 +177,10 @@ public sealed record GoogleDriveAuthorizeUrl(string Url);
 public sealed class SaveSharedDriveRequest
 {
     public string? SharedDriveId { get; set; }
+}
+
+public sealed class SaveDriveFolderRequest
+{
+    public string? FolderId { get; set; }
+    public string? FolderName { get; set; }
 }
