@@ -840,11 +840,12 @@ function StudentLectureHistoryPanel({
         </p>
       ) : (
         <div className="max-h-80 overflow-auto rounded-md border border-border/50">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[840px] text-left text-sm">
             <thead className="sticky top-0 bg-muted/80 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
               <tr>
                 <th className="px-3 py-2 font-medium">Lecture</th>
                 <th className="px-3 py-2 font-medium">Attendance</th>
+                <th className="px-3 py-2 font-medium">Center</th>
                 <th className="px-3 py-2 font-medium">Essay</th>
                 <th className="px-3 py-2 font-medium">Choose</th>
                 <th className="px-3 py-2 font-medium">Quiz</th>
@@ -910,7 +911,7 @@ function LectureHistoryRow({
       {groupLabel && (
         <tr className="bg-muted/40">
           <td
-            colSpan={7}
+            colSpan={8}
             className="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
           >
             {groupLabel}
@@ -962,6 +963,15 @@ function LectureHistoryRow({
           >
             {lecture.attended ? "Present" : "Absent"}
           </Badge>
+        </td>
+        <td className="px-3 py-2">
+          {lecture.attended ? (
+            <span className="font-medium">
+              {lecture.centerName?.trim() || "—"}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
         </td>
         <td className="px-3 py-2 font-medium">
           {formatScoreWithMark(lecture.homeworkScore, lecture.homeworkFullMark)}

@@ -419,6 +419,10 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
                 IsCurrent = l.Id == query.LectureId,
                 Attended = l.LectureAttendances
                     .Any(a => a.StudentId == query.StudentId && a.AttendedAt != null),
+                CenterName = l.LectureAttendances
+                    .Where(a => a.StudentId == query.StudentId && a.AttendedAt != null)
+                    .Select(a => a.Center != null ? a.Center.Name : null)
+                    .FirstOrDefault(),
                 HomeworkScore = l.LectureHomeworks
                     .Where(h => h.StudentId == query.StudentId)
                     .Select(h => (decimal?)h.Score)

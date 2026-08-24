@@ -186,6 +186,7 @@ export type CallCenterStudentLecture = {
   order: number;
   isCurrent: boolean;
   attended: boolean;
+  centerName?: string | null;
   homeworkScore?: number | null;
   homeworkFullMark?: number | null;
   chooseHomeworkScore?: number | null;
