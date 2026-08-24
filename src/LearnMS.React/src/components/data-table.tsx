@@ -99,25 +99,47 @@ export function DataTable<TData, TValue>({
         <DataTableViewOptions table={table} />
       </div>
 
-      <div className="space-y-3 lg:hidden">
+      <div className="space-y-2 lg:hidden">
         {rows.length ? (
-          rows.map((row) => (
-            <div
-              key={row.id}
-              className="space-y-3 rounded-xl border border-color2/10 bg-card/50 p-4 shadow-sm backdrop-blur-sm"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <div key={cell.id} className="space-y-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {getColumnLabel(cell.column)}
-                  </p>
-                  <div className="text-sm [&_button]:w-full [&_input]:w-full">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          rows.map((row) => {
+            const cells = row.getVisibleCells();
+            const selectCell = cells.find((cell) => cell.column.id === "select");
+            const otherCells = cells.filter((cell) => cell.column.id !== "select");
+
+            return (
+              <div
+                key={row.id}
+                className="flex items-start gap-3 rounded-xl border border-color2/10 bg-card/50 p-3 shadow-sm"
+              >
+                {selectCell && (
+                  <div className="shrink-0 pt-1">
+                    {flexRender(
+                      selectCell.column.columnDef.cell,
+                      selectCell.getContext()
+                    )}
                   </div>
+                )}
+                <div className="min-w-0 flex-1 space-y-2">
+                  {otherCells.map((cell) => (
+                    <div
+                      key={cell.id}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <p className="w-16 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {getColumnLabel(cell.column)}
+                      </p>
+                      <div className="min-w-0 flex-1 text-right text-sm [overflow-wrap:anywhere]">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))
+              </div>
+            );
+          })
         ) : (
           <div className="rounded-xl border border-color2/10 bg-card/50 p-8 text-center text-muted-foreground">
             No results.

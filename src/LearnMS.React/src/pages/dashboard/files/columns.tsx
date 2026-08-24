@@ -27,11 +27,18 @@ export const assetsColumns: ColumnDef<Asset>[] = [
   {
     accessorKey: "name",
     header: "Title",
+    cell: ({ row }: { row: Row<Asset> }) => (
+      <p className="max-w-[220px] truncate sm:max-w-none">{row.original.name}</p>
+    ),
   },
   {
     accessorKey: "lectureName",
     header: "Lecture",
-    cell: ({ row }: { row: Row<Asset> }) => row.original.lectureName || "—",
+    cell: ({ row }: { row: Row<Asset> }) => (
+      <p className="max-w-[180px] truncate text-muted-foreground sm:max-w-none">
+        {row.original.lectureName || "—"}
+      </p>
+    ),
   },
   {
     accessorKey: "type",
@@ -42,7 +49,7 @@ export const assetsColumns: ColumnDef<Asset>[] = [
       return (
         <PdfOpenButton
           asset={row.original}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground"
         >
           {type === "Pdf" && <FaFilePdf className="w-8 h-8" />}
           {type === "Image" && <FaFileImage className="w-8 h-8" />}

@@ -52,7 +52,7 @@ export function DashboardCard({
           }}
         />
       )}
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 min-w-0">{children}</div>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export const DashboardLayout = () => {
         </div>
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-color2/10 bg-background/60 shadow-xl backdrop-blur-md">
-          <div className="h-full overflow-y-auto overflow-x-hidden overscroll-contain">
+          <div className="h-full min-h-0 touch-pan-y overflow-y-auto overscroll-y-contain">
             <Outlet />
           </div>
         </main>

@@ -62,14 +62,14 @@ const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
   }, [search]);
 
   return (
-    <div className="w-full text-foreground">
+    <div className="w-full min-w-0 text-foreground">
       {isLoading ? (
         <Loading />
       ) : (
-        <DashboardCard>
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+        <DashboardCard className="overflow-auto">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Input
-              className="max-w-sm"
+              className="w-full min-w-0 sm:max-w-sm"
               placeholder="Search by title or lecture..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -77,6 +77,7 @@ const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
             <Button
               onClick={onDelete}
               variant="destructive"
+              className="w-full sm:w-auto"
               disabled={
                 deleteAssetsMutation.isPending ||
                 Object.keys(rowSelection).length === 0
@@ -86,7 +87,7 @@ const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
               Delete Selected
             </Button>
           </div>
-          <div className="relative">
+          <div className="relative min-w-0">
             <DataTable
               columns={assetsColumns}
               data={data?.data.items ?? []}
@@ -103,11 +104,10 @@ const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
               getRowId={(row) => row.id}
             />
             {enableSelect && Object.keys(rowSelection).length > 0 && (
-              <div className="absolute flex gap-2 mt-12 top-4 left-6">
+              <div className="sticky bottom-2 z-10 mt-3 flex justify-center sm:absolute sm:bottom-auto sm:left-6 sm:top-4 sm:mt-0 sm:justify-start">
                 <Button
                   onClick={onSelectAssets}
                   disabled={deleteAssetsMutation.isPending}
-                  className="mr-2"
                 >
                   Add to Lecture
                 </Button>

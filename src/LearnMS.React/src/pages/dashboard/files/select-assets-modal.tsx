@@ -14,11 +14,13 @@ type SelectAssetsModalProps = {
 const SelectAssetsModal: React.FC<SelectAssetsModalProps> = ({ onClose }) => {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className='min-w-[90%]'>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100%-1rem)] max-w-4xl flex-col overflow-hidden p-4">
+        <DialogHeader className="shrink-0 pr-6">
           <DialogTitle>Select PDFs from Files</DialogTitle>
         </DialogHeader>
-        <AssetsList enableSelect />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <AssetsList enableSelect />
+        </div>
       </DialogContent>
     </Dialog>
   );

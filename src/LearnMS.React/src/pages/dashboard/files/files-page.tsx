@@ -9,6 +9,8 @@ const FilesPage = () => {
       description="Reuse Google Drive PDF links across lectures. Add new links from a lecture page."
       icon={FileText}
       fullWidth
+      className="min-w-0"
+      contentClassName="min-w-0"
     >
       <AssetsList />
     </DashboardPageShell>
