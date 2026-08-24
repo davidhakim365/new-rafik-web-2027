@@ -412,64 +412,70 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl text-foreground">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100%-1rem)] max-w-lg flex-col gap-3 overflow-hidden p-4 text-foreground sm:p-6">
+        <DialogHeader className="shrink-0 space-y-1 pr-6 text-left">
           <DialogTitle>Add PDF</DialogTitle>
           <DialogDescription>
-            Upload a PDF from here. It is sent to your Google Drive as a public
-            viewer link, so students can open it without requesting access.
+            Upload to the Google Drive folder you pick. Students open it without
+            requesting access.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 rounded-lg border border-border/60 p-3">
-          <p className="text-sm font-medium">Google Drive</p>
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
+
+        <div className="space-y-2 rounded-lg border border-border/60 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium">Google Drive</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={connectGoogleDrive}
+            >
+              {driveStatus?.canUpload ? "Reconnect" : "Connect Gmail"}
+            </Button>
+          </div>
           {driveStatus?.canUpload ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {driveStatus.mode === "user" && driveStatus.email
-                ? `Connected as ${driveStatus.email}. Choose the Drive folder for PDF uploads.`
+                ? `Connected as ${driveStatus.email}`
                 : driveStatus.sharedDriveId
-                  ? `Uploading to Shared Drive ${driveStatus.sharedDriveId}.`
-                  : "Google Drive is ready for uploads."}
+                  ? `Shared Drive ${driveStatus.sharedDriveId}`
+                  : "Ready for uploads."}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Env vars are not enough. Click Connect Google account and sign in
-              with your Gmail once. After that, pick a folder for uploads.
+            <p className="text-xs text-muted-foreground">
+              Connect Gmail once, then choose the folder for PDFs.
             </p>
           )}
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={busy}
-            onClick={connectGoogleDrive}
-          >
-            {driveStatus?.canUpload ? "Reconnect Google account" : "Connect Google account"}
-          </Button>
           {driveStatus?.refreshToken && (
-            <div className="space-y-2 rounded-md bg-muted/40 p-2">
-              <p className="text-xs text-muted-foreground">
-                Saved refresh token. Put this in env so you never connect again:
-              </p>
-              <p className="break-all font-mono text-xs">
-                GoogleForms__DriveRefreshToken={driveStatus.refreshToken}
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(
-                    `GoogleForms__DriveRefreshToken=${driveStatus.refreshToken}`
-                  );
-                  toast({
-                    title: "Refresh token copied",
-                    description: "Paste it into your env, then restart the API.",
-                  });
-                }}
-              >
-                Copy refresh token
-              </Button>
-            </div>
+            <details className="rounded-md bg-muted/40 p-2">
+              <summary className="cursor-pointer text-xs text-muted-foreground">
+                Refresh token
+              </summary>
+              <div className="mt-2 space-y-2">
+                <p className="max-h-14 overflow-y-auto break-all font-mono text-[11px] leading-snug">
+                  GoogleForms__DriveRefreshToken={driveStatus.refreshToken}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(
+                      `GoogleForms__DriveRefreshToken=${driveStatus.refreshToken}`
+                    );
+                    toast({
+                      title: "Refresh token copied",
+                      description: "Paste it into your env, then restart the API.",
+                    });
+                  }}
+                >
+                  Copy refresh token
+                </Button>
+              </div>
+            </details>
           )}
           {driveStatus?.canUpload && (
             <div className="space-y-2">
@@ -480,10 +486,12 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
                 value={folderQuery}
                 onChange={(e) => setFolderQuery(e.target.value)}
                 disabled={busy || loadingFolders || savingFolder}
+                className="h-9"
               />
               <select
                 id="drive-folder"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                size={1}
+                className="flex h-9 max-h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={folderId}
                 disabled={busy || loadingFolders || savingFolder}
                 onChange={(e) => {
@@ -505,53 +513,58 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
                 )}
               </select>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">
+                <p className="truncate text-xs text-muted-foreground">
                   {savingFolder
                     ? "Saving folder..."
                     : loadingFolders
-                      ? "Loading your Drive folders..."
-                      : `PDFs will upload to ${
-                          folders.find((folder) => folder.id === folderId)
-                            ?.path ??
-                          driveStatus.folderName ??
-                          "My Drive (root)"
-                        }.`}
+                      ? "Loading folders..."
+                      : folders.find((folder) => folder.id === folderId)?.path ??
+                        driveStatus.folderName ??
+                        "My Drive (root)"}
                 </p>
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
+                  className="h-7 shrink-0 px-2"
                   disabled={busy || loadingFolders || savingFolder}
                   onClick={() => {
                     void loadFolders();
                   }}
                 >
-                  Refresh folders
+                  Refresh
                 </Button>
               </div>
             </div>
           )}
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              placeholder="Shared Drive ID or folder URL (optional)"
-              value={sharedDriveId}
-              onChange={(e) => setSharedDriveId(e.target.value)}
-              disabled={busy || savingDrive}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy || savingDrive || !sharedDriveId.trim()}
-              onClick={saveSharedDrive}
-            >
-              {savingDrive ? "Saving..." : "Save Drive"}
-            </Button>
-          </div>
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground">
+              Shared Drive (optional)
+            </summary>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <Input
+                placeholder="Shared Drive ID or folder URL"
+                value={sharedDriveId}
+                onChange={(e) => setSharedDriveId(e.target.value)}
+                disabled={busy || savingDrive}
+                className="h-9"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy || savingDrive || !sharedDriveId.trim()}
+                onClick={saveSharedDrive}
+              >
+                {savingDrive ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </details>
         </div>
 
         <div
           {...getRootProps()}
-          className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 transition-colors ${
+          className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-3 transition-colors ${
             isDragActive
               ? "border-primary bg-primary/10"
               : "border-border/70 hover:border-primary/60"
@@ -570,15 +583,16 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
               e.target.value = "";
             }}
           />
-          <Upload className="h-8 w-8 text-muted-foreground" />
+          <Upload className="h-6 w-6 text-muted-foreground" />
           <div className="text-center">
-            <p className="font-medium">
-              {isDragActive ? "Drop PDFs here" : "Drag & drop PDFs, or browse"}
+            <p className="text-sm font-medium">
+              {isDragActive ? "Drop PDFs here" : "Drag PDFs here, or browse"}
             </p>
-            <p className="text-sm text-muted-foreground">PDF only, up to 50MB each</p>
+            <p className="text-xs text-muted-foreground">PDF only, up to 50MB each</p>
           </div>
           <Button
             type="button"
+            size="sm"
             variant="outline"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
@@ -588,7 +602,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
         </div>
 
         {rows.length > 0 && (
-          <div className="max-h-[32vh] space-y-3 overflow-y-auto pr-1">
+          <div className="max-h-36 space-y-3 overflow-y-auto pr-1">
             {rows.map((row) => (
               <div
                 key={row.id}
@@ -660,7 +674,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
         </button>
 
         {showLinks && (
-          <div className="max-h-[24vh] space-y-3 overflow-y-auto pr-1">
+          <div className="max-h-40 space-y-3 overflow-y-auto pr-1">
             {linkRows.map((row, index) => (
               <div
                 key={row.id}
@@ -717,7 +731,9 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           </div>
         )}
 
-        <DialogFooter>
+        </div>
+
+        <DialogFooter className="shrink-0 flex-row justify-end gap-2 border-t pt-3 sm:space-x-0">
           <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
           </Button>

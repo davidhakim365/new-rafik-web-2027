@@ -1374,14 +1374,14 @@ function LectureAssetsFrom({
 
   return (
     <div className='w-full h-full'>
-      <div className='flex items-center justify-between m-4 text-2xl'>
-        <div className='flex items-center gap-2'>
-          <div className='p-3 bg-primary/30 border-primary/40 rounded-[50%]'>
-            <FaFile className='text-primary' />
+      <div className="m-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-xl sm:text-2xl">
+          <div className="rounded-[50%] border-primary/40 bg-primary/30 p-3">
+            <FaFile className="text-primary" />
           </div>
           PDF
         </div>
-        <div className='flex gap-2'>
+        <div className="flex flex-wrap gap-2">
           {isDirty && <Button onClick={onUpdate}>Update</Button>}
           <Button
             variant='outline'
@@ -1401,7 +1401,7 @@ function LectureAssetsFrom({
           </Button>
         </div>
       </div>
-      <div className='p-10 border-[3px] bg-primary/30 border-primary/50 rounded flex flex-wrap  items-center gap-4'>
+      <div className="flex flex-wrap items-center gap-4 rounded border-[3px] border-primary/50 bg-primary/30 p-4 sm:p-10">
         {assets.length === 0 && (
           <p className='self-center text-5xl text-primary/40'>NO PDFs</p>
         )}
