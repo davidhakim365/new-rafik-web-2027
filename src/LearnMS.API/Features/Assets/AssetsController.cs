@@ -1,5 +1,6 @@
 using LearnMS.API.Common;
 using LearnMS.API.Entities;
+using LearnMS.API.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,6 +43,25 @@ public sealed class AssetsController(IAssetsService assetsService) : ControllerB
         };
     }
 
+    [HttpPut("{fileId}")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageFiles, Permission.ManageCourses])]
+    public async Task<ApiWrapper.Success<object?>> UpdateAsset(
+        string fileId,
+        [FromBody] UpdateAssetRequest request
+    )
+    {
+        await assetsService.ExecuteAsync(new UpdateAssetCommand
+        {
+            FileId = fileId,
+            Name = request.Name ?? ""
+        });
+
+        return new()
+        {
+            Message = "PDF title updated"
+        };
+    }
+
     [HttpGet("{fileId}")]
     [AllowAnonymous]
     public async Task GetAsset(string fileId)
@@ -52,6 +72,9 @@ public sealed class AssetsController(IAssetsService assetsService) : ControllerB
             Response = HttpContext.Response
         });
     }
+}
 
-
+public sealed class UpdateAssetRequest
+{
+    public string? Name { get; set; }
 }

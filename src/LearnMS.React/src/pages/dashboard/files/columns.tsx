@@ -1,5 +1,6 @@
 import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AssetTitleCell } from "@/pages/dashboard/files/asset-title-cell";
 import { Asset } from "@/types/assets";
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { FaFile, FaFileImage, FaFilePdf } from "react-icons/fa";
@@ -28,7 +29,7 @@ export const assetsColumns: ColumnDef<Asset>[] = [
     accessorKey: "name",
     header: "Title",
     cell: ({ row }: { row: Row<Asset> }) => (
-      <p className="max-w-[220px] truncate sm:max-w-none">{row.original.name}</p>
+      <AssetTitleCell asset={row.original} />
     ),
   },
   {

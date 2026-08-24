@@ -87,6 +87,22 @@ public sealed class AssetsService(AppDbContext db, IOptions<StorageConfig> optio
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task ExecuteAsync(UpdateAssetCommand command, CancellationToken ct = default)
+    {
+        var name = command.Name?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ApiException(AssetsErrors.FileWithoutName);
+
+        if (name.Length > 200)
+            name = name[..200];
+
+        var asset = await db.Set<Asset>().FirstOrDefaultAsync(x => x.Id == command.FileId, ct)
+            ?? throw new ApiException(AssetsErrors.NotFound);
+
+        asset.Name = name;
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task QueryAsync(GetAssetQuery query, CancellationToken ct = default)
     {
         var asset = await db.Set<Asset>()

@@ -30,3 +30,15 @@ export const useDeleteAssetsMutation = () => {
     },
   });
 };
+
+export const useRenameAssetMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<unknown>, Error, { id: string; name: string }>({
+    mutationFn: ({ id, name }) =>
+      api.put(`/api/assets/${id}`, { name }).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["lecture"] });
+    },
+  });
+};
