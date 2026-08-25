@@ -11,6 +11,7 @@ import {
   getGetLectureStudentsQueryKey,
   getGetLectureStatisticsQueryKey,
 } from "@/generated/api";
+import { normalizeScannedCode } from "@/lib/scan-code";
 import { playScanSuccessVoice } from "@/lib/scan-feedback";
 import { toast } from "@/lib/utils";
 import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
@@ -62,7 +63,7 @@ const LectureBarcodeScannerPage = () => {
 
   const handleScan = useCallback(
     (rawCode: string) => {
-      const code = rawCode.trim();
+      const code = normalizeScannedCode(rawCode);
       if (!code || !courseId || !lectureId) return;
 
       if (!centerId) {

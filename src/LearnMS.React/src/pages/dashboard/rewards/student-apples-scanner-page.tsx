@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/axiosCustomInstant";
+import { normalizeScannedCode } from "@/lib/scan-code";
 import { toast } from "@/lib/utils";
 import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -106,8 +107,9 @@ const StudentApplesScannerPage = () => {
 
   const lookupCode = useCallback(
     (rawCode: string) => {
-      const code = rawCode.trim();
+      const code = normalizeScannedCode(rawCode);
       if (!code) return;
+      form.setValue("code", code);
 
       const now = Date.now();
       if (processingRef.current) return;

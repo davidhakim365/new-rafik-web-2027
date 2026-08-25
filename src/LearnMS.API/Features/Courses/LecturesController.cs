@@ -422,10 +422,13 @@ public sealed class LecturesController : ControllerBase
             .FirstOrDefaultAsync(c => c.Id == request.CenterId && c.IsActive)
             ?? throw new ApiException(CentersErrors.NotFound);
 
+        var studentCode = ScanCodes.Normalize(code);
+        if (string.IsNullOrEmpty(studentCode))
+            throw new ApiException(StudentsErrors.NotFound);
         var student
             = await _context
                   .Students
-                  .FirstOrDefaultAsync(x => x.StudentCode.Trim().ToLower() == code.Trim().ToLower()) ??
+                  .FirstOrDefaultAsync(x => x.StudentCode.ToLower() == studentCode.ToLower()) ??
               throw new ApiException(StudentsErrors.NotFound);
 
         var lecture = await _context

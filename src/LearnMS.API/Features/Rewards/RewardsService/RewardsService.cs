@@ -22,10 +22,7 @@ public sealed class RewardsService(
 
     public async Task<AttendAssistantSessionResult> ExecuteAsync(AttendAssistantByCodeCommand command)
     {
-        if (string.IsNullOrWhiteSpace(command.Code))
-            throw new ApiException(RewardsErrors.CodeRequired);
-
-        var code = command.Code.Trim();
+        var code = RequireScannedCode(command.Code);
         Assistant? assistant = null;
 
         if (Guid.TryParse(code, out var assistantId))
@@ -141,13 +138,11 @@ public sealed class RewardsService(
 
     public async Task<AddStudentApplesResult> ExecuteAsync(AddStudentApplesByCodeCommand command)
     {
-        if (string.IsNullOrWhiteSpace(command.Code))
-            throw new ApiException(RewardsErrors.CodeRequired);
         if (command.Amount == 0)
             throw new ApiException(RewardsErrors.InvalidAmount);
 
-        var code = command.Code.Trim();
-        var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode == code)
+        var code = RequireScannedCode(command.Code);
+        var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode.ToLower() == code.ToLower())
             ?? throw new ApiException(RewardsErrors.StudentNotFound);
 
         var cooldown = await GetScannerCooldownAsync(student.Id);
@@ -159,11 +154,8 @@ public sealed class RewardsService(
 
     public async Task<StudentAppleLookupResult> QueryAsync(LookupStudentByCodeQuery query)
     {
-        if (string.IsNullOrWhiteSpace(query.Code))
-            throw new ApiException(RewardsErrors.CodeRequired);
-
-        var code = query.Code.Trim();
-        var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode == code)
+        var code = RequireScannedCode(query.Code);
+        var student = await db.Students.FirstOrDefaultAsync(x => x.StudentCode.ToLower() == code.ToLower())
             ?? throw new ApiException(RewardsErrors.StudentNotFound);
 
         var cooldown = await GetScannerCooldownAsync(student.Id);
@@ -181,10 +173,7 @@ public sealed class RewardsService(
 
     public async Task<AssistantLookupResult> QueryAsync(LookupAssistantByCodeQuery query)
     {
-        if (string.IsNullOrWhiteSpace(query.Code))
-            throw new ApiException(RewardsErrors.CodeRequired);
-
-        var code = query.Code.Trim();
+        var code = RequireScannedCode(query.Code);
         Assistant? assistant = null;
 
         if (Guid.TryParse(code, out var assistantId))
@@ -450,6 +439,14 @@ public sealed class RewardsService(
         {
             throw new ApiException(RewardsErrors.InvalidRewardSystemSettings);
         }
+    }
+
+    private static string RequireScannedCode(string? raw)
+    {
+        var code = ScanCodes.Normalize(raw);
+        if (string.IsNullOrEmpty(code))
+            throw new ApiException(RewardsErrors.CodeRequired);
+        return code;
     }
 
     private static RewardSystemSettingsResult MapSettings(RewardSystemSettings settings) => new()
