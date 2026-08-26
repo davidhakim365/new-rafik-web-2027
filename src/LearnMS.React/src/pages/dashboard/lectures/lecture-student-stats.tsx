@@ -152,7 +152,7 @@ export function LectureStudentStats({
         </div>
         {isSearching && filteredCount !== undefined && (
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            Showing {filteredCount} search results
+            Showing {filteredCount} matching students
           </span>
         )}
       </div>

@@ -14,6 +14,14 @@ public sealed record GetLectureStudentsQuery
     /// When set, includes that lecture's Choose Homework score for comparison/import preview.
     /// </summary>
     public Guid? CompareChooseHomeworkLectureId;
+    public bool? Attended;
+    public Guid? CenterId;
+    public bool? Enrolled;
+    public bool? HasEssayScore;
+    public bool? HasChooseHomeworkScore;
+    public bool? HasQuizScore;
+    public bool? HasSourceChooseHomework;
+    public string? StudyMode;
 }
 
 public sealed record SingleLectureStudent

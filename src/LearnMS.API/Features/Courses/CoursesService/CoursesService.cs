@@ -2360,6 +2360,67 @@ public sealed class CoursesService : ICoursesService
                 || x.Accounts.First().Email.ToLower().Contains(search)
             );
 
+        if (query.CenterId is Guid filterCenterId)
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureAttendances.Any(a =>
+                    a.LectureId == query.LectureId && a.CenterId == filterCenterId));
+        }
+        else if (query.Attended == true)
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureAttendances.Any(a =>
+                    a.LectureId == query.LectureId && a.AttendedAt != null));
+        }
+        else if (query.Attended == false)
+        {
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureAttendances.Any(a =>
+                    a.LectureId == query.LectureId && a.AttendedAt != null));
+        }
+
+        if (query.Enrolled == true)
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureEnrollments.Any(e => e.LectureId == query.LectureId));
+        else if (query.Enrolled == false)
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureEnrollments.Any(e => e.LectureId == query.LectureId));
+
+        if (query.HasEssayScore == true)
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureHomeworks.Any(h => h.LectureId == query.LectureId));
+        else if (query.HasEssayScore == false)
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureHomeworks.Any(h => h.LectureId == query.LectureId));
+
+        if (query.HasChooseHomeworkScore == true)
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureChooseHomeworks.Any(h => h.LectureId == query.LectureId));
+        else if (query.HasChooseHomeworkScore == false)
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureChooseHomeworks.Any(h => h.LectureId == query.LectureId));
+
+        if (query.HasQuizScore == true)
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureQuizzes.Any(q => q.LectureId == query.LectureId));
+        else if (query.HasQuizScore == false)
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureQuizzes.Any(q => q.LectureId == query.LectureId));
+
+        var sourceLectureId = query.CompareChooseHomeworkLectureId ?? query.LectureId;
+        if (query.HasSourceChooseHomework == true)
+            studentsQuery = studentsQuery.Where(x =>
+                x.LectureChooseHomeworks.Any(h => h.LectureId == sourceLectureId));
+        else if (query.HasSourceChooseHomework == false)
+            studentsQuery = studentsQuery.Where(x =>
+                !x.LectureChooseHomeworks.Any(h => h.LectureId == sourceLectureId));
+
+        var studyMode = query.StudyMode?.Trim().ToLowerInvariant();
+        if (studyMode == "online")
+            studentsQuery = studentsQuery.Where(x => x.StudentCode.ToUpper().StartsWith("ONL-"));
+        else if (studyMode == "offline")
+            studentsQuery = studentsQuery.Where(x => !x.StudentCode.ToUpper().StartsWith("ONL-"));
+
         var students = await PageList<Student>.CreateAsync(
             studentsQuery,
             query.Page,

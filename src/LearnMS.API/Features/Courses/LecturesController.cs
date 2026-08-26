@@ -310,7 +310,15 @@ public sealed class LecturesController : ControllerBase
         int page,
         int pageSize,
         string search,
-        Guid? compareChooseHomeworkLectureId = null
+        Guid? compareChooseHomeworkLectureId = null,
+        bool? attended = null,
+        Guid? centerId = null,
+        bool? enrolled = null,
+        bool? hasEssayScore = null,
+        bool? hasChooseHomeworkScore = null,
+        bool? hasQuizScore = null,
+        bool? hasSourceChooseHomework = null,
+        string? studyMode = null
     )
     {
         var result = await _coursesService.QueryAsync(
@@ -321,7 +329,15 @@ public sealed class LecturesController : ControllerBase
                 Page = page,
                 PageSize = pageSize,
                 Search = search,
-                CompareChooseHomeworkLectureId = compareChooseHomeworkLectureId
+                CompareChooseHomeworkLectureId = compareChooseHomeworkLectureId,
+                Attended = attended,
+                CenterId = centerId,
+                Enrolled = enrolled,
+                HasEssayScore = hasEssayScore,
+                HasChooseHomeworkScore = hasChooseHomeworkScore,
+                HasQuizScore = hasQuizScore,
+                HasSourceChooseHomework = hasSourceChooseHomework,
+                StudyMode = studyMode
             }
         );
 

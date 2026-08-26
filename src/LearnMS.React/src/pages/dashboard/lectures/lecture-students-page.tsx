@@ -42,6 +42,17 @@ import { GetLectureDashboardResult, Permission, StudentGradeItem } from "@/gener
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import useDownloadFile from "@/hooks/useDownloadFile";
 import { createLectureStudentsColumns } from "@/pages/dashboard/lectures/lecture-students-columns";
+import {
+  LectureStudentFilters,
+  LectureStudentsFilters,
+  lectureStudentFiltersAreActive,
+  lectureStudentFiltersToQuery,
+  ScoreFilter,
+  SourceHwFilter,
+  StudyModeFilter,
+  TriFilter,
+  AttendanceFilter,
+} from "@/pages/dashboard/lectures/lecture-students-filters";
 import { LectureStudentStats } from "@/pages/dashboard/lectures/lecture-student-stats";
 import { useQueryClient } from "@tanstack/react-query";
 import { PaginationState } from "@tanstack/react-table";
@@ -246,14 +257,40 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
     pageSize: Number(searchParams.get("pageSize") ?? 10),
   });
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [filters, setFilters] = useState<LectureStudentFilters>(() => ({
+    attendance: (searchParams.get("attendance") as AttendanceFilter) || "all",
+    centerId: searchParams.get("centerId"),
+    enrolled: (searchParams.get("enrolled") as TriFilter) || "all",
+    essay: (searchParams.get("essay") as ScoreFilter) || "all",
+    chooseHw: (searchParams.get("chooseHw") as ScoreFilter) || "all",
+    quiz: (searchParams.get("quiz") as ScoreFilter) || "all",
+    sourceHw: (searchParams.get("sourceHw") as SourceHwFilter) || "all",
+    studyMode: (searchParams.get("studyMode") as StudyModeFilter) || "all",
+  }));
+
+  const handleFiltersChange = (next: LectureStudentFilters) => {
+    setFilters(next);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const isFiltered =
+    !!search.trim() || lectureStudentFiltersAreActive(filters);
 
   useEffect(() => {
     setSearchParams({
       page: `${pageIndex + 1}`,
       pageSize: `${pageSize}`,
       ...(search ? { search } : {}),
+      ...(filters.attendance !== "all" ? { attendance: filters.attendance } : {}),
+      ...(filters.centerId ? { centerId: filters.centerId } : {}),
+      ...(filters.enrolled !== "all" ? { enrolled: filters.enrolled } : {}),
+      ...(filters.essay !== "all" ? { essay: filters.essay } : {}),
+      ...(filters.chooseHw !== "all" ? { chooseHw: filters.chooseHw } : {}),
+      ...(filters.quiz !== "all" ? { quiz: filters.quiz } : {}),
+      ...(filters.sourceHw !== "all" ? { sourceHw: filters.sourceHw } : {}),
+      ...(filters.studyMode !== "all" ? { studyMode: filters.studyMode } : {}),
     });
-  }, [pageIndex, search, pageSize]);
+  }, [pageIndex, search, pageSize, filters, setSearchParams]);
   const { data, isLoading } = useGetLectureStudents(
     lecture.courseId,
     lecture.id,
@@ -264,6 +301,7 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
       ...(compareChooseHomeworkLectureId
         ? { compareChooseHomeworkLectureId }
         : {}),
+      ...lectureStudentFiltersToQuery(filters),
     }
   );
 
@@ -334,7 +372,7 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
         totalInGrade={totalInGrade}
         gradeLevel={gradeLevel}
         filteredCount={data?.data?.totalCount}
-        isSearching={!!search.trim()}
+        isSearching={isFiltered}
         selectedCenterName={selectedCenterName}
       />
 
@@ -377,7 +415,16 @@ const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
           className="w-full"
           placeholder="Search students..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+          }}
+        />
+
+        <LectureStudentsFilters
+          value={filters}
+          onChange={handleFiltersChange}
+          showSourceChooseHomework={showCompareChooseHomework}
         />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
