@@ -14,6 +14,7 @@ export const Permission = {
   ManageStudents: 'ManageStudents',
   AddStudents: 'AddStudents',
   ManageLecture: 'ManageLecture',
+  ManageLectureStudents: 'ManageLectureStudents',
   ManageCreditCodes: 'ManageCreditCodes',
   GenerateCreditCodes: 'GenerateCreditCodes',
   ManageAssistants: 'ManageAssistants',

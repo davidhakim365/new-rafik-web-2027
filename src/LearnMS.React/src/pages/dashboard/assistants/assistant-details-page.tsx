@@ -72,8 +72,13 @@ const PERMISSION_GROUPS: PermissionGroup[] = [
       },
       {
         key: "ManageLecture",
-        label: "Manage lectures",
-        description: "Edit lecture content, homework, and settings.",
+        label: "Manage lecture details",
+        description: "Edit lecture content, PDFs, lessons, quizzes, publish, and delete.",
+      },
+      {
+        key: "ManageLectureStudents",
+        label: "Manage lecture students",
+        description: "Attend students, scan barcodes, enter scores, import/export, and enroll.",
       },
     ],
   },

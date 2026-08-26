@@ -14,7 +14,7 @@ namespace LearnMS.API.Features.Centers;
 public sealed class CentersController(AppDbContext context) : ControllerBase
 {
     [HttpGet]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLectureStudents])]
     [SwaggerOperation(OperationId = "GetCenters")]
     public async Task<ApiWrapper.Success<List<CenterDto>>> GetCenters()
     {
@@ -33,7 +33,7 @@ public sealed class CentersController(AppDbContext context) : ControllerBase
     }
 
     [HttpPost]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLectureStudents])]
     [SwaggerOperation(OperationId = "CreateCenter")]
     public async Task<ApiWrapper.Success<CenterDto>> CreateCenter([FromBody] CreateCenterRequest request)
     {

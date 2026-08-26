@@ -22,7 +22,7 @@ public sealed class LessonsController : ControllerBase
     }
 
     [HttpDelete("{lessonId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     public async Task<ApiWrapper.Success<object?>> Delete(Guid courseId, Guid lectureId, Guid lessonId)
     {
         await _coursesService.ExecuteAsync(new DeleteLessonCommand
@@ -61,7 +61,7 @@ public sealed class LessonsController : ControllerBase
     }
 
     [HttpPost]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "CreateLesson")]
     public async Task<ApiWrapper.Success<object?>> Post([FromForm] CreateLessonRequest request, Guid lectureId, Guid courseId)
     {
@@ -84,7 +84,7 @@ public sealed class LessonsController : ControllerBase
     }
 
     [HttpPatch("{lessonId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     public async Task<ApiWrapper.Success<object?>> Patch([FromBody] UpdateLessonRequest request, Guid lessonId, Guid courseId, Guid lectureId)
     {
         await _coursesService.ExecuteAsync(new UpdateLessonCommand
@@ -147,7 +147,7 @@ public sealed class LessonsController : ControllerBase
     }
 
     [HttpPost("{lessonId:guid}/video/upload")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [RequestSizeLimit(5L * 1024 * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 5L * 1024 * 1024 * 1024)]
     [SwaggerOperation(OperationId = "UploadLessonVideo")]
@@ -188,7 +188,7 @@ public sealed class LessonsController : ControllerBase
     }
 
     [HttpPost("{lessonId:guid}/video/policy")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "GetLessonVideoUploadPolicy")]
     public async Task<ApiWrapper.Success<GetLessonVideoUploadPolicyResponse>> GetVideoUploadPolicy(
         Guid courseId,
@@ -221,7 +221,7 @@ public sealed class LessonsController : ControllerBase
     }
 
     [HttpPost("{lessonId:guid}/video/validate")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "ValidateLessonVideoStatus")]
     public async Task<ApiWrapper.Success<ValidateLessonVideoStatusResponse>> ValidateVideoStatus(
         Guid courseId,

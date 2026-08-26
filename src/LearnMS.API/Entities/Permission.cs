@@ -10,6 +10,7 @@ public enum Permission
     ManageStudents,
     AddStudents,
     ManageLecture,
+    ManageLectureStudents,
     ManageCreditCodes,
     GenerateCreditCodes,
     ManageAssistants,

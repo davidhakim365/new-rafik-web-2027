@@ -20,7 +20,7 @@ public sealed class GoogleDriveController(
     private static readonly ConcurrentDictionary<string, DateTimeOffset> PendingStates = new();
 
     [HttpGet("status")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageLecture])]
     public ApiWrapper.Success<GoogleDriveConnectionStatus> GetStatus()
     {
         return new()
@@ -31,7 +31,7 @@ public sealed class GoogleDriveController(
     }
 
     [HttpGet("authorize-url")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageLecture])]
     public ApiWrapper.Success<GoogleDriveAuthorizeUrl> GetAuthorizeUrl()
     {
         var state = Guid.NewGuid().ToString("N");
@@ -45,7 +45,7 @@ public sealed class GoogleDriveController(
     }
 
     [HttpPost("shared-drive")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageLecture])]
     public ApiWrapper.Success<GoogleDriveConnectionStatus> SaveSharedDrive(
         [FromBody] SaveSharedDriveRequest request
     )
@@ -59,7 +59,7 @@ public sealed class GoogleDriveController(
     }
 
     [HttpGet("folders")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageLecture])]
     public async Task<ApiWrapper.Success<IReadOnlyList<GoogleDriveFolder>>> GetFolders(
         CancellationToken cancellationToken
     )
@@ -73,7 +73,7 @@ public sealed class GoogleDriveController(
     }
 
     [HttpPost("folder")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageLecture])]
     public ApiWrapper.Success<GoogleDriveConnectionStatus> SaveFolder(
         [FromBody] SaveDriveFolderRequest request
     )

@@ -50,7 +50,7 @@ const LectureBarcodeScannerPage = () => {
   });
 
   const goBack = () => {
-    navigate(`/dashboard/courses/${courseId}/lectures/${lectureId}?view=students`);
+    navigate(`/dashboard/courses/${courseId}/lectures/${lectureId}/students`);
   };
 
   const resumeScanning = useCallback((delay = 1500) => {

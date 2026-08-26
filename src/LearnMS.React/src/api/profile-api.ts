@@ -8,6 +8,7 @@ export type Permission =
   | "ManageStudents"
   | "AddStudents"
   | "ManageLecture"
+  | "ManageLectureStudents"
   | "ManageCreditCodes"
   | "GenerateCreditCodes"
   | "ManageAssistants"

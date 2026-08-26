@@ -1,15 +1,4 @@
-import {
-  useSyncChooseHomeworkScoresMutation,
-  useUpdateLectureAssetsMutation,
-} from "@/api/lectures-api";
-import {
-  AttendLectureResult,
-  getLectureStatisticsParams,
-  readSelectedCenterId,
-  useAttendLectureAtCenter,
-  writeCompareChooseHomeworkLectureId,
-} from "@/api/centers-api";
-import { CenterSelector } from "@/components/dashboard/center-selector";
+import { useUpdateLectureAssetsMutation } from "@/api/lectures-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +19,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { toast } from "@/components/ui/use-toast";
 import { Lesson } from "@/types/lessons";
@@ -46,67 +28,60 @@ import {
   Delete,
   Edit2,
   ListCollapse,
-  Loader2,
   Menu,
   Settings2,
   Trash,
+  Users,
 } from "lucide-react";
-import Papa from "papaparse";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Link,
+  Navigate,
   useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
 
 import { useDeleteLessonMutation } from "@/api/lessons-api";
-import { DataTable } from "@/components/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getGetCourseQueryKey,
   getGetLectureQueryKey,
-  getGetLectureStudentsQueryKey,
-  getGetLectureStatisticsQueryKey,
   useCreateLesson,
   useDeleteLecture,
-  useGetCourse,
   useGetLecture,
-  useGetLectureStatistics,
-  useGetLectureStudents,
   useGetProfile,
   usePublishLecture,
   useUnPublishLecture,
   useUpdateLecture,
-  useUpdateLectureGrades,
 } from "@/generated/api";
-import { GetLectureDashboardResult, StudentGradeItem } from "@/generated/model";
-import useDownloadFile from "@/hooks/useDownloadFile";
-import { createLectureStudentsColumns } from "@/pages/dashboard/lectures/lecture-students-columns";
-import { LectureStudentStats } from "@/pages/dashboard/lectures/lecture-student-stats";
+import { GetLectureDashboardResult, Permission } from "@/generated/model";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { useAssetsStore } from "@/store/use-assets-store";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQueryClient } from "@tanstack/react-query";
-import { PaginationState } from "@tanstack/react-table";
 import _ from "lodash";
-import {
-  FaBarcode,
-  FaCheck,
-  FaFile,
-  FaFileExport,
-  FaFileImport,
-  FaFilePdf,
-  FaImage,
-} from "react-icons/fa";
+import { FaFile, FaFilePdf, FaImage } from "react-icons/fa";
 import { z } from "zod";
 
 const LectureDetailsPage = () => {
   const { courseId, lectureId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const { hasPermission } = useDashboardPermissions();
+  const { data, isError } = useGetLecture(courseId!, lectureId!);
 
-  const { data, isLoading, isError } = useGetLecture(courseId!, lectureId!);
+  if (
+    searchParams.get("view") === "students" &&
+    hasPermission(Permission.ManageLectureStudents)
+  ) {
+    return (
+      <Navigate
+        to={`/dashboard/courses/${courseId}/lectures/${lectureId}/students`}
+        replace
+      />
+    );
+  }
 
   if (isError) {
     return;
@@ -117,24 +92,11 @@ const LectureDetailsPage = () => {
   if (lecture?.$type !== "GetLectureDashboardResult") return;
 
   return (
-    <Tabs
-      className='w-full h-full '
-      defaultValue='details'
-      onValueChange={(value) => {
-        setSearchParams({ view: value });
-      }}
-      value={searchParams.get("view") ?? "details"}>
-      <TabsList className="h-auto w-full justify-start overflow-x-auto">
-        <TabsTrigger value='details' className="shrink-0">Details</TabsTrigger>
-        <TabsTrigger value='students' className="shrink-0">Students</TabsTrigger>
-      </TabsList>
-      <TabsContent value='details'>
-        <LectureDetailsTab lecture={lecture} courseId={courseId!} />
-      </TabsContent>
-      <TabsContent value='students' className='p-2'>
-        <LectureStudentTab lecture={lecture} courseId={courseId!} />
-      </TabsContent>
-    </Tabs>
+    <LectureDetailsTab
+      lecture={lecture}
+      courseId={courseId!}
+      canOpenStudents={hasPermission(Permission.ManageLectureStudents)}
+    />
   );
 };
 
@@ -143,570 +105,10 @@ export default LectureDetailsPage;
 type TabProps = {
   lecture: GetLectureDashboardResult;
   courseId: string;
+  canOpenStudents: boolean;
 };
 
-const LectureStudentTab: React.FC<TabProps> = ({ lecture, courseId }) => {
-  const { download, isDownloading } = useDownloadFile();
-  const [selectedCenterId, setSelectedCenterId] = useState<string | null>(
-    () => readSelectedCenterId()
-  );
-  const [selectedCenterName, setSelectedCenterName] = useState<string>();
-  const [compareChooseHomeworkLectureId, setCompareChooseHomeworkLectureId] =
-    useState<string | null>(null);
-  const [compareLectureInitialized, setCompareLectureInitialized] =
-    useState(false);
-
-  const handleCenterChange = useCallback(
-    (centerId: string | null, center?: { name: string }) => {
-      setSelectedCenterId(centerId);
-      setSelectedCenterName(center?.name);
-    },
-    []
-  );
-
-  const qc = useQueryClient();
-  const updateLecture = useUpdateLecture({
-    mutation: {
-      onSuccess() {
-        qc.invalidateQueries({
-          queryKey: getGetLectureQueryKey(courseId, lecture.id),
-        });
-        toast({
-          title: "Full marks saved",
-          description: "You can now enter student scores.",
-        });
-      },
-      onError(error: Error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  const updateLectureGrades = useUpdateLectureGrades({
-    mutation: {
-      onSuccess() {
-        qc.invalidateQueries({
-          queryKey: getGetLectureStudentsQueryKey(courseId, lecture.id),
-        });
-        qc.invalidateQueries({
-          queryKey: getGetLectureStatisticsQueryKey({ lectureId: lecture.id }),
-        });
-      },
-      onError(error: Error) {
-        toast({
-          title: "Error",
-          description: error.message,
-        });
-      },
-    },
-  });
-
-  const { data: lectureStatistics, isLoading: lectureStatisticsLoading } =
-    useGetLectureStatistics(
-      getLectureStatisticsParams(lecture.id, selectedCenterId) as any
-    );
-
-  const { data: courseData } = useGetCourse(courseId);
-  const gradeLevel =
-    courseData?.data?.$type === "GetDashboardCourseResult"
-      ? courseData.data.level
-      : undefined;
-
-  const courseLectures = useMemo(() => {
-    const items =
-      courseData?.data?.$type === "GetDashboardCourseResult"
-        ? courseData.data.items ?? []
-        : [];
-    return items
-      .filter((item) => item.type === "Lecture")
-      .slice()
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }, [courseData]);
-
-  useEffect(() => {
-    if (compareLectureInitialized || courseLectures.length === 0) return;
-
-    const currentOrder =
-      courseLectures.find((item) => item.id === lecture.id)?.order ?? null;
-    const previous =
-      currentOrder == null
-        ? undefined
-        : [...courseLectures]
-            .filter((item) => (item.order ?? 0) < currentOrder)
-            .sort((a, b) => (b.order ?? 0) - (a.order ?? 0))[0];
-
-    setCompareChooseHomeworkLectureId(previous?.id ?? lecture.id);
-    setCompareLectureInitialized(true);
-  }, [compareLectureInitialized, courseLectures, lecture.id]);
-
-  useEffect(() => {
-    writeCompareChooseHomeworkLectureId(
-      lecture.id,
-      compareChooseHomeworkLectureId
-    );
-  }, [compareChooseHomeworkLectureId, lecture.id]);
-
-  const compareLectureTitle = useMemo(() => {
-    if (!compareChooseHomeworkLectureId) return null;
-    return (
-      courseLectures.find((item) => item.id === compareChooseHomeworkLectureId)
-        ?.title ?? null
-    );
-  }, [compareChooseHomeworkLectureId, courseLectures]);
-
-  const showCompareChooseHomework = !!compareChooseHomeworkLectureId;
-
-  const studentColumns = useMemo(
-    () =>
-      createLectureStudentsColumns(selectedCenterId, {
-        homeworkFullMark: lecture.homeworkFullMark,
-        chooseHomeworkFullMark: lecture.chooseHomeworkFullMark,
-        quizFullMark: lecture.quizFullMark,
-        showCompareChooseHomework,
-        compareChooseHomeworkLectureTitle: compareLectureTitle,
-      }),
-    [
-      selectedCenterId,
-      lecture.homeworkFullMark,
-      lecture.chooseHomeworkFullMark,
-      lecture.quizFullMark,
-      showCompareChooseHomework,
-      compareLectureTitle,
-    ]
-  );
-
-  const { data: gradeTotalData } = useGetLectureStudents(
-    lecture.courseId,
-    lecture.id,
-    { page: 1, pageSize: 1 }
-  );
-
-  const totalInGrade = gradeTotalData?.data?.totalCount ?? 0;
-
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
-    pageIndex: Number(searchParams.get("page") ?? 1) - 1,
-    pageSize: Number(searchParams.get("pageSize") ?? 10),
-  });
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
-
-  useEffect(() => {
-    setSearchParams({
-      page: `${pageIndex + 1}`,
-      pageSize: `${pageSize}`,
-      view: "students",
-      ...(search ? { search } : {}),
-    });
-  }, [pageIndex, search, pageSize]);
-  const { data, isLoading } = useGetLectureStudents(
-    lecture.courseId,
-    lecture.id,
-    {
-      page: Number(searchParams.get("page")) || 1,
-      pageSize: Number(searchParams.get("pageSize")) || 10,
-      search,
-      ...(compareChooseHomeworkLectureId
-        ? { compareChooseHomeworkLectureId }
-        : {}),
-    }
-  );
-
-  const onExport = async () => {
-    await download(
-      `/api/courses/${lecture.courseId}/lectures/${lecture.id}/students/export`,
-      "students.csv"
-    );
-  };
-
-  const onImport = async () => {
-    try {
-      const [file] = await window.showOpenFilePicker({
-        multiple: false,
-        types: [
-          {
-            description: "CSV",
-            accept: {
-              "text/csv": [".csv"],
-            },
-          },
-        ],
-      });
-
-      const f = await file.getFile();
-      Papa.parse(f, {
-        complete(results: any) {
-          const codes = results.data
-            .filter((x: any) => x[0]) // Ensure the code column exists and is not empty
-            .map(([code]: any) => ({ code })); // Create StudentGradeItem objects
-
-          if (codes.length === 0) {
-            toast({
-              title: "Import Error",
-              description: "No valid student codes found in the CSV file.",
-            });
-            return;
-          }
-
-          updateLectureGrades.mutate({
-            courseId,
-            lectureId: lecture.id,
-            data: {
-              grades: codes as StudentGradeItem[], // Ensure correct type
-            },
-          });
-        },
-        error(err: any) {
-          toast({
-            title: "Import Error",
-            description: `Failed to parse CSV file: ${err.message}`,
-          });
-        },
-      });
-    } catch (error: any) {
-      toast({
-        title: "File Error",
-        description: `Failed to open file: ${error.message}`,
-      });
-    }
-  };
-
-  return (
-    <div className="flex w-full flex-col gap-4 p-3 sm:p-4">
-      <LectureStudentStats
-        stats={lectureStatistics?.data}
-        isLoading={lectureStatisticsLoading}
-        totalInGrade={totalInGrade}
-        gradeLevel={gradeLevel}
-        filteredCount={data?.data?.totalCount}
-        isSearching={!!search.trim()}
-        selectedCenterName={selectedCenterName}
-      />
-
-      <CenterSelector
-        value={selectedCenterId}
-        onChange={handleCenterChange}
-        className="rounded-xl border border-color2/15 bg-muted/20 p-3"
-      />
-
-      <LectureFullMarksForm
-        lecture={lecture}
-        isSaving={updateLecture.isPending}
-        onSave={(data) =>
-          updateLecture.mutate({
-            courseId,
-            lectureId: lecture.id,
-            data,
-          })
-        }
-      />
-
-      <ChooseHomeworkSyncButton lecture={lecture} />
-
-      <ChooseHomeworkComparePanel
-        lecture={lecture}
-        courseLectures={courseLectures}
-        selectedSourceLectureId={compareChooseHomeworkLectureId}
-        onSourceLectureChange={setCompareChooseHomeworkLectureId}
-      />
-
-      {!selectedCenterId && (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-          Select an attendance center before scanning barcodes or marking students
-          as attended.
-        </p>
-      )}
-
-      <div className="flex flex-col gap-3">
-        <Input
-          className="w-full"
-          placeholder="Search students..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <AttendInput
-            lectureId={lecture.id}
-            courseId={lecture.courseId}
-            centerId={selectedCenterId}
-            compareChooseHomeworkLectureId={compareChooseHomeworkLectureId}
-          />
-          <Button
-            disabled={updateLectureGrades.isPending}
-            variant="outline"
-            className="w-full border-red-200 text-red-500 sm:w-auto"
-            onClick={onImport}
-          >
-            {updateLectureGrades.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FaFileImport className="h-4 w-4" />
-            )}
-            <span className="ml-2">Import CSV</span>
-          </Button>
-          <Button
-            disabled={isDownloading}
-            variant="outline"
-            className="w-full text-primary sm:w-auto"
-            onClick={onExport}
-          >
-            {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FaFileExport className="h-4 w-4" />
-            )}
-            <span className="ml-2">Export</span>
-          </Button>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="flex h-48 items-center justify-center">
-          <Loading />
-        </div>
-      ) : (
-        <DataTable
-          data={data?.data!.items!}
-          pagination={{
-            hasNextPage: data!.data!.hasNextPage,
-            hasPreviousPage: data!.data!.hasPreviousPage,
-            pageIndex,
-            pageSize,
-            pageCount: data!.data!.totalCount,
-          }}
-          rowCount={data?.data!.totalCount!}
-          columns={studentColumns}
-          setPagination={setPagination}
-        />
-      )}
-    </div>
-  );
-};
-
-function LectureFullMarksForm({
-  lecture,
-  isSaving,
-  onSave,
-}: {
-  lecture: GetLectureDashboardResult;
-  isSaving: boolean;
-  onSave: (data: {
-    homeworkFullMark?: number;
-    quizFullMark?: number;
-  }) => void;
-}) {
-  const [homeworkFullMark, setHomeworkFullMark] = useState(
-    lecture.homeworkFullMark?.toString() ?? ""
-  );
-  const [quizFullMark, setQuizFullMark] = useState(
-    lecture.quizFullMark?.toString() ?? ""
-  );
-
-  useEffect(() => {
-    setHomeworkFullMark(lecture.homeworkFullMark?.toString() ?? "");
-    setQuizFullMark(lecture.quizFullMark?.toString() ?? "");
-  }, [lecture.homeworkFullMark, lecture.quizFullMark]);
-
-  const hw = Number(homeworkFullMark);
-  const qz = Number(quizFullMark);
-  const hwValid = Number.isFinite(hw) && hw > 0;
-  const qzValid = Number.isFinite(qz) && qz > 0;
-  const canSave = hwValid || qzValid;
-
-  return (
-    <div className="rounded-xl border border-color2/20 bg-color2/5 p-3 sm:p-4">
-      <div className="mb-2">
-        <h3 className="text-sm font-semibold text-foreground">
-          Offline score full marks
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Set Essay and Quiz full marks here. Choose Homework full mark is taken
-          automatically from the Google Form quiz points
-          {lecture.chooseHomeworkFullMark
-            ? ` (currently ${lecture.chooseHomeworkFullMark})`
-            : ""}
-          .
-        </p>
-      </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Essay Homework full mark
-          </label>
-          <Input
-            type="number"
-            min={0.01}
-            step="any"
-            placeholder="e.g. 20"
-            value={homeworkFullMark}
-            onChange={(e) => setHomeworkFullMark(e.target.value)}
-            className="w-full sm:w-40"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Quiz full mark
-          </label>
-          <Input
-            type="number"
-            min={0.01}
-            step="any"
-            placeholder="e.g. 10"
-            value={quizFullMark}
-            onChange={(e) => setQuizFullMark(e.target.value)}
-            className="w-full sm:w-40"
-          />
-        </div>
-        <Button
-          type="button"
-          disabled={!canSave || isSaving}
-          onClick={() => {
-            const data: {
-              homeworkFullMark?: number;
-              quizFullMark?: number;
-            } = {};
-            if (hwValid) data.homeworkFullMark = hw;
-            if (qzValid) data.quizFullMark = qz;
-            onSave(data);
-          }}
-          className="w-full sm:w-auto"
-        >
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            "Save full marks"
-          )}
-        </Button>
-      </div>
-      {(!lecture.homeworkFullMark || !lecture.quizFullMark) && (
-        <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-          Essay and quiz score fields unlock after their full mark is saved.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ChooseHomeworkComparePanel({
-  lecture,
-  courseLectures,
-  selectedSourceLectureId,
-  onSourceLectureChange,
-}: {
-  lecture: GetLectureDashboardResult;
-  courseLectures: { id: string; title: string; order?: number }[];
-  selectedSourceLectureId: string | null;
-  onSourceLectureChange: (lectureId: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border border-teal-500/25 bg-teal-500/5 p-3 sm:p-4">
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">
-          Source Choose Homework
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Pick a lecture to see who already has Choose Homework scores in the
-          Source Choose HW column (Done or Missing).
-        </p>
-      </div>
-
-      <Select
-        value={selectedSourceLectureId ?? undefined}
-        onValueChange={onSourceLectureChange}
-      >
-        <SelectTrigger className="w-full sm:max-w-md">
-          <SelectValue placeholder="Select a lecture" />
-        </SelectTrigger>
-        <SelectContent>
-          {courseLectures.map((item) => (
-            <SelectItem key={item.id} value={item.id}>
-              {item.title}
-              {item.id === lecture.id ? " (this lecture)" : ""}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function ChooseHomeworkSyncButton({
-  lecture,
-}: {
-  lecture: GetLectureDashboardResult;
-}) {
-  const syncMutation = useSyncChooseHomeworkScoresMutation();
-
-  if (!lecture.chooseHomeworkFormId) {
-    return (
-      <p className="rounded-lg border border-color2/20 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-        Set a Choose Homework Google Form on the Details tab to sync scores.
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2 rounded-xl border border-color2/20 bg-color2/5 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">
-          Choose Homework sync
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Pull quiz scores from Google Forms matched by Student ID. Full mark is
-          taken automatically from the form quiz points
-          {lecture.chooseHomeworkFullMark != null
-            ? ` (${lecture.chooseHomeworkFullMark})`
-            : ""}
-          . Also runs automatically every 15 minutes.
-        </p>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full sm:w-auto"
-        disabled={syncMutation.isPending}
-        onClick={() =>
-          syncMutation.mutate(
-            { courseId: lecture.courseId, lectureId: lecture.id },
-            {
-              onSuccess: async (res) => {
-                const data = res.data;
-                toast({
-                  title: "Choose Homework synced",
-                  description: data
-                    ? `Matched ${data.matched}, updated ${data.updated}${
-                        data.unmatchedCodes?.length
-                          ? `, unmatched: ${data.unmatchedCodes.slice(0, 5).join(", ")}`
-                          : ""
-                      }`
-                    : res.message,
-                });
-              },
-              onError: (error) => {
-                toast({
-                  title: "Sync failed",
-                  description: error.message,
-                  variant: "destructive",
-                });
-              },
-            }
-          )
-        }
-      >
-        {syncMutation.isPending ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : null}
-        Sync Choose Homework
-      </Button>
-    </div>
-  );
-}
-
-const LectureDetailsTab: React.FC<TabProps> = ({ lecture }) => {
+const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { mutate: publish, isPending: isPublishing } = usePublishLecture({
@@ -791,6 +193,14 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture }) => {
     <div className='w-full h-full p-4'>
       <div className='flex w-full'>
         <div className='flex gap-2 ms-auto item-center'>
+          {canOpenStudents && (
+            <Button asChild variant="outline" className="gap-2">
+              <Link to={`/dashboard/courses/${lecture.courseId}/lectures/${lecture.id}/students`}>
+                <Users className="h-4 w-4" />
+                Students
+              </Link>
+            </Button>
+          )}
           <Confirmation
             button={<Button variant='destructive'>Delete</Button>}
             title='Are you sure you want to delete this lecture?'
@@ -1444,161 +854,3 @@ function LectureAssetsFrom({
   );
 }
 
-function AttendInput({
-  lectureId,
-  courseId,
-  centerId,
-  compareChooseHomeworkLectureId,
-}: {
-  lectureId: string;
-  courseId: string;
-  centerId: string | null;
-  compareChooseHomeworkLectureId: string | null;
-}) {
-  const navigate = useNavigate();
-  const [showManual, setShowManual] = useState(false);
-  const [code, setCode] = useState("");
-  const [lastAttend, setLastAttend] = useState<AttendLectureResult | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const qc = useQueryClient();
-  const { mutate: attendLecture, isPending } = useAttendLectureAtCenter({
-    mutation: {
-      throwOnError: false,
-    },
-  });
-
-  useEffect(() => {
-    if (!showManual) return;
-    const timer = setTimeout(() => {
-      if (code.length > 0) handleSubmit();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [code, showManual]);
-
-  const handleSubmit = async () => {
-    if (!code || !centerId) {
-      if (!centerId) {
-        toast({
-          title: "Select a center",
-          description: "Choose an attendance center before marking attendance.",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
-
-    attendLecture(
-      {
-        courseId,
-        lectureId,
-        code,
-        centerId,
-        compareChooseHomeworkLectureId,
-      },
-      {
-        onSuccess: (data) => {
-          const result = data.data ?? null;
-          setLastAttend(result);
-          const chooseHwDone =
-            result?.isChooseHomeworkDone ??
-            result?.compareChooseHomeworkScore != null;
-          const sourceTitle =
-            result?.compareChooseHomeworkLectureTitle ?? "Source Choose HW";
-          toast({
-            title: data.message ?? "Student attended successfully",
-            description: chooseHwDone
-              ? `${sourceTitle}: Done`
-              : `${sourceTitle}: Missing`,
-          });
-          qc.invalidateQueries({
-            queryKey: getGetLectureStudentsQueryKey(courseId, lectureId),
-          });
-          qc.invalidateQueries({
-            queryKey: getGetLectureStatisticsQueryKey(
-              getLectureStatisticsParams(lectureId, centerId) as any
-            ),
-          });
-          setCode("");
-          inputRef.current?.focus();
-        },
-        onError: (_) => {
-          setCode("");
-          inputRef.current?.focus();
-        },
-      }
-    );
-  };
-
-  const chooseHwDone =
-    lastAttend?.isChooseHomeworkDone ??
-    lastAttend?.compareChooseHomeworkScore != null;
-  const sourceTitle =
-    lastAttend?.compareChooseHomeworkLectureTitle ?? "Source Choose HW";
-
-  return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-        <Button
-          className="w-full gap-2 bg-gradient-to-r from-color1 to-color2 sm:w-auto"
-          disabled={!centerId}
-          onClick={() =>
-            navigate(
-              `/dashboard/courses/${courseId}/lectures/${lectureId}/scan`
-            )
-          }
-        >
-          <FaBarcode className="h-4 w-4" />
-          Scan Barcode
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={() => setShowManual((state) => !state)}
-        >
-          {showManual ? "Hide Manual" : "Manual Entry"}
-        </Button>
-        {showManual && (
-          <div className="flex w-full gap-2 sm:w-auto">
-            <Input
-              ref={inputRef}
-              type="text"
-              className="w-full text-primary sm:w-[200px]"
-              placeholder="Student code..."
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <Button
-              size="icon"
-              onClick={handleSubmit}
-              disabled={isPending}
-              className="shrink-0"
-            >
-              <FaCheck className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {lastAttend && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-sm">
-          <span className="font-medium text-foreground">
-            {lastAttend.fullName} attended
-          </span>
-          <Badge
-            className={
-              chooseHwDone
-                ? "bg-emerald-600 hover:bg-emerald-600"
-                : "bg-red-600 hover:bg-red-600"
-            }
-          >
-            {sourceTitle}: {chooseHwDone ? "Done" : "Missing"}
-            {chooseHwDone && lastAttend.compareChooseHomeworkScore != null
-              ? ` (${lastAttend.compareChooseHomeworkScore})`
-              : ""}
-          </Badge>
-        </div>
-      )}
-    </div>
-  );
-}

@@ -70,7 +70,7 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
 
     [HttpPut]
     [SwaggerOperation(OperationId = "UpdateQuiz")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     public async Task<ApiWrapper.Success<UpdateQuizResponse>> Put(UpdateQuizRequest request, Guid courseId,
         Guid lectureId)
     {
@@ -107,7 +107,7 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
     }
 
     [HttpDelete("{quizId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "DeleteQuiz")]
     public async Task<ApiWrapper.Success<object?>> Delete(Guid courseId, Guid lectureId, Guid quizId)
     {
@@ -165,7 +165,7 @@ public sealed class QuizzesController(ICoursesService coursesService, ICurrentUs
     }
 
     [HttpPost("{quizId:guid}/grade-essay")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "GradeQuizEssay")]
     public async Task<ApiWrapper.Success<object>> GradeEssay(
         [FromBody] GradeEssayRequest request,

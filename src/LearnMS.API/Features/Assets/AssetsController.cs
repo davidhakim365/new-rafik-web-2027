@@ -44,7 +44,7 @@ public sealed class AssetsController(IAssetsService assetsService) : ControllerB
     }
 
     [HttpPut("{fileId}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageFiles, Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageFiles, Permission.ManageCourses, Permission.ManageLecture])]
     public async Task<ApiWrapper.Success<object?>> UpdateAsset(
         string fileId,
         [FromBody] UpdateAssetRequest request

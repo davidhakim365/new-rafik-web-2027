@@ -52,7 +52,11 @@ const materialItems: NavItem[] = [
     label: "Courses",
     icon: BookOpen,
     match: (pathname) => pathname.startsWith("/dashboard/courses"),
-    permission: Permission.ManageCourses,
+    anyPermissions: [
+      Permission.ManageCourses,
+      Permission.ManageLecture,
+      Permission.ManageLectureStudents,
+    ],
   },
   {
     to: "/dashboard/important-lectures",

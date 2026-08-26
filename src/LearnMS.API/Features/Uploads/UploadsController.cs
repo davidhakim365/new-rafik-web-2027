@@ -11,7 +11,7 @@ namespace LearnMS.API.Features.Uploads;
 public sealed class UploadsController(IImgBbService imgBbService) : ControllerBase
 {
     [HttpPost("imgbb")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageFiles, Permission.ManageStudentApples, Permission.ManageAppleRewardsStore])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses, Permission.ManageLecture, Permission.ManageFiles, Permission.ManageStudentApples, Permission.ManageAppleRewardsStore])]
     public async Task<ApiWrapper.Success<ImgBbUploadResponse>> UploadImgBb(IFormFile file, CancellationToken ct)
     {
         if (file.Length == 0)

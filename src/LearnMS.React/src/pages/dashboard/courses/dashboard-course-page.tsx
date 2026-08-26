@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
+import { Permission } from "@/generated/model";
 import {
   getGetCourseQueryKey,
   useCreateLecture,
@@ -47,7 +49,7 @@ import {
 import { GetDashboardCourseResult, SingleCourseItem } from "@/generated/model";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Edit2, ListCollapse, LucideMove, Menu, Settings2, BookOpen } from "lucide-react";
+import { Edit2, ListCollapse, LucideMove, Menu, Settings2, BookOpen, Users } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -56,6 +58,8 @@ import { z } from "zod";
 const DashboardCoursePage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useDashboardPermissions();
+  const canManageCourses = hasPermission(Permission.ManageCourses);
 
   const { data, isLoading, isError, refetch } = useGetCourse(courseId!);
 
@@ -127,25 +131,29 @@ const DashboardCoursePage = () => {
       icon={BookOpen}
       fullWidth
       actions={
-        <div className="flex gap-2">
-          <Confirmation
-            disabled={deleteCourseMutation.isPending}
-            description="Are you sure you want to delete this course?"
-            title="Delete Course"
-            onConfirm={onDeleting}
-          />
-          <Button
-            onClick={onPublishing}
-            className="border border-color2/40 bg-gradient-to-r from-color1 to-color2 text-white shadow-md shadow-color2/20 hover:opacity-90"
-          >
-            {course.isPublished ? "Unpublish" : "Publish"}
-          </Button>
-        </div>
+        canManageCourses ? (
+          <div className="flex gap-2">
+            <Confirmation
+              disabled={deleteCourseMutation.isPending}
+              description="Are you sure you want to delete this course?"
+              title="Delete Course"
+              onConfirm={onDeleting}
+            />
+            <Button
+              onClick={onPublishing}
+              className="border border-color2/40 bg-gradient-to-r from-color1 to-color2 text-white shadow-md shadow-color2/20 hover:opacity-90"
+            >
+              {course.isPublished ? "Unpublish" : "Publish"}
+            </Button>
+          </div>
+        ) : undefined
       }
     >
       <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-        <CourseDetailsForm {...course} />
-        <CourseContentForm {...course} />
+        {canManageCourses && <CourseDetailsForm {...course} />}
+        <div className={canManageCourses ? "" : "lg:col-span-2"}>
+          <CourseContentForm {...course} canManageCourses={canManageCourses} />
+        </div>
       </div>
     </DashboardPageShell>
   );
@@ -325,7 +333,11 @@ function CourseDetailsForm({
   );
 }
 
-function CourseContentForm({ items, id }: GetDashboardCourseResult) {
+function CourseContentForm({
+  items,
+  id,
+  canManageCourses,
+}: GetDashboardCourseResult & { canManageCourses: boolean }) {
   const [isAddingLecture, setIsAddingLecture] = useState(false);
   const navigate = useNavigate();
 
@@ -336,6 +348,7 @@ function CourseContentForm({ items, id }: GetDashboardCourseResult) {
           <ListCollapse className='text-color2 bg-color2/15 rounded-[50%] w-10 h-10 p-1' />
           Course Content
         </div>
+        {canManageCourses && (
         <div className='flex items-center justify-center gap-2'>
           {!isAddingLecture ? (
             <>
@@ -370,8 +383,9 @@ function CourseContentForm({ items, id }: GetDashboardCourseResult) {
             </Button>
           )}
         </div>
+        )}
       </div>
-      {isAddingLecture && (
+      {isAddingLecture && canManageCourses && (
         <AddLectureForm
           courseId={id}
           onClose={() => setIsAddingLecture(false)}
@@ -395,21 +409,43 @@ function CourseItem({
   item: SingleCourseItem;
   courseId: string;
 }) {
+  const { hasPermission } = useDashboardPermissions();
+  const canManageCourses = hasPermission(Permission.ManageCourses);
+  const canManageDetails = hasPermission(Permission.ManageLecture);
+  const canManageStudents = hasPermission(Permission.ManageLectureStudents);
+
+  const isExam = item.type === "Exam";
+  const lectureDetailsTo = `/dashboard/courses/${courseId}/lectures/${item.id}`;
+  const lectureStudentsTo = `/dashboard/courses/${courseId}/lectures/${item.id}/students`;
+  const examTo = `/dashboard/courses/${courseId}/exams/${item.id}`;
+
   return (
     <div className='flex items-center justify-between w-full gap-2 text-color2 bg-color2/10 border border-color2/25 rounded'>
       <div className='flex gap-2'>
-
         <div className='p-2'>{item.title}</div>
       </div>
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-2 pe-2'>
         <Badge className='h-5'>{item.type}</Badge>
-        <Link
-          className='me-2'
-          to={`/dashboard/courses/${courseId}/${
-            item.type === "Exam" ? "exams" : "lectures"
-          }/${item.id}`}>
-          <Edit2 className='w-4 h-4' />
-        </Link>
+        {isExam
+          ? canManageCourses && (
+              <Link to={examTo} className='me-1'>
+                <Edit2 className='w-4 h-4' />
+              </Link>
+            )
+          : (
+            <>
+              {canManageDetails && (
+                <Link to={lectureDetailsTo} title="Lecture details">
+                  <Edit2 className='w-4 h-4' />
+                </Link>
+              )}
+              {canManageStudents && (
+                <Link to={lectureStudentsTo} title="Lecture students">
+                  <Users className='w-4 h-4' />
+                </Link>
+              )}
+            </>
+          )}
       </div>
     </div>
   );

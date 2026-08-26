@@ -16,6 +16,7 @@ import FilesPage from "@/pages/dashboard/files/files-page";
 import GrantedAccessPage from "@/pages/dashboard/granted-access/granted-access-page";
 import ImportantLecturesPage from "@/pages/dashboard/important-lectures/important-lectures-page";
 import LectureDetailsPage from "@/pages/dashboard/lectures/lecture-details-page";
+import LectureStudentsPage from "@/pages/dashboard/lectures/lecture-students-page";
 import LectureBarcodeScannerPage from "@/pages/dashboard/lectures/lecture-barcode-scanner-page";
 import LessonDetailsPage from "@/pages/dashboard/lessons/lesson-details-page";
 import QuestionsPage from "@/pages/dashboard/questions/questions-page";
@@ -156,7 +157,8 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageCourses", "ManageLecture", "ManageLectureStudents"]}
+                    requireAnyPermission
                   >
                     <CoursesPage />
                   </RequireAuth>
@@ -178,7 +180,8 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageCourses", "ManageLecture", "ManageLectureStudents"]}
+                    requireAnyPermission
                   >
                     <DashboardCoursePage />
                   </RequireAuth>
@@ -189,9 +192,20 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageLecture"]}
                   >
                     <LectureDetailsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="courses/:courseId/lectures/:lectureId/students"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageLectureStudents"]}
+                  >
+                    <LectureStudentsPage />
                   </RequireAuth>
                 }
               />
@@ -200,7 +214,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageLectureStudents"]}
                   >
                     <LectureBarcodeScannerPage />
                   </RequireAuth>
@@ -211,7 +225,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageLecture"]}
                   >
                     <LessonDetailsPage />
                   </RequireAuth>
@@ -222,7 +236,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageLecture"]}
                   >
                     <QuizPage />
                   </RequireAuth>
@@ -233,7 +247,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageCourses"]}
+                    permissions={["ManageLecture"]}
                   >
                     <QuizPage />
                   </RequireAuth>
