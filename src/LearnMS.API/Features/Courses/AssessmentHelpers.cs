@@ -1,4 +1,6 @@
+using System.Globalization;
 using LearnMS.API.Entities;
+using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Questions;
 using LearnMS.API.Features.Questions.Contracts;
 
@@ -6,8 +8,24 @@ namespace LearnMS.API.Features.Courses;
 
 public static class AssessmentHelpers
 {
-    public static QuestionSubmission BuildSubmission(Question question, string answer)
+    public static List<QuestionSubmission> BuildSubmissions(
+        IEnumerable<Question> questions,
+        IEnumerable<QuestionAnswer>? answers)
     {
+        var byId = (answers ?? [])
+            .GroupBy(a => a.QuestionId)
+            .ToDictionary(g => g.Key, g => g.Last().Answer ?? "");
+
+        return questions.Select(question =>
+        {
+            byId.TryGetValue(question.Id, out var answer);
+            return BuildSubmission(question, answer ?? "");
+        }).ToList();
+    }
+
+    public static QuestionSubmission BuildSubmission(Question question, string? answer)
+    {
+        answer ??= "";
         return question.Body switch
         {
             MultipleChoiceQuestion mc => new MultipleChoiceSubmission
@@ -17,20 +35,43 @@ public static class AssessmentHelpers
                 QuestionId = question.Id,
                 StudentAnswer = answer
             },
-            ValueToleranceQuestion vt => new ValueToleranceSubmission
-            {
-                QuestionId = question.Id,
-                StudentAnswer = decimal.Parse(answer),
-                Tolerance = vt.Tolerance,
-                CorrectAnswer = vt.CorrectAnswer
-            },
+            ValueToleranceQuestion vt => BuildValueToleranceSubmission(question.Id, vt, answer),
             EssayQuestion => new EssaySubmission
             {
                 QuestionId = question.Id,
                 StudentAnswer = answer,
-                IsGradedCorrect = null
+                // Unanswered essays are scored as incorrect so timeout submit is not left pending.
+                IsGradedCorrect = string.IsNullOrWhiteSpace(answer) ? false : null
             },
             _ => throw new InvalidOperationException("Unknown question type")
+        };
+    }
+
+    private static ValueToleranceSubmission BuildValueToleranceSubmission(
+        Guid questionId,
+        ValueToleranceQuestion vt,
+        string answer)
+    {
+        if (!decimal.TryParse(answer, NumberStyles.Number, CultureInfo.InvariantCulture, out var value)
+            && !decimal.TryParse(answer, NumberStyles.Number, CultureInfo.CurrentCulture, out value))
+        {
+            return new ValueToleranceSubmission
+            {
+                QuestionId = questionId,
+                StudentAnswer = 0,
+                Tolerance = vt.Tolerance,
+                CorrectAnswer = vt.CorrectAnswer,
+                Unanswered = true
+            };
+        }
+
+        return new ValueToleranceSubmission
+        {
+            QuestionId = questionId,
+            StudentAnswer = value,
+            Tolerance = vt.Tolerance,
+            CorrectAnswer = vt.CorrectAnswer,
+            Unanswered = false
         };
     }
 

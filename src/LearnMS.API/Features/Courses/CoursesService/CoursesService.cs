@@ -1069,39 +1069,19 @@ public sealed class CoursesService : ICoursesService
             throw new ApiException(QuizzesErrors.AlreadySubmitted);
 
         var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == command.StudentId);
-        if (quiz.ExpiryMinutes > 0)
-        {
-            if (attempt is null)
-                throw new ApiException(new ApiError("quizzes/not-started", "Start the quiz before submitting",
-                    StatusCodes.Status400BadRequest));
-            if (attempt.ExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
-                throw new ApiException(new ApiError("quizzes/expired", "Quiz time has expired",
-                    StatusCodes.Status400BadRequest));
-        }
-        else if (attempt?.ExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
-        {
-            throw new ApiException(new ApiError("quizzes/expired", "Quiz time has expired",
+        if (quiz.ExpiryMinutes > 0 && attempt is null)
+            throw new ApiException(new ApiError("quizzes/not-started", "Start the quiz before submitting",
                 StatusCodes.Status400BadRequest));
-        }
 
-        var questionsIds = quiz
-            .Questions.Select(x => x.Id)
-            .Intersect(command.QuestionAnswers.Select(x => x.QuestionId));
-
-        List<QuestionSubmission> questionSubmissions = [];
-
-        foreach (var qId in questionsIds)
-        {
-            var question = quiz.Questions.Single(x => x.Id == qId);
-            var studentQuestion = command.QuestionAnswers.Single(x => x.QuestionId == qId);
-            questionSubmissions.Add(AssessmentHelpers.BuildSubmission(question, studentQuestion.Answer));
-        }
+        // Timed-out quizzes are still accepted so auto-submit can save answered
+        // questions and record blanks as unanswered (incorrect), not reject the attempt.
+        var questionSubmissions = AssessmentHelpers.BuildSubmissions(quiz.Questions, command.QuestionAnswers ?? []);
 
         quiz.QuizSubmissions.Add(
             new QuizSubmission
             {
                 QuizId = command.QuizId,
-                NumOfQuestions = questionSubmissions.Count,
+                NumOfQuestions = quiz.Questions.Count,
                 NumOfCorrect = AssessmentHelpers.CountCorrect(questionSubmissions),
                 QuestionSubmissions = questionSubmissions,
                 PassCount = quiz.PassCount,
@@ -1389,29 +1369,14 @@ public sealed class CoursesService : ICoursesService
         if (enrollment.Submission != null)
             throw new ApiException(ExamsErrors.AlreadySubmitted);
 
-        if (enrollment.ExpiresAt < DateTime.UtcNow)
-        {
-            throw new ApiException(ExamsErrors.ExamExpired);
-        }
-
-        var questionsIds = exam
-            .Questions.Select(x => x.Id)
-            .Intersect(command.QuestionAnswers.Select(x => x.QuestionId));
-
-        List<QuestionSubmission> questionSubmissions = [];
-
-        foreach (var qId in questionsIds)
-        {
-            var question = exam.Questions.Single(x => x.Id == qId);
-            var studentQuestion = command.QuestionAnswers.Single(x => x.QuestionId == qId);
-            questionSubmissions.Add(AssessmentHelpers.BuildSubmission(question, studentQuestion.Answer));
-        }
+        // Timed-out exams are still accepted so auto-submit can persist blanks as unanswered.
+        var questionSubmissions = AssessmentHelpers.BuildSubmissions(exam.Questions, command.QuestionAnswers ?? []);
 
         enrollment.Submission = new ExamSubmission
         {
             StudentId = command.StudentId,
             ExamId = exam.Id,
-            NumOfQuestions = questionSubmissions.Count,
+            NumOfQuestions = exam.Questions.Count,
             NumOfCorrect = AssessmentHelpers.CountCorrect(questionSubmissions),
             QuestionSubmissions = questionSubmissions,
             PassCount = exam.PassCount

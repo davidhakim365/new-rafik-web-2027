@@ -22,6 +22,6 @@ public sealed record QuestionAnswer
 {
     [Required]
     public required Guid QuestionId { get; set; }
-    [Required]
-    public required string Answer { get; set; }
+    /// <summary>Empty when the student skipped the question or time ran out.</summary>
+    public string Answer { get; set; } = "";
 }

@@ -115,6 +115,19 @@ function formatTime(ms: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+function collectAnswers(
+  questions: TakeQuestion[],
+  values: Record<string, unknown>
+) {
+  return questions.map((q) => {
+    const raw = values[q.id];
+    if (raw == null || raw === "") {
+      return { questionId: q.id, answer: "" };
+    }
+    return { questionId: q.id, answer: String(raw) };
+  });
+}
+
 export function AssessmentTakeForm({
   title,
   description,
@@ -136,7 +149,12 @@ export function AssessmentTakeForm({
   );
   const [index, setIndex] = useState(0);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const autoSubmitted = useRef(false);
+  const onSubmitRef = useRef(onSubmit);
+  const questionsRef = useRef(questions);
+  onSubmitRef.current = onSubmit;
+  questionsRef.current = questions;
 
   useEffect(() => {
     setExpiresAt(expiresAtProp);
@@ -163,7 +181,10 @@ export function AssessmentTakeForm({
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     mode: "onChange",
+    shouldUnregister: false,
   });
+  const formRef = useRef(form);
+  formRef.current = form;
 
   useEffect(() => {
     if (!started || !expiresAt) {
@@ -176,14 +197,10 @@ export function AssessmentTakeForm({
       setRemainingMs(Math.max(0, left));
       if (left <= 0 && !autoSubmitted.current) {
         autoSubmitted.current = true;
-        form.handleSubmit((data) => {
-          onSubmit(
-            Object.entries(data).map(([questionId, answer]) => ({
-              questionId,
-              answer: String(answer ?? ""),
-            }))
-          );
-        })();
+        setTimedOut(true);
+        formRef.current.clearErrors();
+        const values = formRef.current.getValues() as Record<string, unknown>;
+        onSubmitRef.current(collectAnswers(questionsRef.current, values));
       }
     };
     tick();
@@ -199,12 +216,14 @@ export function AssessmentTakeForm({
     (remainingMs <= 60_000 ||
       (expiryMinutes > 0 && remainingMs <= expiryMinutes * 60_000 * 0.2));
 
+  const locked = timedOut || !!isSubmitting;
+
   const submitAll = form.handleSubmit((data) => {
     onSubmit(
-      Object.entries(data).map(([questionId, answer]) => ({
-        questionId,
-        answer: String(answer),
-      }))
+      collectAnswers(
+        questions,
+        data as Record<string, unknown>
+      )
     );
   });
 
@@ -284,7 +303,7 @@ export function AssessmentTakeForm({
           <div
             className={cn(
               "sticky top-2 z-20 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-lg font-bold shadow-md transition-colors",
-              urgent
+              timedOut || urgent
                 ? "animate-pulse bg-red-600 text-white"
                 : "bg-foreground text-background"
             )}
@@ -292,7 +311,13 @@ export function AssessmentTakeForm({
             aria-live="polite"
           >
             <Clock className="h-5 w-5" />
-            <span>Time left: {formatTime(remainingMs)}</span>
+            <span>
+              {timedOut
+                ? isSubmitting
+                  ? "Time is up — submitting your answers..."
+                  : "Time is up — submitting unanswered questions as blank"
+                : `Time left: ${formatTime(remainingMs)}`}
+            </span>
           </div>
         )}
 
@@ -340,6 +365,7 @@ export function AssessmentTakeForm({
                             <button
                               key={c.id}
                               type="button"
+                              disabled={locked}
                               onClick={() => field.onChange(c.id)}
                               className={cn(
                                 "flex min-h-[52px] w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition active:scale-[0.99]",
@@ -381,6 +407,7 @@ export function AssessmentTakeForm({
                         step="any"
                         className="h-14 text-lg"
                         placeholder="Enter number"
+                        disabled={locked}
                         {...field}
                       />
                     ) : (
@@ -388,6 +415,7 @@ export function AssessmentTakeForm({
                         className="min-h-[140px] text-base"
                         placeholder="Write your answer..."
                         maxLength={current.maxLength ?? undefined}
+                        disabled={locked}
                         {...field}
                       />
                     )}
@@ -403,7 +431,7 @@ export function AssessmentTakeForm({
               type="button"
               variant="outline"
               className="h-12 flex-1"
-              disabled={index === 0}
+              disabled={index === 0 || locked}
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
             >
               <ChevronLeft className="mr-1 h-4 w-4" /> Prev
@@ -412,6 +440,7 @@ export function AssessmentTakeForm({
               <Button
                 type="button"
                 className="h-12 flex-[1.4]"
+                disabled={locked}
                 onClick={async () => {
                   const ok = await form.trigger(current.id);
                   if (ok) setIndex((i) => i + 1);
@@ -423,9 +452,9 @@ export function AssessmentTakeForm({
               <Button
                 type="submit"
                 className="h-12 flex-[1.4] bg-emerald-600 hover:bg-emerald-700"
-                disabled={isSubmitting}
+                disabled={locked}
               >
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {isSubmitting || timedOut ? "Submitting..." : "Submit"}
               </Button>
             )}
           </div>

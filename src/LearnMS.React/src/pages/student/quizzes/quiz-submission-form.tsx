@@ -34,18 +34,24 @@ export function QuizSubmissionForm({
   };
 }) {
   const qc = useQueryClient();
+  const invalidateQuiz = () => {
+    qc.invalidateQueries({
+      queryKey: getGetQuizQueryKey(courseId, lectureId, quiz.id),
+    });
+    qc.invalidateQueries({
+      queryKey: getGetLectureQueryKey(courseId, lectureId),
+    });
+    qc.invalidateQueries({
+      queryKey: getGetStudentCourseDetailsQueryKey(courseId),
+    });
+  };
   const { mutate: submitQuiz, isPending } = useSubmitQuiz({
     mutation: {
-      onSuccess: () => {
-        qc.invalidateQueries({
-          queryKey: getGetQuizQueryKey(courseId, lectureId, quiz.id),
-        });
-        qc.invalidateQueries({
-          queryKey: getGetLectureQueryKey(courseId, lectureId),
-        });
-        qc.invalidateQueries({
-          queryKey: getGetStudentCourseDetailsQueryKey(courseId),
-        });
+      onSuccess: invalidateQuiz,
+      onError: (error) => {
+        if ((error as { code?: string })?.code === "quiz/already-submitted") {
+          invalidateQuiz();
+        }
       },
     },
   });

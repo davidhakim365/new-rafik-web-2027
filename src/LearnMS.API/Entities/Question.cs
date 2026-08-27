@@ -109,7 +109,10 @@ public class ValueToleranceSubmission : QuestionSubmission
     public required decimal StudentAnswer { get; set; }
     public required decimal CorrectAnswer { get; set; }
     public required decimal Tolerance { get; set; }
-    public override bool IsCorrect => Math.Abs(StudentAnswer - CorrectAnswer) <= Tolerance;
+    /// <summary>True when the student left this numeric question blank (e.g. quiz timed out).</summary>
+    public bool Unanswered { get; set; }
+    public override bool IsCorrect =>
+        !Unanswered && Math.Abs(StudentAnswer - CorrectAnswer) <= Tolerance;
 }
 
 public class EssaySubmission : QuestionSubmission
