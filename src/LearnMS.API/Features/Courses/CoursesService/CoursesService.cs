@@ -1162,6 +1162,24 @@ public sealed class CoursesService : ICoursesService
         await _context.SaveChangesAsync();
     }
 
+    public async Task ExecuteAsync(ReorderLectureItemsCommand command)
+    {
+        var lecture =
+            await _context
+                .Set<Lecture>()
+                .Include(x => x.Lessons)
+                .Include(x => x.Quizzes)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.LectureId && x.CourseId == command.CourseId
+                ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        if (command.ItemIds is null || !lecture.TryReorderItems(command.ItemIds))
+            throw new ApiException(LecturesErrors.InvalidItemOrder);
+
+        _context.Update(lecture);
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<AddLecturePdfLinksResult> ExecuteAsync(AddLecturePdfLinksCommand command)
     {
         if (command.Items is null || command.Items.Count == 0)

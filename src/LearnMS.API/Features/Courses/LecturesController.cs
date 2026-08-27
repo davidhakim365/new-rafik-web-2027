@@ -370,6 +370,27 @@ public sealed class LecturesController : ControllerBase
         return new ApiWrapper.Success<object?> { Message = "PDFs updated successfully" };
     }
 
+    [HttpPut("{lectureId:guid}/items/order")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
+    [SwaggerOperation(OperationId = "ReorderLectureItems")]
+    public async Task<ApiWrapper.Success<object?>> ReorderItems(
+        [FromBody] ReorderLectureItemsRequest request,
+        Guid lectureId,
+        Guid courseId
+    )
+    {
+        await _coursesService.ExecuteAsync(
+            new ReorderLectureItemsCommand
+            {
+                CourseId = courseId,
+                LectureId = lectureId,
+                ItemIds = request.ItemIds ?? []
+            }
+        );
+
+        return new ApiWrapper.Success<object?> { Message = "Session content order updated" };
+    }
+
     [HttpPost("{lectureId:guid}/pdf-links")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "AddLecturePdfLinks")]

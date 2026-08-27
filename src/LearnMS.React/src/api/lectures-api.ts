@@ -442,3 +442,32 @@ export const useAddLecturePdfLinksMutation = () => {
     },
   });
 };
+
+export const useReorderLectureItemsMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<{}>,
+    Error,
+    {
+      lectureId: string;
+      courseId: string;
+      itemIds: string[];
+    }
+  >({
+    mutationFn: ({ lectureId, courseId, itemIds }) =>
+      api
+        .put(`/api/courses/${courseId}/lectures/${lectureId}/items/order`, {
+          itemIds,
+        })
+        .then((res) => res.data),
+    onSuccess: (_, { lectureId, courseId }) => {
+      qc.invalidateQueries({
+        queryKey: ["lecture", { id: lectureId, courseId }],
+      });
+      qc.invalidateQueries({
+        queryKey: getGetLectureQueryKey(courseId, lectureId),
+      });
+      qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
+    },
+  });
+};

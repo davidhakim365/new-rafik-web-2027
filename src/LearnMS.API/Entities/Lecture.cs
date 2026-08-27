@@ -107,6 +107,30 @@ Homework Video :
         }
     }
 
+    public bool TryReorderItems(IReadOnlyList<Guid> orderedIds)
+    {
+        var byId = new Dictionary<Guid, IOrdered>(Lessons.Count + Quizzes.Count);
+        foreach (var lesson in Lessons)
+            byId[lesson.Id] = lesson;
+        foreach (var quiz in Quizzes)
+            byId[quiz.Id] = quiz;
+
+        if (orderedIds.Count != byId.Count)
+            return false;
+
+        var seen = new HashSet<Guid>();
+        foreach (var id in orderedIds)
+        {
+            if (!byId.ContainsKey(id) || !seen.Add(id))
+                return false;
+        }
+
+        for (var i = 0; i < orderedIds.Count; i++)
+            byId[orderedIds[i]].Order = i;
+
+        return true;
+    }
+
     public bool IsPublishable
     {
         get

@@ -1,4 +1,4 @@
-import { useUpdateLectureAssetsMutation } from "@/api/lectures-api";
+import { useReorderLectureItemsMutation, useUpdateLectureAssetsMutation } from "@/api/lectures-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +21,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { toast } from "@/components/ui/use-toast";
-import { Lesson } from "@/types/lessons";
-import { Quiz } from "@/types/quiz";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  ChevronDown,
+  ChevronUp,
   Delete,
   Edit2,
+  GripVertical,
   ListCollapse,
   Menu,
   Settings2,
@@ -45,6 +46,23 @@ import {
 
 import { useDeleteLessonMutation } from "@/api/lessons-api";
 import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
   getGetCourseQueryKey,
   getGetLectureQueryKey,
   useCreateLesson,
@@ -55,7 +73,7 @@ import {
   useUnPublishLecture,
   useUpdateLecture,
 } from "@/generated/api";
-import { GetLectureDashboardResult, Permission } from "@/generated/model";
+import { GetLectureDashboardResult, LectureItemType, Permission, SingleLectureItem } from "@/generated/model";
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { useAssetsStore } from "@/store/use-assets-store";
@@ -503,6 +521,66 @@ function LectureContentForm({
   courseId,
 }: GetLectureDashboardResult) {
   const [isAddingLesson, setIsAddingLecture] = useState(false);
+  const [orderedItems, setOrderedItems] = useState<SingleLectureItem[]>(() =>
+    [...(items ?? [])].sort((a, b) => a.order - b.order)
+  );
+  const reorderMutation = useReorderLectureItemsMutation();
+
+  useEffect(() => {
+    if (reorderMutation.isPending) return;
+    setOrderedItems([...(items ?? [])].sort((a, b) => a.order - b.order));
+  }, [items, reorderMutation.isPending]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const persistOrder = (nextItems: SingleLectureItem[]) => {
+    const previous = orderedItems;
+    setOrderedItems(nextItems);
+    reorderMutation.mutate(
+      {
+        courseId,
+        lectureId,
+        itemIds: nextItems.map((item) => item.id),
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Order updated",
+            description: "Session content order was saved",
+          });
+        },
+        onError: () => {
+          setOrderedItems(previous);
+        },
+      }
+    );
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedItems.findIndex((item) => item.id === active.id);
+    const newIndex = orderedItems.findIndex((item) => item.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    persistOrder(arrayMove(orderedItems, oldIndex, newIndex));
+  };
+
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= orderedItems.length) return;
+    persistOrder(arrayMove(orderedItems, index, nextIndex));
+  };
+
   return (
     <div className='flex flex-col gap-4 p-4'>
       <div className='flex items-center justify-between text-xl'>
@@ -552,14 +630,38 @@ function LectureContentForm({
 
       {!isAddingLesson && (
         <div className='flex flex-col gap-2'>
-          {items.map((item) => (
-            <LectureItem
-              key={item.id}
-              item={item}
-              courseId={courseId}
-              lectureId={lectureId}
-            />
-          ))}
+          {orderedItems.length > 1 && (
+            <p className='text-xs text-muted-foreground'>
+              Drag the handle or use the arrows to reorder lessons and quizzes.
+            </p>
+          )}
+          {orderedItems.length === 0 && (
+            <p className='text-sm text-muted-foreground'>No content yet.</p>
+          )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <SortableContext
+              items={orderedItems.map((item) => item.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {orderedItems.map((item, index) => (
+                <LectureItem
+                  key={item.id}
+                  item={item}
+                  courseId={courseId}
+                  lectureId={lectureId}
+                  index={index}
+                  total={orderedItems.length}
+                  disabled={reorderMutation.isPending}
+                  onMoveUp={() => moveItem(index, -1)}
+                  onMoveDown={() => moveItem(index, 1)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
       )}
     </div>
@@ -570,14 +672,31 @@ function LectureItem({
   item,
   courseId,
   lectureId,
+  index,
+  total,
+  disabled,
+  onMoveUp,
+  onMoveDown,
 }: {
-  item: Quiz | Lesson;
+  item: SingleLectureItem;
   courseId: string;
   lectureId: string;
+  index: number;
+  total: number;
+  disabled: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) {
   const { mutate } = useDeleteLessonMutation();
-
   const qc = useQueryClient();
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id, disabled: disabled || total < 2 });
 
   const onDelete = () => {
     mutate(
@@ -592,18 +711,70 @@ function LectureItem({
           qc.invalidateQueries({
             queryKey: ["lecture", { id: lectureId, courseId }],
           });
+          qc.invalidateQueries({
+            queryKey: getGetLectureQueryKey(courseId, lectureId),
+          });
         },
       }
     );
   };
 
   return (
-    <div className='flex items-center justify-between w-full gap-2 bg-color2/10 border border-color2/25 rounded text-primary'>
-      <div className='flex gap-2'>
-        <div className='p-2'>{item.title}</div>
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: transform
+          ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+          : undefined,
+        transition,
+        opacity: isDragging ? 0.65 : 1,
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className='flex items-center justify-between w-full gap-2 bg-color2/10 border border-color2/25 rounded text-primary'
+    >
+      <div className='flex items-center min-w-0 gap-1'>
+        {total > 1 && (
+          <button
+            type='button'
+            className='p-2 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing disabled:cursor-not-allowed'
+            aria-label={`Drag to reorder ${item.title}`}
+            disabled={disabled}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className='w-4 h-4' />
+          </button>
+        )}
+        <div className='p-2 truncate'>{item.title}</div>
       </div>
-      <div className='flex items-center gap-2'>
-        {item.type === "Lesson" && (
+      <div className='flex items-center gap-1 pe-2'>
+        {total > 1 && (
+          <div className='flex flex-col'>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='h-6 w-6'
+              aria-label={`Move ${item.title} up`}
+              disabled={disabled || index === 0}
+              onClick={onMoveUp}
+            >
+              <ChevronUp className='w-4 h-4' />
+            </Button>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='h-6 w-6'
+              aria-label={`Move ${item.title} down`}
+              disabled={disabled || index === total - 1}
+              onClick={onMoveDown}
+            >
+              <ChevronDown className='w-4 h-4' />
+            </Button>
+          </div>
+        )}
+        {item.type === LectureItemType.Lesson && (
           <Confirmation
             title='Delete Lesson'
             description='Are you sure you want to delete this lesson?'
@@ -613,14 +784,16 @@ function LectureItem({
                 className='w-4 h-4 hover:cursor-pointer hover:scale-105'
                 color='red'
               />
-            }></Confirmation>
+            }
+          />
         )}
         <Badge className='h-5'>{item.type}</Badge>
         <Link
-          className='me-2'
+          className='me-1'
           to={`/dashboard/courses/${courseId}/lectures/${lectureId}/${
-            item.type === "Lesson" ? "lessons" : "quizzes"
-          }/${item.id}`}>
+            item.type === LectureItemType.Lesson ? "lessons" : "quizzes"
+          }/${item.id}`}
+        >
           <Edit2 className='w-4 h-4' />
         </Link>
       </div>

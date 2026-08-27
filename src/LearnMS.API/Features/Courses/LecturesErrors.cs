@@ -50,4 +50,8 @@ public static class LecturesErrors
         "lecture/choose-homework-import-source-not-found",
         "Source lecture was not found in this course",
         StatusCodes.Status404NotFound);
+    public static readonly ApiError InvalidItemOrder = new ApiError(
+        "lecture/invalid-item-order",
+        "Session content order must include every lesson and quiz exactly once",
+        StatusCodes.Status400BadRequest);
 }
