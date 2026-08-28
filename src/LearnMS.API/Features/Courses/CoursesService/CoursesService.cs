@@ -1518,9 +1518,8 @@ public sealed class CoursesService : ICoursesService
         var quiz =
             await _context
                 .Set<Quiz>()
-                .Include(x =>
-                    x.QuizSubmissions.Where(x => x.StudentId == command.StudentId).Take(1)
-                )
+                .Include(x => x.QuizSubmissions.Where(x => x.StudentId == command.StudentId))
+                .Include(x => x.QuizAttempts.Where(x => x.StudentId == command.StudentId))
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.QuizId
                     && x.LectureId == command.LectureId
@@ -1528,13 +1527,8 @@ public sealed class CoursesService : ICoursesService
                 ) ?? throw new ApiException(QuizzesErrors.NotFound);
 
         quiz.QuizSubmissions.RemoveAll(x => x.StudentId == command.StudentId);
+        quiz.QuizAttempts.RemoveAll(x => x.StudentId == command.StudentId);
 
-        var attempt = await _context.Set<QuizAttempt>()
-            .FirstOrDefaultAsync(x => x.QuizId == command.QuizId && x.StudentId == command.StudentId);
-        if (attempt is not null)
-            _context.Remove(attempt);
-
-        _context.Update(quiz);
         await _context.SaveChangesAsync();
     }
 
@@ -1573,6 +1567,10 @@ public sealed class CoursesService : ICoursesService
             throw new ApiException(QuizzesErrors.AlreadySubmitted);
 
         var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == command.StudentId);
+        var freshExpiresAt = quiz.ExpiryMinutes > 0
+            ? DateTime.UtcNow.AddMinutes(quiz.ExpiryMinutes)
+            : (DateTime?)null;
+
         if (attempt is null)
         {
             attempt = new QuizAttempt
@@ -1580,11 +1578,16 @@ public sealed class CoursesService : ICoursesService
                 QuizId = quiz.Id,
                 StudentId = command.StudentId,
                 StartedAt = DateTime.UtcNow,
-                ExpiresAt = quiz.ExpiryMinutes > 0
-                    ? DateTime.UtcNow.AddMinutes(quiz.ExpiryMinutes)
-                    : null
+                ExpiresAt = freshExpiresAt
             };
             await _context.Set<QuizAttempt>().AddAsync(attempt);
+            await _context.SaveChangesAsync();
+        }
+        else if (attempt.ExpiresAt is { } existingExpiresAt && existingExpiresAt <= DateTime.UtcNow)
+        {
+            // Leftover expired attempt (e.g. after retake). Issue a new timer.
+            attempt.StartedAt = DateTime.UtcNow;
+            attempt.ExpiresAt = freshExpiresAt;
             await _context.SaveChangesAsync();
         }
 

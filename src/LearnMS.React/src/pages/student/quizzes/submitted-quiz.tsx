@@ -6,7 +6,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getGetQuizQueryKey, useRetakeQuiz } from "@/generated/api";
+import { getGetLectureQueryKey, getGetQuizQueryKey, useRetakeQuiz } from "@/generated/api";
 import {
   QuizHidden,
   QuizResultOnly,
@@ -33,8 +33,11 @@ const SubmittedQuiz: React.FC<{
   const { mutate: retakeQuiz, isPending } = useRetakeQuiz({
     mutation: {
       onSuccess: () => {
-        qc.invalidateQueries({
+        qc.resetQueries({
           queryKey: getGetQuizQueryKey(courseId!, lectureId!, quiz.id),
+        });
+        qc.invalidateQueries({
+          queryKey: getGetLectureQueryKey(courseId!, lectureId!),
         });
       },
     },
