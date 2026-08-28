@@ -36,6 +36,7 @@ import { useModalStore } from "@/store/use-modal-store";
 import {
   isAlreadyPurchasedError,
   isInsufficientBalanceError,
+  isWrongCourseLevelError,
 } from "@/lib/error-utils";
 import React, { useState, useRef } from "react";
 import {
@@ -60,7 +61,7 @@ import {
   FaFolder,
   FaUser,
 } from "react-icons/fa";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -72,13 +73,22 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { cn } from "@/lib/utils";
 import { resolveEnrollment } from "@/lib/enrollment";
 import { BookOpen, Coins, AlertTriangle, ArrowLeft } from "lucide-react";
+import { profileStudentLevel, studentCoursesHref } from "@/lib/student-level";
 
 export const StudentCoursePage = () => {
   const { courseId } = useParams();
-  const { isLoading, data } = useGetStudentCourseDetails(courseId!);
+  const { isLoading, data, isError, error } = useGetStudentCourseDetails(courseId!);
+  const { data: profile } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
   const accordionRef = useRef<HTMLDivElement>(null);
 
-  console.log({ data });
+  if (studentLevel && data?.data?.level && data.data.level !== studentLevel) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
+
+  if (isError && studentLevel && isWrongCourseLevelError(error)) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
 
   if (isLoading) {
     return (

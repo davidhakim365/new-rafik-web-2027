@@ -16,6 +16,7 @@ import {
   WavePattern,
 } from "@/components/ui/physics-graphics";
 import { Atom, BookOpen, Users } from "lucide-react";
+import { studentCoursesHref } from "@/lib/student-level";
 import type { GetStudentProfileResult } from "@/generated/model";
 
 const getLeftToRightVariants = (isRTL: boolean) => ({
@@ -57,14 +58,8 @@ const HeroSection = () => {
   const browseCoursesHref = (() => {
     const isStudent =
       profile?.data && profile.data.$type === "GetStudentProfileResult";
-    if (!isStudent) return "/courses";
-
-    const level = (profile.data as GetStudentProfileResult).level;
-    const match = /Level(\d+)/.exec(level);
-    if (match?.[1] !== undefined) {
-      return `/courses/levels/${match[1]}`;
-    }
-    return "/courses";
+    if (!isStudent) return "/sign-in-sign-up";
+    return studentCoursesHref((profile.data as GetStudentProfileResult).level);
   })();
 
   return (

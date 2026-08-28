@@ -1,10 +1,12 @@
 import { cn } from "@/lib/utils";
 import { useId, useState } from "react";
 import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Heading } from "./heading";
 import { Paragraph } from "./paragraph";
-import { useNavigate } from "react-router-dom";
-import { ArrowUpRight } from "lucide-react";
+import { useGetProfile } from "@/generated/api";
+import { studentCoursesHref, profileStudentLevel } from "@/lib/student-level";
 
 type FeatureType = {
   title: string;
@@ -24,6 +26,8 @@ export const FeatureCard = ({
 }: FeatureCardPorps) => {
   const [hovered, setHovered] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { data: profile } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
 
   return (
     <div
@@ -37,7 +41,13 @@ export const FeatureCard = ({
       {...props}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => navigate(`/courses/levels/${feature.level}`)}
+      onClick={() =>
+        navigate(
+          studentLevel
+            ? studentCoursesHref(studentLevel)
+            : `/courses/levels/${feature.level}`
+        )
+      }
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-color2/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 

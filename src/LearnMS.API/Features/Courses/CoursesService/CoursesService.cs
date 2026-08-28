@@ -640,7 +640,9 @@ public sealed class CoursesService : ICoursesService
                 .Include(x => x.CourseEnrollments.Where(x => x.StudentId == command.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == command.LectureId).Take(1))
                 .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == command.StudentId))
-                .FirstOrDefaultAsync(x => x.Id == command.CourseId && x.IsPublished)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.CourseId && x.IsPublished && x.Level == student.Level
+                )
             ?? throw new ApiException(CoursesErrors.NotFound);
 
         if (course.Lectures.FirstOrDefault() is not { } lecture)
@@ -1112,6 +1114,14 @@ public sealed class CoursesService : ICoursesService
                 .FirstOrDefaultAsync(x => x.Id == command.ExamId && x.CourseId == command.CourseId)
             ?? throw new ApiException(ExamsErrors.NotFound);
 
+        EnsureStudentCourseLevel(
+            await _context.Courses
+                .Where(c => c.Id == command.CourseId)
+                .Select(c => c.Level)
+                .FirstOrDefaultAsync(),
+            student.Level
+        );
+
         student.BuyOrRetakeExam(exam);
 
         _context.Update(student);
@@ -1554,6 +1564,8 @@ public sealed class CoursesService : ICoursesService
         if (lecture.Quizzes.FirstOrDefault(x => x.Id == command.QuizId) is not { } quiz)
             throw new ApiException(QuizzesErrors.NotFound);
 
+        await EnsureStudentCanAccessCourseAsync(command.StudentId, course.Level);
+
         if (
             course.CourseEnrollments.Any(x => x.StudentId == command.StudentId && x.ExpiresAt > DateTime.UtcNow)
                 is false
@@ -1873,9 +1885,10 @@ public sealed class CoursesService : ICoursesService
                 .Include(x => x.Lectures)
                 .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Exams)
-                .FirstOrDefaultAsync(x =>
-                    x.Id == query.Id && x.IsPublished && x.Level == student.Level
-                ) ?? throw new ApiException(CoursesErrors.NotFound);
+                .FirstOrDefaultAsync(x => x.Id == query.Id && x.IsPublished)
+            ?? throw new ApiException(CoursesErrors.NotFound);
+
+        EnsureStudentCourseLevel(course.Level, student.Level);
 
         var courseExpiresAt = course
             .CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
@@ -2025,6 +2038,8 @@ public sealed class CoursesService : ICoursesService
         if (course.Lectures.FirstOrDefault(x => x.Id == query.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
 
+        EnsureStudentCourseLevel(course.Level, student.Level);
+
         if (
             course
             .Exams.Where(x => x.Order < lecture.Order)
@@ -2171,6 +2186,8 @@ public sealed class CoursesService : ICoursesService
 
         if (course.Lectures.FirstOrDefault(x => x.Id == query.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
+
+        await EnsureStudentCanAccessCourseAsync(query.StudentId, course.Level);
 
         if (lecture.Lessons.FirstOrDefault(x => x.Id == query.LessonId) is not { } lesson)
             throw new ApiException(LessonsErrors.NotFound);
@@ -2513,6 +2530,8 @@ public sealed class CoursesService : ICoursesService
         if (lecture.Quizzes.FirstOrDefault(x => x.Id == query.QuizId) is not { } quiz)
             throw new ApiException(QuizzesErrors.NotFound);
 
+        await EnsureStudentCanAccessCourseAsync(query.StudentId, course.Level);
+
         if (
             course.CourseEnrollments.Any(x =>
                     x.StudentId == query.StudentId && x.ExpiresAt > DateTime.UtcNow
@@ -2647,6 +2666,8 @@ public sealed class CoursesService : ICoursesService
                 )
                 .FirstOrDefaultAsync(x => x.Id == query.CourseId)
             ?? throw new ApiException(CoursesErrors.NotFound);
+
+        await EnsureStudentCanAccessCourseAsync(query.StudentId.Value, course.Level);
 
         var exam =
             course.Exams.FirstOrDefault(x => x.Id == query.Id)
@@ -2898,5 +2919,22 @@ public sealed class CoursesService : ICoursesService
         if (courseExpiresAt is null) return lectureExpiresAt;
         if (lectureExpiresAt is null) return courseExpiresAt;
         return courseExpiresAt > lectureExpiresAt ? courseExpiresAt : lectureExpiresAt;
+    }
+
+    private static void EnsureStudentCourseLevel(StudentLevel? courseLevel, StudentLevel studentLevel)
+    {
+        if (courseLevel != studentLevel)
+            throw new ApiException(CoursesErrors.WrongLevel);
+    }
+
+    private async Task EnsureStudentCanAccessCourseAsync(Guid studentId, StudentLevel? courseLevel)
+    {
+        var studentLevel = await _context.Set<Student>()
+            .Where(s => s.Id == studentId)
+            .Select(s => (StudentLevel?)s.Level)
+            .FirstOrDefaultAsync()
+            ?? throw new ApiException(ProfileErrors.NoStudentFound);
+
+        EnsureStudentCourseLevel(courseLevel, studentLevel);
     }
 }

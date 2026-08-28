@@ -23,9 +23,10 @@ import {
 import { cn } from "@/lib/utils";
 import { resolveEnrollment } from "@/lib/enrollment";
 import { useModalStore } from "@/store/use-modal-store";
-import { isInsufficientBalanceError } from "@/lib/error-utils";
+import { isInsufficientBalanceError, isWrongCourseLevelError } from "@/lib/error-utils";
+import { profileStudentLevel, studentCoursesHref } from "@/lib/student-level";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { FaClock, FaFilePdf, FaPlay, FaQuestionCircle, FaLock } from "react-icons/fa";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -36,7 +37,7 @@ const StudentLecturePage = () => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
 
-  const { isLoading: isLectureLoading, data: lectureData } = useGetLecture(
+  const { isLoading: isLectureLoading, data: lectureData, isError: isLectureError, error: lectureError } = useGetLecture(
     courseId!,
     lectureId!,
     {
@@ -46,14 +47,27 @@ const StudentLecturePage = () => {
     }
   );
 
-  const { isLoading: isCourseLoading, data: courseData } = useGetCourse(
+  const { isLoading: isCourseLoading, data: courseData, isError: isCourseError, error: courseError } = useGetCourse(
     courseId!
   );
+  const { data: profile } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
+
+  if (
+    studentLevel &&
+    (isWrongCourseLevelError(courseError) || isWrongCourseLevelError(lectureError))
+  ) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
+
   if (isLectureLoading || isCourseLoading) {
     return <Loading />;
   }
 
   if (!lectureData?.data || !courseData?.data) {
+    if (studentLevel && (isCourseError || isLectureError)) {
+      return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+    }
     return <Loading />;
   }
 

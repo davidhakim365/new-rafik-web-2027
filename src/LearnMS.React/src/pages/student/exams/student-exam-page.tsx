@@ -6,17 +6,22 @@ import {
   getGetProfileQueryKey,
   useBuyExam,
   useGetExam,
+  useGetProfile,
 } from "@/generated/api";
 import { toast } from "@/lib/utils";
 import { ExamSubmissionForm } from "@/pages/student/exams/exam-submission-form";
 import SubmittedExam from "@/pages/student/exams/submitted-exam";
+import { isWrongCourseLevelError } from "@/lib/error-utils";
+import { profileStudentLevel, studentCoursesHref } from "@/lib/student-level";
 import { useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 
 const StudentExamPage = () => {
   const { courseId, examId } = useParams();
 
-  const { data, isLoading } = useGetExam(courseId!, examId!);
+  const { data, isLoading, error } = useGetExam(courseId!, examId!);
+  const { data: profile } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
   const qc = useQueryClient();
   const { mutate: buyExam } = useBuyExam({
     mutation: {
@@ -36,6 +41,10 @@ const StudentExamPage = () => {
   });
 
   const exam = data?.data;
+
+  if (studentLevel && isWrongCourseLevelError(error)) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
 
   if (isLoading || exam?.$type === "ExamDashboard") {
     return (

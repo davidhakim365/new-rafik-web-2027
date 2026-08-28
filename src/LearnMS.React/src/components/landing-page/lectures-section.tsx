@@ -1,4 +1,4 @@
-import { useGetImportantLectures, useGetLatestLectures } from "@/generated/api";
+import { useGetImportantLectures, useGetLatestLectures, useGetProfile } from "@/generated/api";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { BookOpen, Brain, Users } from "lucide-react";
 import { LectureItem, StudentLevel } from "@/generated/model";
+import { profileStudentLevel } from "@/lib/student-level";
 import {
   Select,
   SelectContent,
@@ -297,11 +298,20 @@ const ImportantLecturesSection = () => {
 };
 
 const LatestLecturesSection = () => {
-  const [level, setLevel] = useState<StudentLevel | undefined>();
+  const { data: profile } = useGetProfile();
+  const lockedLevel = profileStudentLevel(profile);
+  const [level, setLevel] = useState<StudentLevel | undefined>(lockedLevel);
   const [courseId, setCourseId] = useState<string | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (lockedLevel) {
+      setLevel(lockedLevel);
+      setCourseId(undefined);
+    }
+  }, [lockedLevel]);
 
   const { data: coursesData } = useCoursesQuery();
 
@@ -395,6 +405,7 @@ const LatestLecturesSection = () => {
             </SubHeading>
           </div>
           <div className="flex flex-col items-center justify-center gap-4 mb-16 md:flex-row">
+            {!lockedLevel && (
             <Select
               value={level ?? "ALL"}
               onValueChange={(value) => {
@@ -429,6 +440,7 @@ const LatestLecturesSection = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
+            )}
 
             {level && (
               <Select
@@ -544,6 +556,7 @@ const LatestLecturesSection = () => {
           viewport={{ once: true, amount: 0.2 }}
           className="flex flex-col items-center justify-center gap-4 mb-16 md:flex-row"
         >
+          {!lockedLevel && (
           <Select
             value={level ?? "ALL"}
             onValueChange={(value) => {
@@ -578,6 +591,7 @@ const LatestLecturesSection = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
+          )}
 
           {level && (
             <Select
@@ -744,12 +758,20 @@ function FeaturedLecture(props: { lecture: LectureItem }) {
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-center">
-          <Link to={`/courses/${props.lecture.courseId}`}>
-            <FlowButton text={t("importantLectures.goToCourse")} />
-          </Link>
+          <GoToCourseButton courseId={props.lecture.courseId} />
         </CardFooter>
       </Card>
     </motion.div>
+  );
+}
+
+function GoToCourseButton({ courseId }: { courseId: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <Link to={`/courses/${courseId}`}>
+      <FlowButton text={t("importantLectures.goToCourse")} />
+    </Link>
   );
 }
 

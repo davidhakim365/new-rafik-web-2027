@@ -1,5 +1,15 @@
 import { ApiError } from "@/lib/axiosCustomInstant";
 
+export function isWrongCourseLevelError(error: unknown): boolean {
+  const code =
+    error instanceof ApiError
+      ? error.code
+      : error && typeof error === "object" && "code" in error
+        ? String((error as { code?: string }).code ?? "")
+        : "";
+  return code === "course/wrong-level";
+}
+
 export function isAlreadyPurchasedError(error: unknown): boolean {
   if (error instanceof ApiError) {
     const code = error.code?.toLowerCase() || "";

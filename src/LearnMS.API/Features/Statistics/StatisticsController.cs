@@ -13,7 +13,7 @@ namespace LearnMS.API.Features.Statistics;
 [ApiController]
 [Route("api/statistics")]
 [Tags("Statistics")]
-public class StatisticsController(AppDbContext context) : ControllerBase
+public class StatisticsController(AppDbContext context, ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpGet("incomes")]
     [SwaggerOperation(OperationId = "GetIncomesStatistics")]
@@ -200,6 +200,7 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         StudentLevel? studentLevel)
     {
         var lastMonth = DateTime.UtcNow.AddMonths(-1);
+        studentLevel = await ResolveStudentLevelAsync(studentLevel);
 
         var result = await context
             .Lectures
@@ -224,9 +225,12 @@ public class StatisticsController(AppDbContext context) : ControllerBase
     [SwaggerOperation(OperationId = "GetImportantLectures")]
     public async Task<ApiWrapper.Success<List<LectureItem>>> GetImportantLectures()
     {
+        var studentLevel = await ResolveStudentLevelAsync(null);
+
         var result = await context
             .Lectures
-            .Where(l => l.IsPublished && l.Course.IsPublished && l.IsImportant)
+            .Where(l => l.IsPublished && l.Course.IsPublished && l.IsImportant &&
+                        (studentLevel == null || l.Course.Level == studentLevel))
             .OrderByDescending(l => l.CreatedAt)
             .Select(l => new LectureItem(l.Id, l.CourseId, l.Title, l.Course.Title, l.ImageUrl,
                 l.Lessons.Count,
@@ -240,6 +244,18 @@ public class StatisticsController(AppDbContext context) : ControllerBase
         };
     }
 
+
+    private async Task<StudentLevel?> ResolveStudentLevelAsync(StudentLevel? requested)
+    {
+        var user = await currentUserService.GetUserAsync();
+        if (user?.Role != UserRole.Student)
+            return requested;
+
+        return await context.Set<Student>()
+            .Where(s => s.Id == user.Id || s.Accounts.Any(a => a.Id == user.Id))
+            .Select(s => (StudentLevel?)s.Level)
+            .FirstOrDefaultAsync();
+    }
 
     private async Task<long> GetTotalLectureOfflineIncomeAsync(Guid lectureId, GetLectureStatisticsQuery query)
     {

@@ -15,9 +15,12 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { resolveEnrollment } from "@/lib/enrollment";
+import { useGetProfile } from "@/generated/api";
+import { isWrongCourseLevelError } from "@/lib/error-utils";
+import { profileStudentLevel, studentCoursesHref } from "@/lib/student-level";
 
 const StudentLessonPage = () => {
   const { lessonId, lectureId, courseId } = useParams();
@@ -28,9 +31,15 @@ const StudentLessonPage = () => {
     lectureId: lectureId!,
     courseId: courseId!,
   });
+  const { data: profile } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
 
   const startLessonMutation = useStartLessonMutation();
   const renewLessonMutation = useRenewLessonMutation();
+
+  if (studentLevel && isWrongCourseLevelError(error)) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
 
   if (isLoading) {
     return (

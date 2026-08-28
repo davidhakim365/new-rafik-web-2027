@@ -22,16 +22,18 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         [Required] StudentLevel level)
     {
         CurrentUser? user = await currentUserService.GetUserAsync();
-        Guid? studentId = user == null
+        var student = user == null
             ? null
             : await context.Students
                 .AsNoTracking()
                 .Where(s => s.Id == user.Id || s.Accounts.Any(a => a.Id == user.Id))
-                .Select(s => (Guid?)s.Id)
+                .Select(s => new { s.Id, s.Level })
                 .FirstOrDefaultAsync();
+        Guid? studentId = student?.Id;
+        var effectiveLevel = student?.Level ?? level;
 
         var result = await context.Courses
-            .Where(c => c.Level == level && c.IsPublished)
+            .Where(c => c.Level == effectiveLevel && c.IsPublished)
             .Select(c => new
                 {
                     c.Id,
@@ -90,7 +92,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             : await context.Students
                 .AsNoTracking()
                 .Where(s => s.Id == user.Id || s.Accounts.Any(a => a.Id == user.Id))
-                .Select(s => new { s.Id, s.FullName, s.StudentCode })
+                .Select(s => new { s.Id, s.FullName, s.StudentCode, s.Level })
                 .FirstOrDefaultAsync();
         Guid? studentId = studentInfo?.Id;
 
@@ -214,6 +216,9 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         {
             throw new ApiException(CoursesErrors.NotFound);
         }
+
+        if (studentInfo is not null && course.Level != studentInfo.Level)
+            throw new ApiException(CoursesErrors.WrongLevel);
 
         DateTime? courseExpires = course.ExpiresAt;
 

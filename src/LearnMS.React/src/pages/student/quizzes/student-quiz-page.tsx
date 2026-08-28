@@ -1,13 +1,21 @@
 import Loading from "@/components/loading/loading";
-import { useGetQuiz } from "@/generated/api";
+import { useGetProfile, useGetQuiz } from "@/generated/api";
+import { isWrongCourseLevelError } from "@/lib/error-utils";
+import { profileStudentLevel, studentCoursesHref } from "@/lib/student-level";
 import { QuizSubmissionForm } from "@/pages/student/quizzes/quiz-submission-form";
 import SubmittedQuiz from "@/pages/student/quizzes/submitted-quiz";
-import { useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 
 const StudentQuizPage = () => {
   const { courseId, lectureId, quizId } = useParams();
 
-  const { data: quiz, isLoading } = useGetQuiz(courseId!, lectureId!, quizId!);
+  const { data: quiz, isLoading, error } = useGetQuiz(courseId!, lectureId!, quizId!);
+  const { data: profile } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
+
+  if (studentLevel && isWrongCourseLevelError(error)) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
 
   if (isLoading || quiz?.data!.$type === "QuizDashboard") {
     return (

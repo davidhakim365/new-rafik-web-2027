@@ -23,6 +23,7 @@ import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { FlowButton } from "./ui/flow-button";
 import { Heading } from "./ui/heading";
 import { useLocation } from "react-router-dom";
+import { studentCoursesHref } from "@/lib/student-level";
 import type { GetStudentProfileResult } from "@/generated/model";
 
 interface NavBarProps {
@@ -50,14 +51,7 @@ const NavBar: React.FC<NavBarProps> = ({
 
   const coursesHref = (() => {
     if (!isStudent) return "/sign-in-sign-up";
-    const level = (profile!.data as GetStudentProfileResult).level;
-    if (level) {
-      const match = /Level(\d+)/.exec(level);
-      if (match && match[1] !== undefined) {
-        return `/courses/levels/${match[1]}`;
-      }
-    }
-    return "/courses";
+    return studentCoursesHref((profile!.data as GetStudentProfileResult).level);
   })();
 
   const links = useMemo(() => {

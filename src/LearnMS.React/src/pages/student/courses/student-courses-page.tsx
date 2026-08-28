@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/grid-feature-cards";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 
 import CoursesBackground from "@/pages/student/courses/courses-background";
 import { Heading } from "@/components/ui/heading";
@@ -20,21 +20,52 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useGetStudentCourses } from "@/generated/api";
+import { useGetStudentCourses, useGetProfile } from "@/generated/api";
 import { StudentCourseDto, StudentLevel } from "@/generated/model";
 import { CoursesGridSkeleton } from "@/components/ui/course-skeleton";
 import { resolveEnrollment } from "@/lib/enrollment";
+import {
+  profileStudentLevel,
+  studentCoursesHref,
+  studentLevelNumber,
+} from "@/lib/student-level";
 
 export const StudentCoursesPage = () => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
 
   const { levelNum } = useParams();
-  const level = levelNum ? (`Level${levelNum}` as StudentLevel) : undefined;
+  const { data: profile, isPending: isProfilePending } = useGetProfile();
+  const studentLevel = profileStudentLevel(profile);
+  const studentLevelNum = studentLevelNumber(studentLevel);
+  const requestedLevel = levelNum
+    ? (`Level${levelNum}` as StudentLevel)
+    : undefined;
+  const level = studentLevel ?? requestedLevel ?? "Level0";
 
-  const { data, isLoading } = useGetStudentCourses({
-    level: level || "Level0",
-  });
+  const { data, isLoading } = useGetStudentCourses(
+    {
+      level,
+    },
+    {
+      query: { enabled: !isProfilePending },
+    }
+  );
+
+  if (isProfilePending) {
+    return (
+      <div className="z-10 flex flex-col w-full h-full overflow-x-hidden bg-coursePage">
+        <div className="flex items-center justify-center flex-grow p-12">
+          <CoursesGridSkeleton count={8} />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (studentLevelNum && levelNum !== studentLevelNum) {
+    return <Navigate to={studentCoursesHref(studentLevel)} replace />;
+  }
 
   const getLevelDisplayName = (level: string) => {
     switch (level) {

@@ -4,6 +4,7 @@ import { FaFacebook, FaTiktok, FaWhatsapp, FaYoutube } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useGetProfile } from "@/generated/api";
+import { studentCoursesHref } from "@/lib/student-level";
 import type { GetStudentProfileResult } from "@/generated/model";
 import { Heading } from "./ui/heading";
 import { Atom } from "lucide-react";
@@ -42,14 +43,7 @@ const Footer = () => {
   const coursesHref = (() => {
     const isStudent = profile?.data && profile.data.$type === "GetStudentProfileResult";
     if (!isStudent) return "/sign-in-sign-up";
-    const level = (profile!.data as GetStudentProfileResult).level;
-    if (level) {
-      const match = /Level(\d+)/.exec(level);
-      if (match && match[1] !== undefined) {
-        return `/courses/levels/${match[1]}`;
-      }
-    }
-    return "/courses";
+    return studentCoursesHref((profile!.data as GetStudentProfileResult).level);
   })();
 
   const navLinks = [
