@@ -1515,21 +1515,20 @@ public sealed class CoursesService : ICoursesService
 
     public async Task ExecuteAsync(RetakeQuizCommand command)
     {
-        var quiz =
-            await _context
-                .Set<Quiz>()
-                .Include(x => x.QuizSubmissions.Where(x => x.StudentId == command.StudentId))
-                .Include(x => x.QuizAttempts.Where(x => x.StudentId == command.StudentId))
-                .FirstOrDefaultAsync(x =>
-                    x.Id == command.QuizId
-                    && x.LectureId == command.LectureId
-                    && x.Lecture.CourseId == command.CourseId
-                ) ?? throw new ApiException(QuizzesErrors.NotFound);
+        var quizExists = await _context.Set<Quiz>().AnyAsync(x =>
+            x.Id == command.QuizId
+            && x.LectureId == command.LectureId
+            && x.Lecture.CourseId == command.CourseId);
+        if (!quizExists)
+            throw new ApiException(QuizzesErrors.NotFound);
 
-        quiz.QuizSubmissions.RemoveAll(x => x.StudentId == command.StudentId);
-        quiz.QuizAttempts.RemoveAll(x => x.StudentId == command.StudentId);
-
-        await _context.SaveChangesAsync();
+        // Delete directly so a filtered Include cannot leave the expired timer in place.
+        await _context.Set<QuizSubmission>()
+            .Where(x => x.QuizId == command.QuizId && x.StudentId == command.StudentId)
+            .ExecuteDeleteAsync();
+        await _context.Set<QuizAttempt>()
+            .Where(x => x.QuizId == command.QuizId && x.StudentId == command.StudentId)
+            .ExecuteDeleteAsync();
     }
 
     public async Task<StartQuizResult> ExecuteAsync(StartQuizCommand command)
@@ -2531,6 +2530,12 @@ public sealed class CoursesService : ICoursesService
         if (submission is null)
         {
             var attempt = quiz.QuizAttempts.FirstOrDefault(x => x.StudentId == query.StudentId);
+            // Only resume a timer that is still running. An expired leftover must not
+            // auto-submit a blank retake; the student starts a new attempt instead.
+            var activeExpiresAt =
+                attempt?.ExpiresAt is { } expiresAt && expiresAt > DateTime.UtcNow
+                    ? expiresAt
+                    : (DateTime?)null;
 
             return new QuizNotAnswered
             {
@@ -2542,8 +2547,7 @@ public sealed class CoursesService : ICoursesService
                 EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(quiz.Questions),
                 PassCount = quiz.PassCount,
                 ExpiryMinutes = quiz.ExpiryMinutes,
-                // Timer starts only after student confirms via StartQuiz
-                ExpiresAt = attempt?.ExpiresAt
+                ExpiresAt = activeExpiresAt
             };
         }
 

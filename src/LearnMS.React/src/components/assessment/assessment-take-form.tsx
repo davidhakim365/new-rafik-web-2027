@@ -115,6 +115,12 @@ function formatTime(ms: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+function isFutureDate(value: string | Date | null | undefined) {
+  if (value == null || value === "") return false;
+  const t = new Date(value).getTime();
+  return Number.isFinite(t) && t > Date.now();
+}
+
 function collectAnswers(
   questions: TakeQuestion[],
   values: Record<string, unknown>
@@ -139,27 +145,33 @@ export function AssessmentTakeForm({
   onConfirmStart,
   onSubmit,
 }: Props) {
-  const isTimed = expiryMinutes > 0 || !!expiresAtProp;
+  const isTimed = expiryMinutes > 0 || isFutureDate(expiresAtProp);
   const [started, setStarted] = useState(
-    () => !requireStartConfirm || !isTimed || !!expiresAtProp
+    () => !requireStartConfirm || !isTimed || isFutureDate(expiresAtProp)
   );
   const [starting, setStarting] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | Date | null | undefined>(
-    expiresAtProp
+    () => (isFutureDate(expiresAtProp) ? expiresAtProp : null)
   );
   const [index, setIndex] = useState(0);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const autoSubmitted = useRef(false);
+  const seenRemaining = useRef(false);
   const onSubmitRef = useRef(onSubmit);
   const questionsRef = useRef(questions);
   onSubmitRef.current = onSubmit;
   questionsRef.current = questions;
 
   useEffect(() => {
-    setExpiresAt(expiresAtProp);
-    if (expiresAtProp) setStarted(true);
-  }, [expiresAtProp]);
+    if (isFutureDate(expiresAtProp)) {
+      setExpiresAt(expiresAtProp);
+      setStarted(true);
+      return;
+    }
+    setExpiresAt(null);
+    if (requireStartConfirm) setStarted(false);
+  }, [expiresAtProp, requireStartConfirm]);
 
   const schema = useMemo(() => {
     const shape: Record<string, z.ZodTypeAny> = {};
@@ -195,7 +207,10 @@ export function AssessmentTakeForm({
     const tick = () => {
       const left = end - Date.now();
       setRemainingMs(Math.max(0, left));
-      if (left <= 0 && !autoSubmitted.current) {
+      if (left > 0) seenRemaining.current = true;
+      // Only auto-submit after this session actually had time left. Arriving
+      // already expired (retake) must not submit a blank quiz.
+      if (left <= 0 && !autoSubmitted.current && seenRemaining.current) {
         autoSubmitted.current = true;
         setTimedOut(true);
         formRef.current.clearErrors();
@@ -230,10 +245,15 @@ export function AssessmentTakeForm({
   const handleStart = async () => {
     setStarting(true);
     try {
+      autoSubmitted.current = false;
+      seenRemaining.current = false;
+      setTimedOut(false);
       const result = await onConfirmStart?.();
-      if (result) setExpiresAt(result);
-      else if (expiryMinutes > 0 && !expiresAt) {
+      if (isFutureDate(result)) setExpiresAt(result as string | Date);
+      else if (expiryMinutes > 0) {
         setExpiresAt(new Date(Date.now() + expiryMinutes * 60_000).toISOString());
+      } else {
+        setExpiresAt(null);
       }
       setStarted(true);
     } finally {

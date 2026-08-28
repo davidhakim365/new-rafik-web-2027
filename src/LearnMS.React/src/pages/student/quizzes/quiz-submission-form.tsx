@@ -81,7 +81,7 @@ export function QuizSubmissionForm({
         const res = await api.post(
           `/api/courses/${courseId}/lectures/${lectureId}/quizzes/${quiz.id}/start`
         );
-        return res.data?.data?.expiresAt ?? null;
+        return res.data?.data?.expiresAt ?? res.data?.expiresAt ?? null;
       }}
       onSubmit={(questionAnswers) => {
         submitQuiz(

@@ -20,7 +20,7 @@ const StudentQuizPage = () => {
   if (quiz?.data?.$type === "QuizNotAnswered") {
     return (
       <QuizSubmissionForm
-        key={`${quiz.data.id}-${(quiz.data as { expiresAt?: string | null }).expiresAt ?? "new"}`}
+        key={`${quiz.data.id}-attempt`}
         courseId={courseId!}
         lectureId={lectureId!}
         quiz={quiz.data!}
