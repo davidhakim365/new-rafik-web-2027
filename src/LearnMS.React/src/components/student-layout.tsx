@@ -1,4 +1,4 @@
-import PageFallBackOnError from "@/components/fallback-on-error";
+import AppErrorFallback from "@/components/app-error-fallback";
 import NavBar from "@/components/navbar";
 import { StudentSecurityLock } from "@/components/security/student-security-lock";
 import { ErrorBoundary } from "react-error-boundary";
@@ -13,7 +13,7 @@ const StudentLayout = () => {
       <NavBar />
       <ErrorBoundary
         resetKeys={[location.key]}
-        FallbackComponent={PageFallBackOnError}
+        FallbackComponent={AppErrorFallback}
       >
         <Outlet />
       </ErrorBoundary>

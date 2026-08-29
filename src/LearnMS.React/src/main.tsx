@@ -19,11 +19,13 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      throwOnError: true,
+      // Background refetch failures (tablet sleep, flaky network) must not
+      // unmount an in-progress quiz/exam. Only throw when we have nothing to show.
+      throwOnError: (_error, query) => query.state.data === undefined,
     },
     mutations: {
       retry: false,
-      throwOnError: true,
+      throwOnError: false,
     },
   },
   queryCache: new QueryCache({

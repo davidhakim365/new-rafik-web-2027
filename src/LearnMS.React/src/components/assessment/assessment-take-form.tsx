@@ -115,6 +115,77 @@ function formatTime(ms: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+function CountdownBanner({
+  expiresAt,
+  expiryMinutes,
+  timedOut,
+  isSubmitting,
+  onTick,
+  onTimeout,
+}: {
+  expiresAt: string | Date;
+  expiryMinutes: number;
+  timedOut: boolean;
+  isSubmitting: boolean;
+  onTick: (leftMs: number) => void;
+  onTimeout: () => void;
+}) {
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [urgent, setUrgent] = useState(false);
+  const onTickRef = useRef(onTick);
+  const onTimeoutRef = useRef(onTimeout);
+  onTickRef.current = onTick;
+  onTimeoutRef.current = onTimeout;
+
+  useEffect(() => {
+    const end = new Date(expiresAt).getTime();
+    if (!Number.isFinite(end)) return;
+
+    const tick = () => {
+      const left = end - Date.now();
+      onTickRef.current(left);
+      if (left > 0) {
+        if (labelRef.current && !timedOut) {
+          labelRef.current.textContent = `Time left: ${formatTime(left)}`;
+        }
+        const nextUrgent =
+          left <= 60_000 ||
+          (expiryMinutes > 0 && left <= expiryMinutes * 60_000 * 0.2);
+        setUrgent((prev) => (prev === nextUrgent ? prev : nextUrgent));
+        return;
+      }
+      if (labelRef.current) {
+        labelRef.current.textContent = isSubmitting
+          ? "Time is up — submitting your answers..."
+          : "Time is up — submitting unanswered questions as blank";
+      }
+      setUrgent(true);
+      onTimeoutRef.current();
+    };
+
+    tick();
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, [expiresAt, expiryMinutes, timedOut, isSubmitting]);
+
+  return (
+    <div
+      translate="no"
+      className={cn(
+        "sticky top-2 z-20 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-lg font-bold shadow-md transition-colors",
+        timedOut || urgent
+          ? "animate-pulse bg-red-600 text-white"
+          : "bg-foreground text-background"
+      )}
+      role="timer"
+      aria-live="off"
+    >
+      <Clock className="h-5 w-5" />
+      <span ref={labelRef} />
+    </div>
+  );
+}
+
 function isFutureDate(value: string | Date | null | undefined) {
   if (value == null || value === "") return false;
   const t = new Date(value).getTime();
@@ -154,7 +225,6 @@ export function AssessmentTakeForm({
     () => (isFutureDate(expiresAtProp) ? expiresAtProp : null)
   );
   const [index, setIndex] = useState(0);
-  const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const autoSubmitted = useRef(false);
   const seenRemaining = useRef(false);
@@ -198,39 +268,18 @@ export function AssessmentTakeForm({
   const formRef = useRef(form);
   formRef.current = form;
 
-  useEffect(() => {
-    if (!started || !expiresAt) {
-      setRemainingMs(null);
-      return;
-    }
-    const end = new Date(expiresAt).getTime();
-    const tick = () => {
-      const left = end - Date.now();
-      setRemainingMs(Math.max(0, left));
-      if (left > 0) seenRemaining.current = true;
-      // Only auto-submit after this session actually had time left. Arriving
-      // already expired (retake) must not submit a blank quiz.
-      if (left <= 0 && !autoSubmitted.current && seenRemaining.current) {
-        autoSubmitted.current = true;
-        setTimedOut(true);
-        formRef.current.clearErrors();
-        const values = formRef.current.getValues() as Record<string, unknown>;
-        onSubmitRef.current(collectAnswers(questionsRef.current, values));
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [started, expiresAt]);
+  const handleTimeout = () => {
+    if (autoSubmitted.current || !seenRemaining.current) return;
+    autoSubmitted.current = true;
+    setTimedOut(true);
+    formRef.current.clearErrors();
+    const values = formRef.current.getValues() as Record<string, unknown>;
+    onSubmitRef.current(collectAnswers(questionsRef.current, values));
+  };
 
   const current = questions[index];
   const total = questions.length;
   const progress = total ? ((index + 1) / total) * 100 : 0;
-  const urgent =
-    remainingMs != null &&
-    (remainingMs <= 60_000 ||
-      (expiryMinutes > 0 && remainingMs <= expiryMinutes * 60_000 * 0.2));
-
   const locked = timedOut || !!isSubmitting;
 
   const submitAll = form.handleSubmit((data) => {
@@ -304,7 +353,10 @@ export function AssessmentTakeForm({
   }
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col bg-gradient-to-b from-muted/40 to-background px-3 py-4 sm:px-6">
+    <div
+      translate="no"
+      className="notranslate mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col bg-gradient-to-b from-muted/40 to-background px-3 py-4 sm:px-6"
+    >
       <header className="mb-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -319,26 +371,17 @@ export function AssessmentTakeForm({
           </div>
         </div>
 
-        {remainingMs != null && (
-          <div
-            className={cn(
-              "sticky top-2 z-20 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-lg font-bold shadow-md transition-colors",
-              timedOut || urgent
-                ? "animate-pulse bg-red-600 text-white"
-                : "bg-foreground text-background"
-            )}
-            role="timer"
-            aria-live="polite"
-          >
-            <Clock className="h-5 w-5" />
-            <span>
-              {timedOut
-                ? isSubmitting
-                  ? "Time is up — submitting your answers..."
-                  : "Time is up — submitting unanswered questions as blank"
-                : `Time left: ${formatTime(remainingMs)}`}
-            </span>
-          </div>
+        {started && expiresAt && (
+          <CountdownBanner
+            expiresAt={expiresAt}
+            expiryMinutes={expiryMinutes}
+            timedOut={timedOut}
+            isSubmitting={!!isSubmitting}
+            onTick={(left) => {
+              if (left > 0) seenRemaining.current = true;
+            }}
+            onTimeout={handleTimeout}
+          />
         )}
 
         <div className="h-2 overflow-hidden rounded-full bg-muted">

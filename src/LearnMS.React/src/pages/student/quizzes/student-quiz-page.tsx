@@ -9,7 +9,18 @@ import { Navigate, useParams } from "react-router-dom";
 const StudentQuizPage = () => {
   const { courseId, lectureId, quizId } = useParams();
 
-  const { data: quiz, isLoading, error } = useGetQuiz(courseId!, lectureId!, quizId!);
+  const { data: quiz, isLoading, error } = useGetQuiz(
+    courseId!,
+    lectureId!,
+    quizId!,
+    {
+      query: {
+        throwOnError: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+      },
+    }
+  );
   const { data: profile } = useGetProfile();
   const studentLevel = profileStudentLevel(profile);
 
@@ -17,7 +28,15 @@ const StudentQuizPage = () => {
     return <Navigate to={studentCoursesHref(studentLevel)} replace />;
   }
 
-  if (isLoading || quiz?.data!.$type === "QuizDashboard") {
+  if (isLoading && !quiz?.data) {
+    return (
+      <div className='flex items-center justify-center w-full h-full'>
+        <Loading />
+      </div>
+    );
+  }
+
+  if (quiz?.data?.$type === "QuizDashboard") {
     return (
       <div className='flex items-center justify-center w-full h-full'>
         <Loading />
@@ -36,7 +55,15 @@ const StudentQuizPage = () => {
     );
   }
 
-  return <SubmittedQuiz quiz={quiz?.data!} />;
+  if (!quiz?.data) {
+    return (
+      <div className='flex items-center justify-center w-full h-full'>
+        <Loading />
+      </div>
+    );
+  }
+
+  return <SubmittedQuiz quiz={quiz.data} />;
 };
 
 export default StudentQuizPage;

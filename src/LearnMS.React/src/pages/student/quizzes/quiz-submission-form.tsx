@@ -53,6 +53,7 @@ export function QuizSubmissionForm({
           invalidateQuiz();
         }
       },
+      throwOnError: false,
     },
   });
 

@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
-import PageFallBackOnError from "@/components/fallback-on-error";
+import AppErrorFallback from "@/components/app-error-fallback";
 import RequireAuth from "@/components/require-auth";
 import PasswordResetPage from "@/pages/auth/password-reset-page";
 import SignInSignUpPage from "@/pages/auth/sign-in-sign-up-page";
@@ -60,7 +60,7 @@ function App() {
             console.log(error);
           }}
           onReset={reset}
-          FallbackComponent={PageFallBackOnError}
+          FallbackComponent={AppErrorFallback}
         >
           <Routes>
             <Route path="/sign-in-sign-up" element={<SignInSignUpPage />} />

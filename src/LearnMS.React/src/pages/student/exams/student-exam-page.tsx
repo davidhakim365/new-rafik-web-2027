@@ -19,7 +19,13 @@ import { Navigate, useParams } from "react-router-dom";
 const StudentExamPage = () => {
   const { courseId, examId } = useParams();
 
-  const { data, isLoading, error } = useGetExam(courseId!, examId!);
+  const { data, isLoading, error } = useGetExam(courseId!, examId!, {
+    query: {
+      throwOnError: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  });
   const { data: profile } = useGetProfile();
   const studentLevel = profileStudentLevel(profile);
   const qc = useQueryClient();
