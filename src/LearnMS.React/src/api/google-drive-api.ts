@@ -9,6 +9,7 @@ export type GoogleDriveStatus = {
   refreshToken?: string | null;
   folderId?: string | null;
   folderName?: string | null;
+  refreshTokenFromEnv?: boolean;
 };
 
 export type GoogleDriveFolder = {

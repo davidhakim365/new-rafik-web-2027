@@ -438,18 +438,20 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           </div>
           {driveStatus?.canUpload ? (
             <p className="text-xs text-muted-foreground">
-              {driveStatus.mode === "user" && driveStatus.email
-                ? `Connected as ${driveStatus.email}`
-                : driveStatus.sharedDriveId
-                  ? `Shared Drive ${driveStatus.sharedDriveId}`
-                  : "Ready for uploads."}
+              {driveStatus.refreshTokenFromEnv
+                ? "Using the refresh token from env. Host restarts stay connected — do not reconnect unless Google revoked that token."
+                : driveStatus.mode === "user" && driveStatus.email
+                  ? `Connected as ${driveStatus.email}`
+                  : driveStatus.sharedDriveId
+                    ? `Shared Drive ${driveStatus.sharedDriveId}`
+                    : "Ready for uploads."}
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
               Connect Gmail once, then choose the folder for PDFs.
             </p>
           )}
-          {driveStatus?.refreshToken && (
+          {driveStatus?.refreshToken && !driveStatus.refreshTokenFromEnv && (
             <details className="rounded-md bg-muted/40 p-2">
               <summary className="cursor-pointer text-xs text-muted-foreground">
                 Refresh token

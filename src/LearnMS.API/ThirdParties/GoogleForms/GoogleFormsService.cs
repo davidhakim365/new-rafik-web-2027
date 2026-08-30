@@ -47,7 +47,8 @@ public sealed record GoogleDriveConnectionStatus(
     string Mode,
     string? RefreshToken,
     string? FolderId = null,
-    string? FolderName = null
+    string? FolderName = null,
+    bool RefreshTokenFromEnv = false
 );
 
 public sealed class GoogleFormsService : IGoogleFormsService
@@ -278,12 +279,15 @@ public sealed class GoogleFormsService : IGoogleFormsService
         var email = local.Email;
 
         var refreshToken = EffectiveRefreshToken(local);
+        var fromEnv = HasEnvRefreshToken();
         var folderId = EffectiveFolderId(local);
         var folderName = string.IsNullOrWhiteSpace(local.FolderName)
             ? (string.IsNullOrWhiteSpace(folderId) ? "My Drive" : folderId)
             : local.FolderName;
+        // When env already has the token, do not send a local/rotated value to the UI.
+        var tokenForClient = fromEnv ? null : refreshToken;
         if (!string.IsNullOrWhiteSpace(refreshToken))
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", refreshToken, folderId, folderName);
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", tokenForClient, folderId, folderName, fromEnv);
         if (HasImpersonateUser())
             return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, _config.ImpersonateUser, sharedDriveId, "impersonate", null, folderId, folderName);
         if (!string.IsNullOrWhiteSpace(sharedDriveId) && IsConfigured)
@@ -333,7 +337,8 @@ public sealed class GoogleFormsService : IGoogleFormsService
         }
 
         var local = _driveSettings.Read();
-        local.RefreshToken = token.RefreshToken;
+        if (!HasEnvRefreshToken())
+            local.RefreshToken = token.RefreshToken;
         local.AccessToken = token.AccessToken;
         local.AccessTokenIssuedUtc = DateTime.UtcNow;
 
@@ -348,7 +353,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
         var about = await aboutRequest.ExecuteAsync(cancellationToken);
         local.Email = about.User?.EmailAddress;
         _driveSettings.Write(local);
-        return local.RefreshToken!;
+        return token.RefreshToken!;
     }
 
     public void SaveSharedDriveId(string? sharedDriveId)
@@ -500,7 +505,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
             throw new ApiException(
                 new ApiError(
                     "google-drive/not-connected",
-                    "Google Drive is not connected yet. Open Add PDF and click Connect Google account, then sign in with your Gmail. Setting env vars alone is not enough.",
+                    "Google Drive is not connected yet. Set GoogleForms:DriveRefreshToken in env, or open Add PDF and click Connect Gmail once.",
                     StatusCodes.Status400BadRequest
                 )
             );
@@ -565,8 +570,17 @@ public sealed class GoogleFormsService : IGoogleFormsService
                 await credential.RefreshTokenAsync(cancellationToken);
                 local.AccessToken = credential.Token.AccessToken;
                 local.AccessTokenIssuedUtc = DateTime.UtcNow;
-                if (!string.IsNullOrWhiteSpace(credential.Token.RefreshToken))
-                    local.RefreshToken = credential.Token.RefreshToken;
+                // Keep the env refresh token stable. Google may echo a token on
+                // access-token refresh; that must not replace the value in env.
+                if (!HasEnvRefreshToken())
+                {
+                    var nextRefresh = credential.Token.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(nextRefresh)
+                        && !string.Equals(local.RefreshToken, nextRefresh, StringComparison.Ordinal))
+                    {
+                        local.RefreshToken = nextRefresh;
+                    }
+                }
                 _driveSettings.Write(local);
             }
 
@@ -613,8 +627,11 @@ public sealed class GoogleFormsService : IGoogleFormsService
         );
     }
 
+    private bool HasEnvRefreshToken() =>
+        !string.IsNullOrWhiteSpace(_config.DriveRefreshToken) && _config.DriveRefreshToken != "*";
+
     private string? EffectiveRefreshToken(GoogleDriveLocalSettings local) =>
-        FirstNonEmpty(local.RefreshToken, _config.DriveRefreshToken);
+        HasEnvRefreshToken() ? _config.DriveRefreshToken : FirstNonEmpty(local.RefreshToken);
 
     private string? EffectiveFolderId(GoogleDriveLocalSettings local)
     {
