@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/axiosCustomInstant";
+import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { normalizeScannedCode } from "@/lib/scan-code";
 import { toast } from "@/lib/utils";
-import Quagga, { QuaggaJSResultObject } from "@ericblade/quagga2";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Apple, ArrowLeft, CheckCircle, Clock, Loader2, ScanLine, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -50,7 +50,6 @@ function resolveCooldownEndsAt(found: StudentAppleLookup): number | null {
 
 const StudentApplesScannerPage = () => {
   const navigate = useNavigate();
-  const scannerRef = useRef<HTMLDivElement>(null);
   const processingRef = useRef(false);
   const lastCodeRef = useRef("");
   const lastScanTimeRef = useRef(0);
@@ -177,6 +176,9 @@ const StudentApplesScannerPage = () => {
     [form, lookupMutation, resumeScanning]
   );
 
+  const { scannerRef, cameraStatus, cameraError, retryCamera } =
+    useBarcodeScanner(lookupCode);
+
   const clearStudent = useCallback(() => {
     setStudent(null);
     setCooldownEndsAt(null);
@@ -221,71 +223,12 @@ const StudentApplesScannerPage = () => {
     );
   };
 
-  useEffect(() => {
-    if (!scannerRef.current) return;
-
-    let mounted = true;
-
-    Quagga.init(
-      {
-        inputStream: {
-          type: "LiveStream",
-          target: scannerRef.current,
-          constraints: {
-            width: { min: 640, ideal: 1280, max: 1920 },
-            height: { min: 480, ideal: 720, max: 1080 },
-            facingMode: "environment",
-          },
-        },
-        locator: {
-          patchSize: "medium",
-          halfSample: true,
-        },
-        numOfWorkers: Math.min(navigator.hardwareConcurrency || 2, 4),
-        decoder: {
-          readers: [
-            "code_128_reader",
-            "ean_reader",
-            "ean_8_reader",
-            "code_39_reader",
-            "codabar_reader",
-            "upc_reader",
-          ],
-        },
-        locate: true,
-        frequency: 10,
-      },
-      (err) => {
-        if (!mounted) return;
-        if (err) {
-          setStatus("error");
-          setFeedback("Could not access camera. You can still type the student code below.");
-          toast({
-            title: "Camera error",
-            description: String(err),
-            variant: "destructive",
-          });
-          return;
-        }
-        Quagga.start();
-        setStatus("scanning");
-        setFeedback("Point camera at student barcode, or type code below");
-      }
-    );
-
-    const onDetected = (result: QuaggaJSResultObject) => {
-      const code = result?.codeResult?.code;
-      if (code) lookupCode(code);
-    };
-
-    Quagga.onDetected(onDetected);
-
-    return () => {
-      mounted = false;
-      Quagga.offDetected(onDetected);
-      Quagga.stop();
-    };
-  }, [lookupCode]);
+  const cameraFeedback =
+    cameraStatus === "starting"
+      ? "Starting camera..."
+      : cameraStatus === "error"
+        ? cameraError
+        : feedback || "Point camera at student barcode, or type code below";
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#06100c] text-white">
@@ -317,18 +260,40 @@ const StudentApplesScannerPage = () => {
           <Loader2 className="relative z-10 h-5 w-5 animate-spin text-emerald-300" />
         )}
         {status === "found" && <CheckCircle className="relative z-10 h-5 w-5 text-emerald-400" />}
-        {status === "error" && <XCircle className="relative z-10 h-5 w-5 text-red-400" />}
+        {(status === "error" || cameraStatus === "error") && (
+          <XCircle className="relative z-10 h-5 w-5 text-red-400" />
+        )}
       </header>
 
-      <div ref={scannerRef} className="relative min-h-0 flex-1 overflow-hidden bg-black">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
+        <div
+          ref={scannerRef}
+          className="absolute inset-0 [&_canvas]:hidden [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+        />
         <ScannerViewfinder
-          active={!student && (status === "scanning" || status === "initializing")}
+          active={
+            !student &&
+            cameraStatus === "ready" &&
+            (status === "scanning" || status === "initializing")
+          }
           label="Align student barcode"
         />
+        {cameraStatus === "error" && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center">
+            <p className="max-w-sm text-sm text-red-200">{cameraError}</p>
+            <Button
+              type="button"
+              onClick={() => void retryCamera()}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white"
+            >
+              Allow camera
+            </Button>
+          </div>
+        )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black via-black/70 to-transparent p-4 pt-16">
           <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-black/50 px-3 py-2 text-sm backdrop-blur-md">
             <ScanLine className="h-4 w-4 text-emerald-300" />
-            <span className="text-emerald-50/90">{feedback || "Initializing camera..."}</span>
+            <span className="text-emerald-50/90">{cameraFeedback}</span>
           </div>
         </div>
       </div>
