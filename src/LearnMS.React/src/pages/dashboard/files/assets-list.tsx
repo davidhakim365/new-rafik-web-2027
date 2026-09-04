@@ -7,16 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/utils";
 import { assetsColumns } from "@/pages/dashboard/files/columns";
-import { useAssetsStore } from "@/store/use-assets-store";
+import { useAssetsStore, useQuizAnswerAssetsStore } from "@/store/use-assets-store";
 import { PaginationState, RowSelectionState } from "@tanstack/react-table";
 import { Trash2 } from "lucide-react";
 
 type AssetsListProps = {
   enableSelect?: boolean;
+  selectTarget?: "assets" | "quizAnswers";
 };
 
-const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
+const AssetsList = ({
+  enableSelect = false,
+  selectTarget = "assets",
+}: AssetsListProps) => {
   const { addAssets } = useAssetsStore();
+  const { addAssets: addQuizAnswerAssets } = useQuizAnswerAssetsStore();
 
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -42,7 +47,11 @@ const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
   const onSelectAssets = () => {
     const selected =
       data!.data.items?.filter((q) => selectedIds.includes(q.id)) ?? [];
-    addAssets(selected);
+    if (selectTarget === "quizAnswers") {
+      addQuizAnswerAssets(selected);
+    } else {
+      addAssets(selected);
+    }
     setRowSelection({});
   };
 
@@ -109,7 +118,7 @@ const AssetsList = ({ enableSelect = false }: AssetsListProps) => {
                   onClick={onSelectAssets}
                   disabled={deleteAssetsMutation.isPending}
                 >
-                  Add to Lecture
+                  Add to {selectTarget === "quizAnswers" ? "Quiz Answers" : "Lecture"}
                 </Button>
               </div>
             )}

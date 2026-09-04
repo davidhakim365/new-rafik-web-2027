@@ -29,6 +29,8 @@ public abstract record GetLectureResult
     [Required]
     public required List<Asset> Assets { get; set; } = new();
     [Required]
+    public required List<Asset> QuizAnswerAssets { get; set; } = new();
+    [Required]
     public List<SingleLectureItem> Items { get; set; } = new();
     [Required]
     public required bool IsImportant { get; init; }
@@ -116,4 +118,12 @@ public sealed record GetStudentLectureResult : GetLectureResult
     public required DateTime? ExpiresAt { get; set; }
     [Required]
     public Enrollment Enrollment { get; init; }
+
+    [Required]
+    public required bool CanViewQuizAnswers { get; init; }
+
+    [Required]
+    public required bool HasQuizAnswers { get; init; }
+
+    public string? QuizAnswersLockReason { get; init; }
 }

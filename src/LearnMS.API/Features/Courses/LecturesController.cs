@@ -370,6 +370,28 @@ public sealed class LecturesController : ControllerBase
         return new ApiWrapper.Success<object?> { Message = "PDFs updated successfully" };
     }
 
+    [HttpPut("{lectureId:guid}/quiz-answers")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
+    [SwaggerOperation(OperationId = "UpdateLectureQuizAnswerAssets")]
+    public async Task<ApiWrapper.Success<object?>> UpdateQuizAnswerAssets(
+        [FromBody] List<string> assetsIds,
+        Guid lectureId,
+        Guid courseId
+    )
+    {
+        await _coursesService.ExecuteAsync(
+            new UpdateLectureAssetsCommand
+            {
+                CourseId = courseId,
+                LectureId = lectureId,
+                AssetsIds = assetsIds,
+                ForQuizAnswers = true
+            }
+        );
+
+        return new ApiWrapper.Success<object?> { Message = "Quiz answers updated successfully" };
+    }
+
     [HttpPut("{lectureId:guid}/items/order")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
     [SwaggerOperation(OperationId = "ReorderLectureItems")]
@@ -397,7 +419,8 @@ public sealed class LecturesController : ControllerBase
     public async Task<ApiWrapper.Success<AddLecturePdfLinksResult>> AddPdfLinks(
         [FromBody] List<AddLecturePdfLinkItem> items,
         Guid lectureId,
-        Guid courseId
+        Guid courseId,
+        [FromQuery] bool forQuizAnswers = false
     )
     {
         var result = await _coursesService.ExecuteAsync(
@@ -405,7 +428,8 @@ public sealed class LecturesController : ControllerBase
             {
                 CourseId = courseId,
                 LectureId = lectureId,
-                Items = items
+                Items = items,
+                ForQuizAnswers = forQuizAnswers
             }
         );
 
@@ -425,7 +449,8 @@ public sealed class LecturesController : ControllerBase
         IFormFile file,
         [FromForm] string? title,
         Guid lectureId,
-        Guid courseId
+        Guid courseId,
+        [FromQuery] bool forQuizAnswers = false
     )
     {
         var result = await _coursesService.ExecuteAsync(
@@ -434,7 +459,8 @@ public sealed class LecturesController : ControllerBase
                 CourseId = courseId,
                 LectureId = lectureId,
                 File = file,
-                Title = title
+                Title = title,
+                ForQuizAnswers = forQuizAnswers
             }
         );
 

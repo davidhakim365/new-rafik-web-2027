@@ -12,13 +12,17 @@ type Actions = {
   removeAsset: (id: string) => void;
 };
 
-export const useAssetsStore = create<State & Actions>((set, get) => ({
-  assets: [],
-  addAssets: (assets) =>
-    set({ assets: _.uniqBy([...get().assets, ...assets], "id") }),
-  clearAssets: () => set({ assets: [] }),
-  removeAsset: (id) =>
-    set((state) => ({
-      assets: state.assets.filter((asset) => asset.id !== id),
-    })),
-}));
+const createAssetsStore = () =>
+  create<State & Actions>((set, get) => ({
+    assets: [],
+    addAssets: (assets) =>
+      set({ assets: _.uniqBy([...get().assets, ...assets], "id") }),
+    clearAssets: () => set({ assets: [] }),
+    removeAsset: (id) =>
+      set((state) => ({
+        assets: state.assets.filter((asset) => asset.id !== id),
+      })),
+  }));
+
+export const useAssetsStore = createAssetsStore();
+export const useQuizAnswerAssetsStore = createAssetsStore();

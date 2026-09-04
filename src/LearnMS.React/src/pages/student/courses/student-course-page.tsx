@@ -60,6 +60,7 @@ import {
   FaAlignLeft,
   FaFolder,
   FaUser,
+  FaLock,
 } from "react-icons/fa";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -910,6 +911,22 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
       {/* Attachments Section */}
       <AttachmentsSection attachments={lecture.assets} />
 
+      {(lecture.hasQuizAnswers || (lecture.quizAnswerAssets?.length ?? 0) > 0) && (
+        <AttachmentsSection
+          title={t("courses.quizAnswers")}
+          attachments={lecture.canViewQuizAnswers ? lecture.quizAnswerAssets : []}
+          emptyText={t("courses.noQuizAnswersAvailable")}
+          locked={!lecture.canViewQuizAnswers}
+          lockMessage={
+            lecture.quizAnswersLockReason === "attendance"
+              ? t("courses.quizAnswersLockedAttendance")
+              : lecture.quizAnswersLockReason === "passQuiz"
+                ? t("courses.quizAnswersLockedPassQuiz")
+                : t("courses.quizAnswersLockedEnroll")
+          }
+        />
+      )}
+
       {/* Lecture Content Items - Always shown */}
       <LectureItemsAccordions lecture={lecture} courseId={courseId!} />
 
@@ -985,11 +1002,22 @@ function HomeworkVideoSection({ url }: { url: string }) {
 
 function AttachmentsSection({
   attachments,
+  title,
+  emptyText,
+  locked = false,
+  lockMessage,
 }: {
   attachments?: StudentAssetDto[];
+  title?: string;
+  emptyText?: string;
+  locked?: boolean;
+  lockMessage?: string;
 }) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
+  const heading = title ?? t("courses.attachments");
+  const empty = emptyText ?? t("courses.noAssetsAvailable");
+  const count = locked ? 0 : attachments?.length || 0;
 
   const getAssetIcon = (type: string) => {
     switch (type) {
@@ -1008,7 +1036,7 @@ function AttachmentsSection({
         <div className="flex items-center gap-2">
           <FaFolder className="w-4 h-4 text-primary sm:w-5 sm:h-5" />
           <h4 className="text-base font-semibold text-foreground sm:text-xl">
-            {t("courses.attachments")} ({attachments?.length || 0})
+            {heading} ({count})
           </h4>
         </div>
         <button
@@ -1024,7 +1052,16 @@ function AttachmentsSection({
       </div>
       {isExpanded && (
         <div className="p-3 border rounded-lg shadow-sm sm:p-4 bg-background/90 border-border/50 backdrop-blur-sm">
-          {attachments && attachments.length > 0 ? (
+          {locked ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex items-center justify-center w-12 h-12 mb-3 rounded-full bg-muted/30">
+                <FaLock className="w-6 h-6 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {lockMessage}
+              </p>
+            </div>
+          ) : attachments && attachments.length > 0 ? (
             <div className="space-y-2">
               {attachments.map((asset) => (
                 <PdfOpenButton
@@ -1053,7 +1090,7 @@ function AttachmentsSection({
                 <FaFolder className="w-6 h-6 text-muted-foreground/50" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">
-                {t("courses.noAssetsAvailable")}
+                {empty}
               </p>
             </div>
           )}

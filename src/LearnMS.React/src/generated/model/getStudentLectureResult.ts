@@ -20,4 +20,7 @@ export type GetStudentLectureResult = GetLectureResult & {
   isPublished?: boolean | null;
   price: number;
   renewalPrice: number;
+  canViewQuizAnswers?: boolean;
+  hasQuizAnswers?: boolean;
+  quizAnswersLockReason?: string | null;
 };

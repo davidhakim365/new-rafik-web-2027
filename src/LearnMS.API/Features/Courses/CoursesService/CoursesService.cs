@@ -1134,6 +1134,7 @@ public sealed class CoursesService : ICoursesService
             await _context
                 .Set<Lecture>()
                 .Include(x => x.Assets)
+                .Include(x => x.QuizAnswerAssets)
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
@@ -1143,10 +1144,11 @@ public sealed class CoursesService : ICoursesService
             .Where(x => command.AssetsIds.Contains(x.Id))
             .ToListAsync();
 
-        lecture.Assets.Clear();
+        var target = command.ForQuizAnswers ? lecture.QuizAnswerAssets : lecture.Assets;
+        target.Clear();
 
         foreach (var asset in assets)
-            lecture.Assets.Add(asset);
+            target.Add(asset);
 
         _context.Update(lecture);
         await _context.SaveChangesAsync();
@@ -1179,6 +1181,7 @@ public sealed class CoursesService : ICoursesService
             await _context
                 .Set<Lecture>()
                 .Include(x => x.Assets)
+                .Include(x => x.QuizAnswerAssets)
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
@@ -1207,7 +1210,7 @@ public sealed class CoursesService : ICoursesService
             };
 
             await _context.AddAsync(asset);
-            lecture.Assets.Add(asset);
+            AttachPdfAsset(lecture, asset, command.ForQuizAnswers);
             created.Add(asset);
         }
 
@@ -1229,6 +1232,7 @@ public sealed class CoursesService : ICoursesService
             await _context
                 .Set<Lecture>()
                 .Include(x => x.Assets)
+                .Include(x => x.QuizAnswerAssets)
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
@@ -1266,11 +1270,18 @@ public sealed class CoursesService : ICoursesService
         };
 
         await _context.AddAsync(asset);
-        lecture.Assets.Add(asset);
+        AttachPdfAsset(lecture, asset, command.ForQuizAnswers);
         _context.Update(lecture);
         await _context.SaveChangesAsync();
 
         return new UploadLecturePdfResult { Asset = asset };
+    }
+
+    private static void AttachPdfAsset(Lecture lecture, Asset asset, bool forQuizAnswers)
+    {
+        var target = forQuizAnswers ? lecture.QuizAnswerAssets : lecture.Assets;
+        if (target.All(existing => existing.Id != asset.Id))
+            target.Add(asset);
     }
 
     private static bool IsPdfFile(IFormFile file)
@@ -1958,6 +1969,7 @@ public sealed class CoursesService : ICoursesService
                 )
                 .Include(x => x.Quizzes)
                 .Include(x => x.Assets)
+                .Include(x => x.QuizAnswerAssets)
                 .Include(x => x.Lessons)
                 .FirstOrDefaultAsync() ?? throw new ApiException(LecturesErrors.NotFound);
 
@@ -2001,6 +2013,7 @@ public sealed class CoursesService : ICoursesService
             Price = lecture.Price,
             RenewalPrice = lecture.RenewalPrice,
             Assets = lecture.Assets,
+            QuizAnswerAssets = lecture.QuizAnswerAssets,
             Items = lesson.Union(quizzes).OrderBy(x => x.Order).ToList(),
             IsImportant = lecture.IsImportant
         };
@@ -2024,6 +2037,8 @@ public sealed class CoursesService : ICoursesService
                 .ThenInclude(x => x.LectureAttendances.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Assets)
+                .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
+                .ThenInclude(x => x.QuizAnswerAssets)
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes)
                 .ThenInclude(x => x.QuizSubmissions.Where(x => x.StudentId == query.StudentId))
@@ -2124,6 +2139,19 @@ public sealed class CoursesService : ICoursesService
                 ? lecture.Assets
                 : [];
 
+        var enrollment = EnrollmentStatus.FromExpiresAt(expiresAt);
+        var (canViewQuizAnswers, quizAnswersLockReason) = LectureQuizAnswerAccess.Evaluate(
+            student.StudentCode,
+            enrollment == Enrollment.Active,
+            hasAttendedLecture,
+            hasQuizzes,
+            hasQuizzes && lecture.Quizzes.All(IsQuizPassed)
+        );
+        var hasQuizAnswers = lecture.QuizAnswerAssets.Count > 0;
+        var quizAnswerAssets = canViewQuizAnswers
+            ? lecture.QuizAnswerAssets
+            : [];
+
         if (
             !string.IsNullOrWhiteSpace(lecture.ChooseHomeworkFormUrl)
             && (
@@ -2152,7 +2180,7 @@ public sealed class CoursesService : ICoursesService
             Description = lecture.Description ?? "",
             CourseId = lecture.CourseId,
             ExpiresAt = expiresAt,
-            Enrollment = EnrollmentStatus.FromExpiresAt(expiresAt),
+            Enrollment = enrollment,
             ImageUrl = lecture.ImageUrl!,
             HomeworkVideoUrl = lecture.HomeworkVideoUrl,
             ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
@@ -2162,6 +2190,10 @@ public sealed class CoursesService : ICoursesService
             IsPublished = lecture!.IsPublished,
             // added
             Assets = assets,
+            QuizAnswerAssets = quizAnswerAssets,
+            CanViewQuizAnswers = canViewQuizAnswers,
+            HasQuizAnswers = hasQuizAnswers,
+            QuizAnswersLockReason = quizAnswersLockReason,
             Items = lessons.Union(quizzes).OrderBy(x => x.Order).ToList(),
             IsImportant = lecture.IsImportant
         };

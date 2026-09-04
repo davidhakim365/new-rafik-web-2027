@@ -8,6 +8,7 @@ public sealed class AddLecturePdfLinksCommand
     public Guid LectureId { get; set; }
     public Guid CourseId { get; set; }
     public required List<AddLecturePdfLinkItem> Items { get; set; }
+    public bool ForQuizAnswers { get; set; }
 }
 
 public sealed class AddLecturePdfLinkItem
@@ -30,6 +31,7 @@ public sealed class UploadLecturePdfCommand
     public Guid CourseId { get; set; }
     public required IFormFile File { get; set; }
     public string? Title { get; set; }
+    public bool ForQuizAnswers { get; set; }
 }
 
 public sealed class UploadLecturePdfResult

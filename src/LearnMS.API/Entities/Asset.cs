@@ -26,6 +26,12 @@ public sealed class Asset
     [JsonIgnore]
     public List<LectureAsset> LectureAssets { get; } = [];
 
+    [JsonIgnore]
+    public List<Lecture> QuizAnswerLectures { get; } = [];
+
+    [JsonIgnore]
+    public List<LectureQuizAnswerAsset> LectureQuizAnswerAssets { get; } = [];
+
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
 

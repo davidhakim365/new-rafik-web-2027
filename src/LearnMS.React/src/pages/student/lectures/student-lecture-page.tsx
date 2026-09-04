@@ -141,6 +141,43 @@ const StudentLecturePage = () => {
               </div>
             </div>
           )}
+          {(lecture.hasQuizAnswers || (lecture.quizAnswerAssets?.length ?? 0) > 0) && (
+            <div className="space-y-3">
+              <h2
+                dir={isRTL ? "rtl" : "ltr"}
+                className="text-xl font-bold sm:text-2xl text-foreground"
+              >
+                {t("courses.quizAnswers")}
+              </h2>
+              {lecture.canViewQuizAnswers &&
+              lecture.quizAnswerAssets &&
+              lecture.quizAnswerAssets.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {lecture.quizAnswerAssets.map((asset) => (
+                    <PdfOpenButton
+                      key={asset.id}
+                      asset={asset}
+                      className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/50 p-3 text-left hover:bg-card/70"
+                    >
+                      <FaFilePdf className="h-5 w-5 shrink-0 text-red-500" />
+                      <span className="truncate font-medium">{asset.name}</span>
+                    </PdfOpenButton>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-4">
+                  <FaLock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    {lecture.quizAnswersLockReason === "attendance"
+                      ? t("courses.quizAnswersLockedAttendance")
+                      : lecture.quizAnswersLockReason === "passQuiz"
+                        ? t("courses.quizAnswersLockedPassQuiz")
+                        : t("courses.quizAnswersLockedEnroll")}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           <h2
             dir={isRTL ? "rtl" : "ltr"}
             className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl lg:text-4xl text-foreground"

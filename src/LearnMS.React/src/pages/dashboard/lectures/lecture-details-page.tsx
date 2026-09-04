@@ -1,4 +1,4 @@
-import { useReorderLectureItemsMutation, useUpdateLectureAssetsMutation } from "@/api/lectures-api";
+import { useReorderLectureItemsMutation, useUpdateLectureAssetsMutation, useUpdateLectureQuizAnswerAssetsMutation } from "@/api/lectures-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +76,7 @@ import {
 import { GetLectureDashboardResult, LectureItemType, Permission, SingleLectureItem } from "@/generated/model";
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
-import { useAssetsStore } from "@/store/use-assets-store";
+import { useAssetsStore, useQuizAnswerAssetsStore } from "@/store/use-assets-store";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQueryClient } from "@tanstack/react-query";
 import _ from "lodash";
@@ -245,6 +245,9 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
         <LectureContentForm {...lecture} />
         <div className='col-span-1 p-4 lg:col-span-2'>
           <LectureAssetsFrom {...lecture} />
+        </div>
+        <div className='col-span-1 p-4 lg:col-span-2'>
+          <LectureQuizAnswerAssetsForm {...lecture} />
         </div>
       </div>
     </div>
@@ -924,18 +927,82 @@ function LectureAssetsFrom({
   id,
   courseId,
 }: GetLectureDashboardResult) {
-  const { openModal } = useModalStore();
-  const { clearAssets, addAssets, assets, removeAsset } = useAssetsStore();
+  return (
+    <LecturePdfCollectionForm
+      title="PDF"
+      emptyText="NO PDFs"
+      oldAssets={oldAssets}
+      lectureId={id}
+      courseId={courseId}
+      useStore={useAssetsStore}
+      useUpdateMutation={useUpdateLectureAssetsMutation}
+      successTitle="PDF updated"
+      selectTarget="assets"
+    />
+  );
+}
 
-  const updateLectureAssetsMutation = useUpdateLectureAssetsMutation();
+function LectureQuizAnswerAssetsForm({
+  quizAnswerAssets: oldAssets,
+  id,
+  courseId,
+}: GetLectureDashboardResult) {
+  return (
+    <LecturePdfCollectionForm
+      title="Quiz Answers"
+      emptyText="NO QUIZ ANSWERS"
+      description="Offline students can open these PDFs after attending at a center. Online students must be enrolled in the lecture and pass the quiz."
+      oldAssets={oldAssets ?? []}
+      lectureId={id}
+      courseId={courseId}
+      useStore={useQuizAnswerAssetsStore}
+      useUpdateMutation={useUpdateLectureQuizAnswerAssetsMutation}
+      successTitle="Quiz answers updated"
+      selectTarget="quizAnswers"
+      forQuizAnswers
+    />
+  );
+}
+
+function LecturePdfCollectionForm({
+  title,
+  emptyText,
+  description,
+  oldAssets,
+  lectureId,
+  courseId,
+  useStore,
+  useUpdateMutation,
+  successTitle,
+  selectTarget,
+  forQuizAnswers = false,
+}: {
+  title: string;
+  emptyText: string;
+  description?: string;
+  oldAssets: GetLectureDashboardResult["assets"];
+  lectureId: string;
+  courseId: string;
+  useStore: typeof useAssetsStore;
+  useUpdateMutation:
+    | typeof useUpdateLectureAssetsMutation
+    | typeof useUpdateLectureQuizAnswerAssetsMutation;
+  successTitle: string;
+  selectTarget: "assets" | "quizAnswers";
+  forQuizAnswers?: boolean;
+}) {
+  const { openModal } = useModalStore();
+  const { clearAssets, addAssets, assets, removeAsset } = useStore();
+
+  const updateMutation = useUpdateMutation();
 
   const onUpdate = () => {
-    updateLectureAssetsMutation.mutate(
-      { lectureId: id, courseId, data: assets.map((asset) => asset.id) },
+    updateMutation.mutate(
+      { lectureId, courseId, data: assets.map((asset) => asset.id) },
       {
         onSuccess: (data) => {
           toast({
-            title: "PDF updated",
+            title: successTitle,
             description: data.message,
           });
         },
@@ -958,17 +1025,22 @@ function LectureAssetsFrom({
   return (
     <div className='w-full h-full'>
       <div className="m-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xl sm:text-2xl">
-          <div className="rounded-[50%] border-primary/40 bg-primary/30 p-3">
-            <FaFile className="text-primary" />
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex items-center gap-2 text-xl sm:text-2xl">
+            <div className="rounded-[50%] border-primary/40 bg-primary/30 p-3">
+              <FaFile className="text-primary" />
+            </div>
+            {title}
           </div>
-          PDF
+          {description && (
+            <p className="text-xs text-muted-foreground sm:text-sm">{description}</p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {isDirty && <Button onClick={onUpdate}>Update</Button>}
           <Button
             variant='outline'
-            onClick={() => openModal("select-assets-modal")}
+            onClick={() => openModal("select-assets-modal", { target: selectTarget })}
           >
             From Files
           </Button>
@@ -976,7 +1048,8 @@ function LectureAssetsFrom({
             onClick={() =>
               openModal("add-pdf-links-modal", {
                 courseId,
-                lectureId: id,
+                lectureId,
+                forQuizAnswers,
               })
             }
           >
@@ -986,7 +1059,7 @@ function LectureAssetsFrom({
       </div>
       <div className="flex flex-wrap items-center gap-4 rounded border-[3px] border-primary/50 bg-primary/30 p-4 sm:p-10">
         {assets.length === 0 && (
-          <p className='self-center text-5xl text-primary/40'>NO PDFs</p>
+          <p className='self-center text-5xl text-primary/40'>{emptyText}</p>
         )}
         {assets.map((asset) => (
           <div

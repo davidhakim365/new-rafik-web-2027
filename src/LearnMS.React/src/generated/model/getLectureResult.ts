@@ -10,6 +10,7 @@ import type { SingleLectureItem } from './singleLectureItem';
 export interface GetLectureResult {
   $type: string;
   assets: Asset[];
+  quizAnswerAssets?: Asset[];
   courseId: string;
   id: string;
   isImportant: boolean;

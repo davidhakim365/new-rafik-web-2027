@@ -55,6 +55,10 @@ public sealed record StudentLectureDto : StudentCourseItemDto
 {
     [Required] public required List<StudentLectureItemDto> Items { get; init; }
     [Required] public required List<StudentAssetDto> Assets { get; init; }
+    [Required] public required List<StudentAssetDto> QuizAnswerAssets { get; init; }
+    [Required] public required bool CanViewQuizAnswers { get; init; }
+    [Required] public required bool HasQuizAnswers { get; init; }
+    public string? QuizAnswersLockReason { get; init; }
     [Required] public required decimal Price { get; init; }
     [Required] public required decimal RenewalPrice { get; init; }
     public string? ImageUrl { get; init; }

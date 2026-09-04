@@ -322,6 +322,35 @@ export const useUpdateLectureAssetsMutation = () => {
       qc.invalidateQueries({
         queryKey: ["lecture", { id: lectureId, courseId }],
       });
+      qc.invalidateQueries({
+        queryKey: getGetLectureQueryKey(courseId, lectureId),
+      });
+    },
+  });
+};
+
+export const useUpdateLectureQuizAnswerAssetsMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<{}>,
+    {},
+    {
+      lectureId: string;
+      courseId: string;
+      data: string[];
+    }
+  >({
+    mutationFn: ({ lectureId, courseId, data }) =>
+      api
+        .put(`/api/courses/${courseId}/lectures/${lectureId}/quiz-answers`, data)
+        .then((res) => res.data),
+    onSuccess: (_, { lectureId, courseId }) => {
+      qc.invalidateQueries({
+        queryKey: ["lecture", { id: lectureId, courseId }],
+      });
+      qc.invalidateQueries({
+        queryKey: getGetLectureQueryKey(courseId, lectureId),
+      });
     },
   });
 };
@@ -341,12 +370,14 @@ export async function uploadLecturePdf({
   lectureId,
   file,
   title,
+  forQuizAnswers = false,
   onProgress,
 }: {
   courseId: string;
   lectureId: string;
   file: File;
   title?: string;
+  forQuizAnswers?: boolean;
   onProgress: (percent: number) => void;
 }) {
   const formData = new FormData();
@@ -404,7 +435,9 @@ export async function uploadLecturePdf({
 
     xhr.open(
       "POST",
-      `/api/courses/${courseId}/lectures/${lectureId}/pdfs`
+      `/api/courses/${courseId}/lectures/${lectureId}/pdfs${
+        forQuizAnswers ? "?forQuizAnswers=true" : ""
+      }`
     );
 
     if (token) {
@@ -427,11 +460,17 @@ export const useAddLecturePdfLinksMutation = () => {
       lectureId: string;
       courseId: string;
       data: AddLecturePdfLinkItem[];
+      forQuizAnswers?: boolean;
     }
   >({
-    mutationFn: ({ lectureId, courseId, data }) =>
+    mutationFn: ({ lectureId, courseId, data, forQuizAnswers }) =>
       api
-        .post(`/api/courses/${courseId}/lectures/${lectureId}/pdf-links`, data)
+        .post(
+          `/api/courses/${courseId}/lectures/${lectureId}/pdf-links${
+            forQuizAnswers ? "?forQuizAnswers=true" : ""
+          }`,
+          data
+        )
         .then((res) => res.data),
     onSuccess: (_, { lectureId, courseId }) => {
       qc.invalidateQueries({

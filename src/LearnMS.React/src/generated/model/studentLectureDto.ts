@@ -13,6 +13,10 @@ import type { StudentLectureDtoItemsItem } from './studentLectureDtoItemsItem';
 export type StudentLectureDto = StudentCourseItemDto & {
   $type: StudentLectureDtoType;
   assets: StudentAssetDto[];
+  quizAnswerAssets?: StudentAssetDto[];
+  canViewQuizAnswers?: boolean;
+  hasQuizAnswers?: boolean;
+  quizAnswersLockReason?: string | null;
   enrollment: Enrollment;
   expirationDays?: number | null;
   expiresAt?: string | null;

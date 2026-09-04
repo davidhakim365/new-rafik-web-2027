@@ -50,5 +50,10 @@ public sealed class LecturesConfigurations : IEntityTypeConfiguration<Lecture>
             l => l.HasOne(x => x.Asset).WithMany(x => x.LectureAssets).HasForeignKey(x => x.AssetId),
             r => r.HasOne(x => x.Lecture).WithMany(x => x.LectureAssets).HasForeignKey(x => x.LectureId)
         );
+
+        builder.HasMany(x => x.QuizAnswerAssets).WithMany(x => x.QuizAnswerLectures).UsingEntity<LectureQuizAnswerAsset>(
+            l => l.HasOne(x => x.Asset).WithMany(x => x.LectureQuizAnswerAssets).HasForeignKey(x => x.AssetId),
+            r => r.HasOne(x => x.Lecture).WithMany(x => x.LectureQuizAnswerAssets).HasForeignKey(x => x.LectureId)
+        );
     }
 }

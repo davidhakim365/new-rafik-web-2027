@@ -145,6 +145,15 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                                 Type = a.Type,
                                 Url = a.Url
                             }).ToList(),
+                            QuizAnswerAssets = l.QuizAnswerAssets.Select(a => new StudentAssetDto()
+                            {
+                                Id = a.Id,
+                                Name = a.Name,
+                                Type = a.Type,
+                                Url = a.Url
+                            }).ToList(),
+                            HasAttended = studentId != null && l.LectureAttendances
+                                .Any(a => a.StudentId == studentId && a.AttendedAt != null),
                             Lessons = l.Lessons
                                 .Select(ls => new StudentLessonDto()
                                 {
@@ -225,6 +234,16 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         List<StudentLectureDto> lectures = course.Lectures.Select(l =>
         {
             var expiresAt = EffectiveEnrollmentExpiresAt(courseExpires, l.ExpiresAt);
+            var enrollment = EnrollmentStatus.FromExpiresAt(expiresAt);
+            var hasAnyQuiz = l.Quizzes.Count > 0;
+            var passedAllQuizzes = hasAnyQuiz && l.Quizzes.All(q => q.IsPassed == true);
+            var (canViewQuizAnswers, quizAnswersLockReason) = LectureQuizAnswerAccess.Evaluate(
+                studentInfo?.StudentCode,
+                enrollment == Enrollment.Active,
+                l.HasAttended,
+                hasAnyQuiz,
+                passedAllQuizzes
+            );
             return new StudentLectureDto()
             {
                 Id = l.Id,
@@ -243,10 +262,14 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                     studentInfo?.FullName
                 ),
                 Assets = l.Assets,
+                QuizAnswerAssets = canViewQuizAnswers ? l.QuizAnswerAssets : [],
+                CanViewQuizAnswers = canViewQuizAnswers,
+                HasQuizAnswers = l.QuizAnswerAssets.Count > 0,
+                QuizAnswersLockReason = quizAnswersLockReason,
                 ExpirationDays = l.ExpirationDays,
                 Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),
                 ExpiresAt = expiresAt,
-                Enrollment = EnrollmentStatus.FromExpiresAt(expiresAt),
+                Enrollment = enrollment,
             };
         }).ToList();
 

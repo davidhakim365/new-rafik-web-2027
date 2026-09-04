@@ -83,6 +83,9 @@ Homework Video :
     public List<Asset> Assets = [];
     public List<LectureAsset> LectureAssets = [];
 
+    public List<Asset> QuizAnswerAssets = [];
+    public List<LectureQuizAnswerAsset> LectureQuizAnswerAssets = [];
+
     public void AddItem(Lesson lesson)
     {
         lesson.Order = Lessons.Count + Quizzes.Count + 1;
@@ -149,6 +152,15 @@ Homework Video :
 }
 
 public class LectureAsset
+{
+    public required string AssetId { get; init; }
+    public Asset Asset { get; } = null!;
+
+    public required Guid LectureId { get; init; }
+    public Lecture Lecture { get; } = null!;
+}
+
+public class LectureQuizAnswerAsset
 {
     public required string AssetId { get; init; }
     public Asset Asset { get; } = null!;

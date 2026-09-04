@@ -50,6 +50,7 @@ type AddPdfLinksModalProps = {
   onClose: () => void;
   courseId: string;
   lectureId: string;
+  forQuizAnswers?: boolean;
 };
 
 const createLinkRow = (): LinkRow => ({
@@ -62,6 +63,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
   onClose,
   courseId,
   lectureId,
+  forQuizAnswers = false,
 }) => {
   const [rows, setRows] = useState<UploadRow[]>([]);
   const [linkRows, setLinkRows] = useState<LinkRow[]>([]);
@@ -312,6 +314,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
             lectureId,
             file: row.file,
             title: row.title,
+            forQuizAnswers,
             onProgress: (percent) => {
               setRows((prev) =>
                 prev.map((item) =>
@@ -386,7 +389,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       }
 
       addPdfLinksMutation.mutate(
-        { courseId, lectureId, data },
+        { courseId, lectureId, data, forQuizAnswers },
         {
           onSuccess: (res) => {
             toast({
@@ -414,10 +417,11 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex max-h-[90dvh] w-[calc(100%-1rem)] max-w-lg flex-col gap-3 overflow-hidden p-4 text-foreground sm:p-6">
         <DialogHeader className="shrink-0 space-y-1 pr-6 text-left">
-          <DialogTitle>Add PDF</DialogTitle>
+          <DialogTitle>{forQuizAnswers ? "Add Quiz Answer PDF" : "Add PDF"}</DialogTitle>
           <DialogDescription>
-            Upload to the Google Drive folder you pick. Students open it without
-            requesting access.
+            {forQuizAnswers
+              ? "Upload quiz answer PDFs to Google Drive. They also appear in the files bank. Offline students need center attendance; online students need enrollment and a passed quiz."
+              : "Upload to the Google Drive folder you pick. Students open it without requesting access."}
           </DialogDescription>
         </DialogHeader>
 

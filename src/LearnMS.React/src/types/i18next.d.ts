@@ -253,6 +253,11 @@ declare module "i18next" {
           homeworkVideo: string;
           noAttachmentsAvailable: string;
           noAssetsAvailable: string;
+          quizAnswers: string;
+          noQuizAnswersAvailable: string;
+          quizAnswersLockedAttendance: string;
+          quizAnswersLockedEnroll: string;
+          quizAnswersLockedPassQuiz: string;
           enrollmentExpiredMessage: string;
           joinStudentsMessage: string;
           insufficientBalance: string;
