@@ -8,30 +8,7 @@ public class Lecture : IOrdered
     public required string Title { get; set; }
 
     public string? Description { get; set; } =
-        @" *HomeWork*
-
-El-Moasser Book :
-
-__________________
-
-*Choose*
-
-HW:
-
-Choose Form : 
-
-__________________
-
-*Essay*
-
-HW:
-
-Essay Form :
-
-__________________
-
-Homework Video :
-
+        @" *
 ";
 
     public string? ImageUrl { get; set; } = ".";
@@ -60,8 +37,8 @@ Homework Video :
     /// <summary>Full mark for offline quiz scores. Must be set before scoring.</summary>
     public decimal? QuizFullMark { get; set; }
 
-    public decimal? Price { get; set; } = 90;
-    public decimal? RenewalPrice { get; set; } = 90;
+    public decimal? Price { get; set; } = 100;
+    public decimal? RenewalPrice { get; set; } = 25;
     public int? ExpirationDays { get; set; } = 7;
     public bool IsPublished = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
