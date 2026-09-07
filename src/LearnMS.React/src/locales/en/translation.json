@@ -225,6 +225,7 @@
       "studentId": "Student ID",
       "loadError": "Could not load progress. Please sign in again.",
       "attended": "Attended",
+      "watchedOnline": "Watched online",
       "absent": "Absent",
       "lectureDate": "Lecture date",
       "attendedAt": "Attended on",

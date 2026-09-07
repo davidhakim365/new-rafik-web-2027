@@ -143,6 +143,7 @@ public sealed class ParentService(AppDbContext db, IOptions<JwtBearerConfig> jwt
             CourseTitle = l.CourseTitle,
             LectureCreatedAt = l.CreatedAt,
             Attended = l.AttendedAt != null || l.LessonAttended,
+            WatchedOnline = l.LessonAttended,
             AttendedAt = l.AttendedAt
         }).ToList();
 

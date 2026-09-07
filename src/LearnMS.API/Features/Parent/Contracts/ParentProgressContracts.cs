@@ -29,6 +29,7 @@ public sealed record ParentAttendanceItem
     [Required] public required string CourseTitle { get; init; }
     [Required] public required DateTime LectureCreatedAt { get; init; }
     [Required] public required bool Attended { get; init; }
+    [Required] public required bool WatchedOnline { get; init; }
     public DateTime? AttendedAt { get; init; }
 }
 

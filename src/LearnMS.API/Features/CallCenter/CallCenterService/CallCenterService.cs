@@ -32,28 +32,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         var students = await PageList<Student>.CreateAsync(studentsQuery, page, pageSize);
 
         var items = students.Items.Select(student =>
-        {
-            var attendanceRow = student.LectureAttendances.FirstOrDefault();
-            var callLog = student.LectureStudentCallLogs.FirstOrDefault();
-
-            return new CallCenterStudentDto
-            {
-                Id = student.Id,
-                StudentCode = student.StudentCode,
-                StudyMode = ResolveStudyMode(student.StudentCode),
-                FullName = student.FullName,
-                PhoneNumber = student.PhoneNumber,
-                ParentPhoneNumber = student.ParentPhoneNumber,
-                Attended = attendanceRow is { AttendedAt: not null },
-                HomeworkScore = student.LectureHomeworks.FirstOrDefault()?.Score,
-                ChooseHomeworkScore = student.LectureChooseHomeworks.FirstOrDefault()?.Score,
-                QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score,
-                Comment = callLog?.Comment,
-                Called = callLog?.Called ?? false,
-                CalledAt = callLog?.CalledAt,
-                IsBlocked = student.IsBlocked
-            };
-        }).ToList();
+            MapStudent(student, student.LectureStudentCallLogs.FirstOrDefault())).ToList();
 
         return new PageList<CallCenterStudentDto>(
             items,
@@ -93,9 +72,8 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
 
             yield return chunk.Select(student =>
             {
-                var attendanceRow = student.LectureAttendances.FirstOrDefault();
+                var (centerAttended, watchedOnline) = ResolveAttendance(student);
                 var callLog = student.LectureStudentCallLogs.FirstOrDefault();
-                var attended = attendanceRow is { AttendedAt: not null };
                 var studyMode = ResolveStudyMode(student.StudentCode);
 
                 return new ExportCallCenterStudentRow
@@ -105,7 +83,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
                     FullName = student.FullName,
                     ParentPhoneNumber = student.ParentPhoneNumber,
                     PhoneNumber = student.PhoneNumber,
-                    Attendance = attended ? "Present" : "Absent",
+                    Attendance = AttendanceExportLabel(centerAttended, watchedOnline),
                     HomeworkScore = student.LectureHomeworks.FirstOrDefault()?.Score.ToString(),
                     ChooseHomeworkScore = student.LectureChooseHomeworks.FirstOrDefault()?.Score.ToString(),
                     QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score.ToString(),
@@ -133,6 +111,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             .Include(x => x.LectureChooseHomeworks.Where(h => h.LectureId == command.LectureId).Take(1))
             .Include(x => x.LectureQuizzes.Where(q => q.LectureId == command.LectureId).Take(1))
             .Include(x => x.LectureAttendances.Where(a => a.LectureId == command.LectureId).Take(1))
+            .Include(x => x.AttendedLessons.Where(l => l.LectureId == command.LectureId))
             .FirstOrDefaultAsync(x => x.Id == command.StudentId)
             ?? throw new ApiException(CallCenterErrors.StudentNotFound);
 
@@ -204,24 +183,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
 
         await db.SaveChangesAsync();
 
-        var attendanceRow = student.LectureAttendances.FirstOrDefault();
-        return new CallCenterStudentDto
-        {
-            Id = student.Id,
-            StudentCode = student.StudentCode,
-            StudyMode = ResolveStudyMode(student.StudentCode),
-            FullName = student.FullName,
-            PhoneNumber = student.PhoneNumber,
-            ParentPhoneNumber = student.ParentPhoneNumber,
-            Attended = attendanceRow is { AttendedAt: not null },
-            HomeworkScore = student.LectureHomeworks.FirstOrDefault()?.Score,
-            ChooseHomeworkScore = student.LectureChooseHomeworks.FirstOrDefault()?.Score,
-            QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score,
-            Comment = callLog.Comment,
-            Called = callLog.Called,
-            CalledAt = callLog.CalledAt,
-            IsBlocked = student.IsBlocked
-        };
+        return MapStudent(student, callLog);
     }
 
     public async Task<SetCallCenterStudentBlockedResult> ExecuteAsync(
@@ -418,6 +380,11 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
                 Order = l.Order,
                 IsCurrent = l.Id == query.LectureId,
                 Attended = l.LectureAttendances
+                    .Any(a => a.StudentId == query.StudentId && a.AttendedAt != null)
+                    || l.Lessons.Any(lesson => lesson.AttendedStudents.Any(s => s.Id == query.StudentId)),
+                WatchedOnline = l.Lessons.Any(lesson =>
+                    lesson.AttendedStudents.Any(s => s.Id == query.StudentId)),
+                CenterAttended = l.LectureAttendances
                     .Any(a => a.StudentId == query.StudentId && a.AttendedAt != null),
                 CenterName = l.LectureAttendances
                     .Where(a => a.StudentId == query.StudentId && a.AttendedAt != null)
@@ -508,6 +475,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
             .Include(x => x.LectureChooseHomeworks.Where(h => h.LectureId == lectureId).Take(1))
             .Include(x => x.LectureQuizzes.Where(q => q.LectureId == lectureId).Take(1))
             .Include(x => x.LectureAttendances.Where(a => a.LectureId == lectureId).Take(1))
+            .Include(x => x.AttendedLessons.Where(l => l.LectureId == lectureId))
             .Include(x => x.LectureStudentCallLogs.Where(c => c.LectureId == lectureId).Take(1))
             .OrderBy(x => x.StudentCode)
             .AsQueryable();
@@ -524,12 +492,14 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         if (attendance is "present")
         {
             studentsQuery = studentsQuery.Where(x =>
-                x.LectureAttendances.Any(a => a.LectureId == lectureId && a.AttendedAt != null));
+                x.LectureAttendances.Any(a => a.LectureId == lectureId && a.AttendedAt != null)
+                || x.AttendedLessons.Any(l => l.LectureId == lectureId));
         }
         else if (attendance is "absent")
         {
             studentsQuery = studentsQuery.Where(x =>
-                !x.LectureAttendances.Any(a => a.LectureId == lectureId && a.AttendedAt != null));
+                !x.LectureAttendances.Any(a => a.LectureId == lectureId && a.AttendedAt != null)
+                && !x.AttendedLessons.Any(l => l.LectureId == lectureId));
         }
 
         if (called is "called" or "yes" or "true")
@@ -555,5 +525,44 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
         }
 
         return studentsQuery;
+    }
+
+    private static CallCenterStudentDto MapStudent(Student student, LectureStudentCallLog? callLog)
+    {
+        var (centerAttended, watchedOnline) = ResolveAttendance(student);
+
+        return new CallCenterStudentDto
+        {
+            Id = student.Id,
+            StudentCode = student.StudentCode,
+            StudyMode = ResolveStudyMode(student.StudentCode),
+            FullName = student.FullName,
+            PhoneNumber = student.PhoneNumber,
+            ParentPhoneNumber = student.ParentPhoneNumber,
+            Attended = centerAttended || watchedOnline,
+            WatchedOnline = watchedOnline,
+            CenterAttended = centerAttended,
+            HomeworkScore = student.LectureHomeworks.FirstOrDefault()?.Score,
+            ChooseHomeworkScore = student.LectureChooseHomeworks.FirstOrDefault()?.Score,
+            QuizScore = student.LectureQuizzes.FirstOrDefault()?.Score,
+            Comment = callLog?.Comment,
+            Called = callLog?.Called ?? false,
+            CalledAt = callLog?.CalledAt,
+            IsBlocked = student.IsBlocked
+        };
+    }
+
+    private static (bool CenterAttended, bool WatchedOnline) ResolveAttendance(Student student)
+    {
+        var centerAttended = student.LectureAttendances.Any(a => a.AttendedAt != null);
+        var watchedOnline = student.AttendedLessons.Count > 0;
+        return (centerAttended, watchedOnline);
+    }
+
+    private static string AttendanceExportLabel(bool centerAttended, bool watchedOnline)
+    {
+        if (centerAttended) return "Present";
+        if (watchedOnline) return "Watched online";
+        return "Absent";
     }
 }

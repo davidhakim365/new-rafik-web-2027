@@ -10,6 +10,8 @@ export type CallCenterStudent = {
   phoneNumber: string;
   parentPhoneNumber: string;
   attended: boolean;
+  watchedOnline?: boolean;
+  centerAttended?: boolean;
   homeworkScore?: number | null;
   chooseHomeworkScore?: number | null;
   quizScore?: number | null;
@@ -186,6 +188,8 @@ export type CallCenterStudentLecture = {
   order: number;
   isCurrent: boolean;
   attended: boolean;
+  watchedOnline?: boolean;
+  centerAttended?: boolean;
   centerName?: string | null;
   homeworkScore?: number | null;
   homeworkFullMark?: number | null;
@@ -346,6 +350,37 @@ export function resolveCallCenterStudyMode(
   return isOnlineStudentCode(student.studentCode) ? "online" : "offline";
 }
 
+export type CallCenterAttendanceKind = "present" | "watched-online" | "absent";
+
+/** Center scan wins over online watch when both happened. */
+export function resolveCallCenterAttendance(item: {
+  attended: boolean;
+  watchedOnline?: boolean;
+  centerAttended?: boolean;
+  centerName?: string | null;
+}): CallCenterAttendanceKind {
+  const centerAttended =
+    item.centerAttended === true || !!item.centerName?.trim();
+  if (centerAttended) return "present";
+  if (item.watchedOnline) return "watched-online";
+  if (item.attended) return "present";
+  return "absent";
+}
+
+export function callCenterAttendanceLabel(
+  kind: CallCenterAttendanceKind,
+  language: "ar" | "en" = "en"
+): string {
+  if (language === "ar") {
+    if (kind === "present") return "حاضر";
+    if (kind === "watched-online") return "شاهد أونلاين";
+    return "غائب";
+  }
+  if (kind === "present") return "Present";
+  if (kind === "watched-online") return "Watched online";
+  return "Absent";
+}
+
 export function buildCallCenterWhatsAppMessage(
   student: CallCenterStudent,
   lectureTitle: string,
@@ -353,14 +388,10 @@ export function buildCallCenterWhatsAppMessage(
 ): string {
   const score = (value?: number | null) =>
     value == null ? (language === "ar" ? "غير مسجل" : "N/A") : String(value);
-  const attendance =
-    language === "ar"
-      ? student.attended
-        ? "حاضر"
-        : "غائب"
-      : student.attended
-        ? "Present"
-        : "Absent";
+  const attendance = callCenterAttendanceLabel(
+    resolveCallCenterAttendance(student),
+    language
+  );
   const studyMode = resolveCallCenterStudyMode(student);
   const studyModeLabel =
     language === "ar"

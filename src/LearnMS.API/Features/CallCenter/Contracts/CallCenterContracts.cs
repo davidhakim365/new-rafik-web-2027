@@ -70,6 +70,8 @@ public sealed record CallCenterStudentLectureDto
     [Required] public required int Order { get; init; }
     [Required] public required bool IsCurrent { get; init; }
     [Required] public required bool Attended { get; init; }
+    [Required] public required bool WatchedOnline { get; init; }
+    [Required] public required bool CenterAttended { get; init; }
     public string? CenterName { get; init; }
     public decimal? HomeworkScore { get; init; }
     public decimal? HomeworkFullMark { get; init; }
@@ -112,6 +114,8 @@ public sealed record CallCenterStudentDto
     [Required] public required string PhoneNumber { get; init; }
     [Required] public required string ParentPhoneNumber { get; init; }
     [Required] public required bool Attended { get; init; }
+    [Required] public required bool WatchedOnline { get; init; }
+    [Required] public required bool CenterAttended { get; init; }
     public decimal? HomeworkScore { get; init; }
     public decimal? ChooseHomeworkScore { get; init; }
     public decimal? QuizScore { get; init; }

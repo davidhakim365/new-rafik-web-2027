@@ -46,6 +46,7 @@ export type ParentAttendanceItem = {
   courseTitle: string;
   lectureCreatedAt: string;
   attended: boolean;
+  watchedOnline?: boolean;
   attendedAt: string | null;
 };
 

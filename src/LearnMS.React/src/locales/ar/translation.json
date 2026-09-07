@@ -225,6 +225,7 @@
       "studentId": "رقم الطالب",
       "loadError": "تعذر تحميل التقدم. يرجى تسجيل الدخول مرة أخرى.",
       "attended": "حضر",
+      "watchedOnline": "شاهد أونلاين",
       "absent": "غاب",
       "lectureDate": "تاريخ المحاضرة",
       "attendedAt": "تاريخ الحضور",

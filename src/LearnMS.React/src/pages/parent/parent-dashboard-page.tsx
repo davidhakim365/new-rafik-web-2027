@@ -308,12 +308,16 @@ const ParentDashboardPage = () => {
                         className={cn(
                           "rounded-full",
                           item.attended
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                            ? item.watchedOnline && !item.attendedAt
+                              ? "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                             : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
                         )}
                       >
                         {item.attended
-                          ? t("parent.dashboard.attended")
+                          ? item.watchedOnline && !item.attendedAt
+                            ? t("parent.dashboard.watchedOnline")
+                            : t("parent.dashboard.attended")
                           : t("parent.dashboard.absent")}
                       </Badge>
                       {item.attendedAt && (

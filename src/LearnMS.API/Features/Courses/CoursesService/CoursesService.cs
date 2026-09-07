@@ -2249,6 +2249,30 @@ public sealed class CoursesService : ICoursesService
             ?? await _context.Set<LessonAttendance>().FirstOrDefaultAsync(x =>
                 x.LessonId == query.LessonId && x.StudentId == query.StudentId);
 
+        // Unlimited lessons skip POST /start, so opening the player must still
+        // create LessonAttendance — otherwise parent follow-up / call center
+        // keep showing the student as absent.
+        if (attendance is null && lesson.ExpirationHours == 0)
+        {
+            attendance = new LessonAttendance
+            {
+                LessonId = query.LessonId,
+                StudentId = query.StudentId,
+                ExpirationDate = null
+            };
+            _context.Set<LessonAttendance>().Add(attendance);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                _context.Entry(attendance).State = EntityState.Detached;
+                attendance = await _context.Set<LessonAttendance>().FirstOrDefaultAsync(x =>
+                    x.LessonId == query.LessonId && x.StudentId == query.StudentId);
+            }
+        }
+
         var sessionIsActive =
             lesson.ExpirationHours == 0
             || (attendance?.ExpirationDate is { } sessionExpiresAt && sessionExpiresAt > DateTime.UtcNow);

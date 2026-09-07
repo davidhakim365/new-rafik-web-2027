@@ -2,7 +2,9 @@ import {
   CallCenterStudent,
   CallCenterStudentLecture,
   buildCallCenterWhatsAppMessage,
+  callCenterAttendanceLabel,
   openWhatsApp,
+  resolveCallCenterAttendance,
   resolveCallCenterStudyMode,
   useCallCenterHistoryQuery,
   useCallCenterStudentLecturesQuery,
@@ -84,6 +86,28 @@ function formatOnlineQuizzes(
 ) {
   if (studentScore == null && totalScore == null) return "—";
   return `${studentScore ?? 0} / ${totalScore ?? 0}`;
+}
+
+function attendanceBadgeClass(kind: ReturnType<typeof resolveCallCenterAttendance>) {
+  if (kind === "present") return "bg-emerald-600 hover:bg-emerald-600";
+  if (kind === "watched-online") return "bg-sky-600 hover:bg-sky-600";
+  return "bg-red-600 hover:bg-red-600";
+}
+
+function AttendanceBadge({
+  item,
+}: {
+  item: Pick<
+    CallCenterStudent,
+    "attended" | "watchedOnline" | "centerAttended"
+  > & { centerName?: string | null };
+}) {
+  const kind = resolveCallCenterAttendance(item);
+  return (
+    <Badge className={attendanceBadgeClass(kind)}>
+      {callCenterAttendanceLabel(kind)}
+    </Badge>
+  );
 }
 
 const CallCenterPage = () => {
@@ -555,15 +579,7 @@ function CallCenterStudentCard({
             >
               {isOnline ? "Online" : "Offline"}
             </Badge>
-            <Badge
-              className={
-                student.attended
-                  ? "bg-emerald-600 hover:bg-emerald-600"
-                  : "bg-red-600 hover:bg-red-600"
-              }
-            >
-              {student.attended ? "Present" : "Absent"}
-            </Badge>
+            <AttendanceBadge item={student} />
             {isBlocked && (
               <Badge className="bg-zinc-800 hover:bg-zinc-800 text-white">
                 Blocked
@@ -954,20 +970,16 @@ function LectureHistoryRow({
           ) : null}
         </td>
         <td className="px-3 py-2">
-          <Badge
-            className={
-              lecture.attended
-                ? "bg-emerald-600 hover:bg-emerald-600"
-                : "bg-red-600 hover:bg-red-600"
-            }
-          >
-            {lecture.attended ? "Present" : "Absent"}
-          </Badge>
+          <AttendanceBadge item={lecture} />
         </td>
         <td className="px-3 py-2">
-          {lecture.attended ? (
+          {lecture.centerAttended || lecture.centerName?.trim() ? (
             <span className="font-medium">
               {lecture.centerName?.trim() || "—"}
+            </span>
+          ) : lecture.watchedOnline ? (
+            <span className="font-medium text-sky-700 dark:text-sky-300">
+              Online
             </span>
           ) : (
             <span className="text-muted-foreground">—</span>
