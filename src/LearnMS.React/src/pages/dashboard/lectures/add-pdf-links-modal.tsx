@@ -86,11 +86,15 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
     try {
       const res = await getGoogleDriveFolders();
       setFolders(res.data ?? []);
-    } catch {
+    } catch (error) {
       setFolders([]);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "The Google token in env may be expired. Click Connect Gmail once, copy the new token into env, then restart the API.";
       toast({
         title: "Could not load Drive folders",
-        description: "Reconnect Google account, then try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {
