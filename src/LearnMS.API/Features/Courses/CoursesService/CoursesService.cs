@@ -168,6 +168,42 @@ public sealed class CoursesService : ICoursesService
         await _context.SaveChangesAsync();
     }
 
+    public async Task ExecuteAsync(PublishLectureAttachmentsCommand command)
+    {
+        var lecture =
+            await _context.Lectures.FirstOrDefaultAsync(x =>
+                x.Id == command.Id && x.CourseId == command.CourseId
+            ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        if (!lecture.IsPublishable)
+            throw new ApiException(LecturesErrors.NotPublishable);
+
+        lecture.AreAttachmentsPublished = true;
+
+        _context.Update(lecture);
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ExecuteAsync(UnPublishLectureAttachmentsCommand command)
+    {
+        var lecture =
+            await _context.Lectures.FirstOrDefaultAsync(x => x.Id == command.Id)
+            ?? throw new ApiException(LecturesErrors.NotFound);
+
+        lecture.AreAttachmentsPublished = false;
+
+        _context.Update(lecture);
+
+        await _context.SaveChangesAsync();
+    }
+
+    private static void EnsureLectureContentPublished(Lecture lecture)
+    {
+        if (!lecture.IsPublished)
+            throw new ApiException(LecturesErrors.NotFound);
+    }
+
     private async Task ApplyChooseHomeworkFormAsync(Lecture lecture, string rawFormId)
     {
         if (string.IsNullOrWhiteSpace(rawFormId))
@@ -731,6 +767,8 @@ public sealed class CoursesService : ICoursesService
         if (course.Lectures.FirstOrDefault(x => x.Id == command.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
 
+        EnsureLectureContentPublished(lecture);
+
         if (lecture.Lessons.FirstOrDefault(x => x.Id == command.LessonId) is not { } lesson)
             throw new ApiException(LessonsErrors.NotFound);
 
@@ -773,6 +811,8 @@ public sealed class CoursesService : ICoursesService
 
         if (course.Lectures.FirstOrDefault(x => x.Id == command.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
+
+        EnsureLectureContentPublished(lecture);
 
         if (lecture.Lessons.FirstOrDefault(x => x.Id == command.LessonId) is not { } lesson)
             throw new ApiException(LessonsErrors.NotFound);
@@ -1048,6 +1088,8 @@ public sealed class CoursesService : ICoursesService
 
         if (course.Lectures.FirstOrDefault(x => x.Id == command.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
+
+        EnsureLectureContentPublished(lecture);
 
         if (lecture.Quizzes.FirstOrDefault(x => x.Id == command.QuizId) is not { } quiz)
             throw new ApiException(QuizzesErrors.NotFound);
@@ -1539,7 +1581,8 @@ public sealed class CoursesService : ICoursesService
         var quizExists = await _context.Set<Quiz>().AnyAsync(x =>
             x.Id == command.QuizId
             && x.LectureId == command.LectureId
-            && x.Lecture.CourseId == command.CourseId);
+            && x.Lecture.CourseId == command.CourseId
+            && x.Lecture.IsPublished);
         if (!quizExists)
             throw new ApiException(QuizzesErrors.NotFound);
 
@@ -1571,6 +1614,8 @@ public sealed class CoursesService : ICoursesService
 
         if (course.Lectures.FirstOrDefault(x => x.Id == command.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
+
+        EnsureLectureContentPublished(lecture);
 
         if (lecture.Quizzes.FirstOrDefault(x => x.Id == command.QuizId) is not { } quiz)
             throw new ApiException(QuizzesErrors.NotFound);
@@ -1905,7 +1950,9 @@ public sealed class CoursesService : ICoursesService
             .CourseEnrollments.FirstOrDefault(x => x.StudentId == query.StudentId)
             ?.ExpiresAt;
 
-        var lectures = course.Lectures.Select(l =>
+        var lectures = course.Lectures
+            .Where(l => l.IsPublished || l.AreAttachmentsPublished)
+            .Select(l =>
         {
             var expiresAt = EffectiveEnrollmentExpiresAt(
                 courseExpiresAt,
@@ -1965,7 +2012,11 @@ public sealed class CoursesService : ICoursesService
                         query.IsCoursePublished == null
                         || x.Course.IsPublished == query.IsCoursePublished
                     )
-                    && (query.IsPublished == null || x.IsPublished == query.IsPublished)
+                    && (
+                        query.IsPublished == null
+                        || (query.IsPublished == true && (x.IsPublished || x.AreAttachmentsPublished))
+                        || (query.IsPublished == false && !x.IsPublished && !x.AreAttachmentsPublished)
+                    )
                 )
                 .Include(x => x.Quizzes)
                 .Include(x => x.Assets)
@@ -1995,6 +2046,28 @@ public sealed class CoursesService : ICoursesService
                 Description = q.Description
             });
 
+        var items = lesson.Union(quizzes).OrderBy(x => x.Order).ToList();
+        var assets = lecture.Assets;
+        var quizAnswerAssets = lecture.QuizAnswerAssets;
+        var homeworkVideoUrl = lecture.HomeworkVideoUrl;
+        var chooseHomeworkFormId = lecture.ChooseHomeworkFormId;
+        var chooseHomeworkFormUrl = lecture.ChooseHomeworkFormUrl;
+        if (query.IsPublished == true)
+        {
+            if (!lecture.AreAttachmentsPublished)
+            {
+                assets = [];
+                quizAnswerAssets = [];
+            }
+            if (!lecture.IsPublished)
+            {
+                items = [];
+                homeworkVideoUrl = null;
+                chooseHomeworkFormId = null;
+                chooseHomeworkFormUrl = null;
+            }
+        }
+
         var result = new GetLectureDashboardResult
         {
             Id = lecture.Id,
@@ -2003,18 +2076,19 @@ public sealed class CoursesService : ICoursesService
             Title = lecture.Title,
             Description = lecture.Description,
             ImageUrl = lecture.ImageUrl,
-            HomeworkVideoUrl = lecture.HomeworkVideoUrl,
-            ChooseHomeworkFormId = lecture.ChooseHomeworkFormId,
-            ChooseHomeworkFormUrl = lecture.ChooseHomeworkFormUrl,
+            HomeworkVideoUrl = homeworkVideoUrl,
+            ChooseHomeworkFormId = chooseHomeworkFormId,
+            ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
             HomeworkFullMark = lecture.HomeworkFullMark,
             ChooseHomeworkFullMark = lecture.ChooseHomeworkFullMark,
             QuizFullMark = lecture.QuizFullMark,
             IsPublished = lecture.IsPublished,
+            AreAttachmentsPublished = lecture.AreAttachmentsPublished,
             Price = lecture.Price,
             RenewalPrice = lecture.RenewalPrice,
-            Assets = lecture.Assets,
-            QuizAnswerAssets = lecture.QuizAnswerAssets,
-            Items = lesson.Union(quizzes).OrderBy(x => x.Order).ToList(),
+            Assets = assets,
+            QuizAnswerAssets = quizAnswerAssets,
+            Items = items,
             IsImportant = lecture.IsImportant
         };
 
@@ -2051,6 +2125,9 @@ public sealed class CoursesService : ICoursesService
             ?? throw new ApiException(CoursesErrors.NotFound);
 
         if (course.Lectures.FirstOrDefault(x => x.Id == query.LectureId) is not { } lecture)
+            throw new ApiException(LecturesErrors.NotFound);
+
+        if (!lecture.IsPublished && !lecture.AreAttachmentsPublished)
             throw new ApiException(LecturesErrors.NotFound);
 
         EnsureStudentCourseLevel(course.Level, student.Level);
@@ -2128,26 +2205,29 @@ public sealed class CoursesService : ICoursesService
 
         var expiresAt = EffectiveEnrollmentExpiresAt(courseExpiresAt, lectureExpiresAt);
 
-        // Assets: show only after all quizzes in this lecture are passed (or no quizzes / attended)
-        var hasQuizzes = lecture.Quizzes.Any();
+        // Assets: show only after all live quizzes in this lecture are passed (or no quizzes / attended)
+        var hasQuizzes = lecture.IsPublished && lecture.Quizzes.Any();
         var hasCompletedQuizzes = !hasQuizzes || lecture.Quizzes.All(IsQuizPassed);
 
         var hasAttendedLecture = lecture.LectureAttendances
             .Any(la => la.StudentId == query.StudentId && la.AttendedAt != null);
         var assets =
-            hasCompletedQuizzes || hasAttendedLecture || (!hasQuizzes && expiresAt != null)
+            lecture.AreAttachmentsPublished &&
+            (hasCompletedQuizzes || hasAttendedLecture || (!hasQuizzes && expiresAt != null))
                 ? lecture.Assets
                 : [];
 
         var enrollment = EnrollmentStatus.FromExpiresAt(expiresAt);
-        var (canViewQuizAnswers, quizAnswersLockReason) = LectureQuizAnswerAccess.Evaluate(
-            student.StudentCode,
-            enrollment == Enrollment.Active,
-            hasAttendedLecture,
-            hasQuizzes,
-            hasQuizzes && lecture.Quizzes.All(IsQuizPassed)
-        );
-        var hasQuizAnswers = lecture.QuizAnswerAssets.Count > 0;
+        var (canViewQuizAnswers, quizAnswersLockReason) = lecture.AreAttachmentsPublished
+            ? LectureQuizAnswerAccess.Evaluate(
+                student.StudentCode,
+                enrollment == Enrollment.Active,
+                hasAttendedLecture,
+                hasQuizzes,
+                hasQuizzes && lecture.Quizzes.All(IsQuizPassed)
+            )
+            : (false, (string?)null);
+        var hasQuizAnswers = lecture.AreAttachmentsPublished && lecture.QuizAnswerAssets.Count > 0;
         var quizAnswerAssets = canViewQuizAnswers
             ? lecture.QuizAnswerAssets
             : [];
@@ -2165,13 +2245,19 @@ public sealed class CoursesService : ICoursesService
             await _context.SaveChangesAsync();
         }
 
-        var chooseHomeworkFormUrl = GoogleFormsPrefill.ApplyPrefill(
-            lecture.ChooseHomeworkFormUrl,
-            lecture.ChooseHomeworkStudentIdEntryId,
-            lecture.ChooseHomeworkNameEntryId,
-            student.StudentCode,
-            student.FullName
-        );
+        var chooseHomeworkFormUrl = lecture.IsPublished
+            ? GoogleFormsPrefill.ApplyPrefill(
+                lecture.ChooseHomeworkFormUrl,
+                lecture.ChooseHomeworkStudentIdEntryId,
+                lecture.ChooseHomeworkNameEntryId,
+                student.StudentCode,
+                student.FullName
+            )
+            : null;
+
+        var items = lecture.IsPublished
+            ? lessons.Union(quizzes).OrderBy(x => x.Order).ToList()
+            : [];
 
         return new GetStudentLectureResult
         {
@@ -2182,19 +2268,20 @@ public sealed class CoursesService : ICoursesService
             ExpiresAt = expiresAt,
             Enrollment = enrollment,
             ImageUrl = lecture.ImageUrl!,
-            HomeworkVideoUrl = lecture.HomeworkVideoUrl,
+            HomeworkVideoUrl = lecture.IsPublished ? lecture.HomeworkVideoUrl : null,
             ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
             Price = lecture.Price!.Value,
             ExpirationDays = lecture.ExpirationDays!.Value,
             RenewalPrice = lecture.RenewalPrice!.Value,
-            IsPublished = lecture!.IsPublished,
+            IsPublished = lecture.IsPublished,
+            AreAttachmentsPublished = lecture.AreAttachmentsPublished,
             // added
             Assets = assets,
             QuizAnswerAssets = quizAnswerAssets,
             CanViewQuizAnswers = canViewQuizAnswers,
             HasQuizAnswers = hasQuizAnswers,
             QuizAnswersLockReason = quizAnswersLockReason,
-            Items = lessons.Union(quizzes).OrderBy(x => x.Order).ToList(),
+            Items = items,
             IsImportant = lecture.IsImportant
         };
     }
@@ -2218,6 +2305,8 @@ public sealed class CoursesService : ICoursesService
 
         if (course.Lectures.FirstOrDefault(x => x.Id == query.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
+
+        EnsureLectureContentPublished(lecture);
 
         await EnsureStudentCanAccessCourseAsync(query.StudentId, course.Level);
 
@@ -2582,6 +2671,8 @@ public sealed class CoursesService : ICoursesService
 
         if (course.Lectures.FirstOrDefault(x => x.Id == query.LectureId) is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
+
+        EnsureLectureContentPublished(lecture);
 
         if (lecture.Quizzes.FirstOrDefault(x => x.Id == query.QuizId) is not { } quiz)
             throw new ApiException(QuizzesErrors.NotFound);

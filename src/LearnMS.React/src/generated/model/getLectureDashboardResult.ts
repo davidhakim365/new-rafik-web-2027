@@ -19,6 +19,7 @@ export type GetLectureDashboardResult = GetLectureResult & {
   quizFullMark?: number | null;
   imageUrl: string;
   isPublished: boolean;
+  areAttachmentsPublished: boolean;
   price: number;
   renewalPrice: number;
 };

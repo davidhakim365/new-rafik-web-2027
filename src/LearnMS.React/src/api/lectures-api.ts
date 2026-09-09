@@ -105,6 +105,37 @@ export const usePublishingLectureMutation = () => {
       qc.invalidateQueries({
         queryKey: ["lecture", { id: lectureId, courseId }],
       });
+      qc.invalidateQueries({
+        queryKey: ["course", { id: courseId }],
+      });
+      qc.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+};
+
+export const usePublishingLectureAttachmentsMutation = () => {
+  const qc = useQueryClient();
+
+  return useMutation<
+    ApiResponse<{}>,
+    {},
+    { courseId: string; lectureId: string; publish: boolean }
+  >({
+    mutationFn: ({ courseId, lectureId, publish }) =>
+      api
+        .post(
+          `/api/courses/${courseId}/lectures/${lectureId}/${
+            publish ? "publish-attachments" : "unpublish-attachments"
+          }`
+        )
+        .then((res) => res.data),
+    onSuccess: (_, { lectureId, courseId }) => {
+      qc.invalidateQueries({
+        queryKey: getGetLectureQueryKey(courseId, lectureId),
+      });
+      qc.invalidateQueries({
+        queryKey: ["lecture", { id: lectureId, courseId }],
+      });
       qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
       qc.invalidateQueries({ queryKey: ["courses"] });
     },

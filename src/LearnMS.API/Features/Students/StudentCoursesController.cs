@@ -43,7 +43,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                     c.Price,
                     c.RenewalPrice,
                     c.Level,
-                    LecturesCount = c.Lectures.Count(l => l.IsPublished),
+                    LecturesCount = c.Lectures.Count(l => l.IsPublished || l.AreAttachmentsPublished),
                     c.ExpirationDays,
                     ExamsCount = c.Exams.Count,
                     ExpiresAt = studentId == null
@@ -116,7 +116,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             .Select(es => (DateTime?)es.ExpiresAt)
                             .FirstOrDefault(),
                     Lectures = c.Lectures
-                        .Where(l => l.IsPublished)
+                        .Where(l => l.IsPublished || l.AreAttachmentsPublished)
                         .Select(l => new
                         {
                             l.Id,
@@ -127,6 +127,8 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                             l.Price,
                             l.RenewalPrice,
                             l.ImageUrl,
+                            l.IsPublished,
+                            l.AreAttachmentsPublished,
                             l.HomeworkVideoUrl,
                             l.ChooseHomeworkFormUrl,
                             l.ChooseHomeworkStudentIdEntryId,
@@ -235,15 +237,18 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         {
             var expiresAt = EffectiveEnrollmentExpiresAt(courseExpires, l.ExpiresAt);
             var enrollment = EnrollmentStatus.FromExpiresAt(expiresAt);
-            var hasAnyQuiz = l.Quizzes.Count > 0;
+            var contentPublished = l.IsPublished;
+            var hasAnyQuiz = contentPublished && l.Quizzes.Count > 0;
             var passedAllQuizzes = hasAnyQuiz && l.Quizzes.All(q => q.IsPassed == true);
-            var (canViewQuizAnswers, quizAnswersLockReason) = LectureQuizAnswerAccess.Evaluate(
-                studentInfo?.StudentCode,
-                enrollment == Enrollment.Active,
-                l.HasAttended,
-                hasAnyQuiz,
-                passedAllQuizzes
-            );
+            var (canViewQuizAnswers, quizAnswersLockReason) = l.AreAttachmentsPublished
+                ? LectureQuizAnswerAccess.Evaluate(
+                    studentInfo?.StudentCode,
+                    enrollment == Enrollment.Active,
+                    l.HasAttended,
+                    hasAnyQuiz,
+                    passedAllQuizzes
+                )
+                : (false, (string?)null);
             return new StudentLectureDto()
             {
                 Id = l.Id,
@@ -253,23 +258,29 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                 RenewalPrice = l.RenewalPrice!.Value,
                 Order = l.Order,
                 ImageUrl = l.ImageUrl,
-                HomeworkVideoUrl = l.HomeworkVideoUrl,
-                ChooseHomeworkFormUrl = GoogleFormsPrefill.ApplyPrefill(
-                    l.ChooseHomeworkFormUrl,
-                    l.ChooseHomeworkStudentIdEntryId,
-                    l.ChooseHomeworkNameEntryId,
-                    studentInfo?.StudentCode,
-                    studentInfo?.FullName
-                ),
-                Assets = l.Assets,
+                HomeworkVideoUrl = contentPublished ? l.HomeworkVideoUrl : null,
+                ChooseHomeworkFormUrl = contentPublished
+                    ? GoogleFormsPrefill.ApplyPrefill(
+                        l.ChooseHomeworkFormUrl,
+                        l.ChooseHomeworkStudentIdEntryId,
+                        l.ChooseHomeworkNameEntryId,
+                        studentInfo?.StudentCode,
+                        studentInfo?.FullName
+                    )
+                    : null,
+                Assets = l.AreAttachmentsPublished ? l.Assets : [],
                 QuizAnswerAssets = canViewQuizAnswers ? l.QuizAnswerAssets : [],
                 CanViewQuizAnswers = canViewQuizAnswers,
-                HasQuizAnswers = l.QuizAnswerAssets.Count > 0,
+                HasQuizAnswers = l.AreAttachmentsPublished && l.QuizAnswerAssets.Count > 0,
                 QuizAnswersLockReason = quizAnswersLockReason,
                 ExpirationDays = l.ExpirationDays,
-                Items = l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList(),
+                Items = contentPublished
+                    ? l.Lessons.Cast<StudentLectureItemDto>().Union(l.Quizzes).OrderBy(i => i.Order).ToList()
+                    : [],
                 ExpiresAt = expiresAt,
                 Enrollment = enrollment,
+                IsPublished = contentPublished,
+                AreAttachmentsPublished = l.AreAttachmentsPublished,
             };
         }).ToList();
 

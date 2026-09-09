@@ -24,7 +24,7 @@ public static class LectureQuizAnswerAccess
         {
             if (!isEnrolled)
                 return (false, LockEnroll);
-            if (!hasAnyQuiz || !passedAllQuizzes)
+            if (hasAnyQuiz && !passedAllQuizzes)
                 return (false, LockPassQuiz);
             return (true, null);
         }

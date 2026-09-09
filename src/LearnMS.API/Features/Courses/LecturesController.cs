@@ -203,6 +203,32 @@ public sealed class LecturesController : ControllerBase
     }
 
 
+    [HttpPost("{lectureId:guid}/publish-attachments")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
+    [SwaggerOperation(OperationId = "PublishLectureAttachments")]
+    public async Task<ApiWrapper.Success<object?>> PublishAttachments(Guid lectureId, Guid courseId)
+    {
+        await _coursesService.ExecuteAsync(
+            new PublishLectureAttachmentsCommand { Id = lectureId, CourseId = courseId }
+        );
+
+        return new ApiWrapper.Success<object?> { Message = "Published lecture attachments successfully" };
+    }
+
+
+    [HttpPost("{lectureId:guid}/unpublish-attachments")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLecture])]
+    [SwaggerOperation(OperationId = "UnPublishLectureAttachments")]
+    public async Task<ApiWrapper.Success<object?>> UnpublishAttachments(Guid lectureId, Guid courseId)
+    {
+        await _coursesService.ExecuteAsync(
+            new UnPublishLectureAttachmentsCommand { Id = lectureId, CourseId = courseId }
+        );
+
+        return new ApiWrapper.Success<object?> { Message = "Unpublished lecture attachments successfully" };
+    }
+
+
     [HttpPut("{lectureId:guid}/students/{studentId:guid}/homework")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageLectureStudents])]
     [SwaggerOperation(OperationId = "ChangeLectureHomeworkScore")]

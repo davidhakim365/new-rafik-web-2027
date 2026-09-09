@@ -7,4 +7,10 @@ public sealed record PublishLectureCommand
     public required Guid CourseId { get; init; }
 }
 
+public sealed record PublishLectureAttachmentsCommand
+{
+    public required Guid Id { get; init; }
+    public required Guid CourseId { get; init; }
+}
+
 

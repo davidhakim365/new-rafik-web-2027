@@ -70,6 +70,12 @@ public sealed record StudentLectureDto : StudentCourseItemDto
 
     [Required]
     public Enrollment Enrollment { get; init; }
+
+    [Required]
+    public required bool IsPublished { get; init; }
+
+    [Required]
+    public required bool AreAttachmentsPublished { get; init; }
 }
 
 public sealed record StudentAssetDto

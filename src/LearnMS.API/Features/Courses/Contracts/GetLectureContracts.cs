@@ -55,6 +55,8 @@ public record GetLectureDashboardResult : GetLectureResult
     [Required]
     public required bool? IsPublished { get; set; }
     [Required]
+    public required bool AreAttachmentsPublished { get; set; }
+    [Required]
     public required int? ExpirationDays { get; set; }
 }
 
@@ -115,6 +117,7 @@ public sealed record GetStudentLectureResult : GetLectureResult
     [Required]
     public required int ExpirationDays { get; init; }
     public required bool? IsPublished {get; set;}
+    public required bool AreAttachmentsPublished { get; set; }
     public required DateTime? ExpiresAt { get; set; }
     [Required]
     public Enrollment Enrollment { get; init; }

@@ -1,4 +1,4 @@
-import { useReorderLectureItemsMutation, useUpdateLectureAssetsMutation, useUpdateLectureQuizAnswerAssetsMutation } from "@/api/lectures-api";
+import { useReorderLectureItemsMutation, useUpdateLectureAssetsMutation, useUpdateLectureQuizAnswerAssetsMutation, usePublishingLectureAttachmentsMutation } from "@/api/lectures-api";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
 import { Badge } from "@/components/ui/badge";
@@ -136,10 +136,10 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
           queryKey: getGetLectureQueryKey(lecture.courseId!, lecture.id),
         });
         toast({
-          title: "Publishing",
+          title: lecture.isPublished ? "Unpublished" : "Published",
           description: lecture.isPublished
-            ? "Successfully unpublished the course"
-            : "Successfully published the course",
+            ? "Lecture videos and quizzes are now hidden from students"
+            : "Lecture videos and quizzes are now visible to students",
         });
       },
     },
@@ -151,14 +151,14 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
           queryKey: getGetLectureQueryKey(lecture.courseId!, lecture.id),
         });
         toast({
-          title: "UnPublishing",
-          description: lecture.isPublished
-            ? "Successfully unpublished the course"
-            : "Successfully published the course",
+          title: "Unpublished",
+          description: "Lecture videos and quizzes are now hidden from students",
         });
       },
     },
   });
+  const { mutate: publishAttachments, isPending: isPublishingAttachments } =
+    usePublishingLectureAttachmentsMutation();
   const { mutate: deleteLecture, isPending: isDeleting } = useDeleteLecture({
     mutation: {
       onSuccess() {
@@ -178,7 +178,8 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
 
   const { data: profile } = useGetProfile();
 
-  const isLoading = isPublishing || isDeleting || isUnPublishing;
+  const isLoading =
+    isPublishing || isDeleting || isUnPublishing || isPublishingAttachments;
 
   if (
     profile?.data?.$type === "GetAssistantProfileResult" &&
@@ -199,7 +200,7 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
     );
   }
 
-  const onPublish = () => {
+  const onPublishContent = () => {
     if (lecture.isPublished) {
       unPublish({ courseId: lecture.courseId!, lectureId: lecture.id });
     } else {
@@ -207,10 +208,32 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
     }
   };
 
+  const attachmentsPublished = !!lecture.areAttachmentsPublished;
+
+  const onPublishAttachments = () => {
+    publishAttachments(
+      {
+        courseId: lecture.courseId!,
+        lectureId: lecture.id,
+        publish: !attachmentsPublished,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: attachmentsPublished ? "Unpublished" : "Published",
+            description: attachmentsPublished
+              ? "Attachments and quiz answers are now hidden from students"
+              : "Attachments and quiz answers are now visible to students",
+          });
+        },
+      }
+    );
+  };
+
   return (
     <div className='w-full h-full p-4'>
       <div className='flex w-full'>
-        <div className='flex gap-2 ms-auto item-center'>
+        <div className='flex flex-wrap gap-2 ms-auto items-center justify-end'>
           {canOpenStudents && (
             <Button asChild variant="outline" className="gap-2">
               <Link to={`/dashboard/courses/${lecture.courseId}/lectures/${lecture.id}/students`}>
@@ -233,9 +256,17 @@ const LectureDetailsTab: React.FC<TabProps> = ({ lecture, canOpenStudents }) => 
 
           <Button
             disabled={isLoading}
-            onClick={onPublish}
+            onClick={onPublishAttachments}
             className='bg-card border rounded text-primary border-primary hover:bg-primary hover:text-primary-foreground'>
-            {lecture.isPublished ? "UnPublish" : "Publish"}
+            {attachmentsPublished ? "Unpublish Attachments & Quiz Answers" : "Publish Attachments & Quiz Answers"}
+          </Button>
+          <Button
+            disabled={isLoading}
+            onClick={onPublishContent}
+            className='bg-card border rounded text-primary border-primary hover:bg-primary hover:text-primary-foreground'>
+            {lecture.isPublished
+              ? "Unpublish Videos & Quizzes"
+              : "Publish Videos & Quizzes"}
           </Button>
         </div>
       </div>
@@ -951,7 +982,7 @@ function LectureQuizAnswerAssetsForm({
     <LecturePdfCollectionForm
       title="Quiz Answers"
       emptyText="NO QUIZ ANSWERS"
-      description="Offline students can open these PDFs after attending at a center. Online students must be enrolled in the lecture and pass the quiz."
+      description="These PDFs publish with attachments. Offline students can open them after attending at a center. Online students must be enrolled and pass the quiz when quizzes are published."
       oldAssets={oldAssets ?? []}
       lectureId={id}
       courseId={courseId}

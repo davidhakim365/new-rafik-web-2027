@@ -17,6 +17,8 @@ public interface ICoursesService
     public Task ExecuteAsync(DeleteLessonCommand command);
     public Task ExecuteAsync(PublishLectureCommand command);
     public Task ExecuteAsync(UnPublishLectureCommand command);
+    public Task ExecuteAsync(PublishLectureAttachmentsCommand command);
+    public Task ExecuteAsync(UnPublishLectureAttachmentsCommand command);
     public Task ExecuteAsync(CreateLessonCommand command);
     public Task ExecuteAsync(UpdateLessonCommand command);
     public Task ExecuteAsync(UploadLessonVideoCommand command);

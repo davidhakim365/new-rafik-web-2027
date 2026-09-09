@@ -39,6 +39,8 @@ public sealed class LecturesConfigurations : IEntityTypeConfiguration<Lecture>
         builder.HasOne(x => x.Course).WithMany(x => x.Lectures).HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Cascade).IsRequired();
 
         builder.Property(x => x.IsPublished);
+        builder.Property(x => x.AreAttachmentsPublished);
+        builder.Ignore(x => x.IsVisibleToStudents);
 
         builder.HasMany(x => x.EnrolledStudents).WithMany(x => x.PurchasedLectures).UsingEntity<LectureEnrollment>(
             l => l.HasOne(x => x.Student).WithMany(x => x.LectureEnrollments).HasForeignKey(x => x.StudentId),

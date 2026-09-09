@@ -41,6 +41,12 @@ public class Lecture : IOrdered
     public decimal? RenewalPrice { get; set; } = 25;
     public int? ExpirationDays { get; set; } = 7;
     public bool IsPublished = false;
+
+    /// <summary>When true, students can see lecture PDF attachments independently of videos and quizzes.</summary>
+    public bool AreAttachmentsPublished { get; set; } = false;
+
+    public bool IsVisibleToStudents => IsPublished || AreAttachmentsPublished;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Student> EnrolledStudents { get; } = [];

@@ -178,6 +178,8 @@ const StudentLecturePage = () => {
               )}
             </div>
           )}
+          {lecture.items.length > 0 && (
+            <>
           <h2
             dir={isRTL ? "rtl" : "ltr"}
             className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl lg:text-4xl text-foreground"
@@ -206,6 +208,8 @@ const StudentLecturePage = () => {
               );
             })}
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

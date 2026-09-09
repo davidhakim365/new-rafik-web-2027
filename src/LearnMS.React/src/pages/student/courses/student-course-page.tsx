@@ -760,8 +760,9 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
       className="px-3 pb-4 space-y-4 sm:px-6 sm:pb-8 sm:space-y-8"
       dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* Action Button Section - Only for Non-Active Lectures */}
-      {(lecture.enrollment as string) !== "Active" && (
+      {/* Action Button Section - Only for Non-Active Lectures with published videos/quizzes */}
+      {(lecture.enrollment as string) !== "Active" &&
+        lecture.isPublished !== false && (
         <div className="space-y-3 sm:space-y-4">
           <PlasticButton
             onClick={handleButtonClick}
@@ -909,7 +910,9 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
       )}
 
       {/* Attachments Section */}
-      <AttachmentsSection attachments={lecture.assets} />
+      {(lecture.assets?.length ?? 0) > 0 && (
+        <AttachmentsSection attachments={lecture.assets} />
+      )}
 
       {(lecture.hasQuizAnswers || (lecture.quizAnswerAssets?.length ?? 0) > 0) && (
         <AttachmentsSection
@@ -927,8 +930,10 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
         />
       )}
 
-      {/* Lecture Content Items - Always shown */}
-      <LectureItemsAccordions lecture={lecture} courseId={courseId!} />
+      {/* Lecture Content Items */}
+      {(lecture.items?.length ?? 0) > 0 && (
+        <LectureItemsAccordions lecture={lecture} courseId={courseId!} />
+      )}
 
       {/* Additional Info for Non-Active Lectures */}
       {(lecture.enrollment as string) !== "Active" &&

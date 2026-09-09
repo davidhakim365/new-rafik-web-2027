@@ -24,6 +24,8 @@ export type StudentLectureDto = StudentCourseItemDto & {
   chooseHomeworkFormUrl?: string | null;
   imageUrl?: string | null;
   items: StudentLectureDtoItemsItem[];
+  isPublished?: boolean;
+  areAttachmentsPublished?: boolean;
   price: number;
   renewalPrice: number;
 };

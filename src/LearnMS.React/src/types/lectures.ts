@@ -13,6 +13,7 @@ export type Lecture = {
   price: number;
   renewalPrice: number;
   isPublished?: boolean;
+  areAttachmentsPublished?: boolean;
   expirationDays: number;
   assets: Asset[];
 } & Enrollment;

@@ -18,6 +18,7 @@ export type GetStudentLectureResult = GetLectureResult & {
   chooseHomeworkFormUrl?: string | null;
   imageUrl: string;
   isPublished?: boolean | null;
+  areAttachmentsPublished?: boolean | null;
   price: number;
   renewalPrice: number;
   canViewQuizAnswers?: boolean;
