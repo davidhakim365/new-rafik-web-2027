@@ -14,10 +14,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadToImgBb } from "@/lib/imgbb-upload";
 import { toast } from "@/lib/utils";
 import {
   createDefaultMultipleChoices,
@@ -25,7 +25,7 @@ import {
   QuestionChoiceDraft,
 } from "@/types/assessment";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Delete, Loader2, Plus } from "lucide-react";
+import { Delete, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -69,15 +69,6 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
       correctAnswer: choices[0]?.id,
     },
   });
-
-  const upload = async (file: File, apply: (url: string) => void) => {
-    setUploading(true);
-    try {
-      apply(await uploadToImgBb(file));
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const onAddQuestion = (data: z.infer<typeof FormSchema>) => {
     addQuestionMutation.mutate(
@@ -142,25 +133,16 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
               />
               <FormField
                 name="image"
-                render={() => (
+                control={form.control}
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Question image (ImgBB)</FormLabel>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f)
-                          upload(f, (url) => form.setValue("image", url));
-                      }}
+                    <FormLabel>Question image</FormLabel>
+                    <ImageUploadField
+                      value={field.value}
+                      onChange={field.onChange}
+                      capturePaste
+                      onUploadingChange={setUploading}
                     />
-                    {form.watch("image") && (
-                      <img
-                        src={form.watch("image")}
-                        alt=""
-                        className="mt-2 max-h-40 rounded border"
-                      />
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -227,31 +209,21 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                                   <Delete />
                                 </Button>
                               </div>
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const f = e.target.files?.[0];
-                                  if (f)
-                                    upload(f, (url) =>
-                                      setChoices((opts) => {
-                                        const next = [...opts];
-                                        next[index] = {
-                                          ...next[index],
-                                          imageUrl: url,
-                                        };
-                                        return next;
-                                      })
-                                    );
-                                }}
+                              <ImageUploadField
+                                compact
+                                value={choice.imageUrl}
+                                onChange={(url) =>
+                                  setChoices((opts) => {
+                                    const next = [...opts];
+                                    next[index] = {
+                                      ...next[index],
+                                      imageUrl: url,
+                                    };
+                                    return next;
+                                  })
+                                }
+                                onUploadingChange={setUploading}
                               />
-                              {choice.imageUrl && (
-                                <img
-                                  src={choice.imageUrl}
-                                  alt=""
-                                  className="h-16 w-16 rounded object-cover"
-                                />
-                              )}
                             </FormLabel>
                           </FormItem>
                         ))}
@@ -262,11 +234,7 @@ const AddMultipleQuestionModal: React.FC<AddMultipleQuestionModalProps> = ({
                 )}
               />
               <Button type="submit" className="w-full">
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Submit"
-                )}
+                Submit
               </Button>
             </fieldset>
           </form>

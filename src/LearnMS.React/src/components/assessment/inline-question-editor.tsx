@@ -1,3 +1,4 @@
+import { ImageUploadField } from "@/components/image-upload-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,15 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadToImgBb } from "@/lib/imgbb-upload";
-import { toast } from "@/lib/utils";
 import {
   createDefaultMultipleChoices,
   createEmptyChoice,
   DraftQuestion,
   QuestionChoiceDraft,
 } from "@/types/assessment";
-import { ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
+import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 type Props = {
@@ -29,19 +28,6 @@ type Props = {
 
 export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
   const [uploading, setUploading] = useState(false);
-
-  const upload = async (file: File, apply: (url: string) => void) => {
-    setUploading(true);
-    try {
-      const url = await uploadToImgBb(file);
-      apply(url);
-      toast({ title: "Uploaded", description: "Image saved to ImgBB" });
-    } catch {
-      /* toast from interceptor */
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const setChoice = (id: string, patch: Partial<QuestionChoiceDraft>) => {
     onChange({
@@ -104,25 +90,13 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
       {draft.inputMode === "photo" ? (
         <div className="space-y-2">
           <Label>Question photo</Label>
-          <div className="flex flex-wrap items-center gap-3">
-            <Input
-              type="file"
-              accept="image/*"
-              disabled={uploading}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) upload(f, (url) => onChange({ image: url }));
-              }}
-            />
-            {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-          </div>
-          {draft.image && (
-            <img
-              src={draft.image}
-              alt="Question"
-              className="max-h-48 rounded-lg object-contain border"
-            />
-          )}
+          <ImageUploadField
+            value={draft.image}
+            onChange={(url) => onChange({ image: url })}
+            capturePaste
+            disabled={uploading}
+            onUploadingChange={setUploading}
+          />
         </div>
       ) : (
         <div className="space-y-2">
@@ -136,22 +110,13 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
           <Label className="text-muted-foreground text-xs">
             Optional image
           </Label>
-          <Input
-            type="file"
-            accept="image/*"
+          <ImageUploadField
+            value={draft.image}
+            onChange={(url) => onChange({ image: url })}
+            capturePaste
             disabled={uploading}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) upload(f, (url) => onChange({ image: url }));
-            }}
+            onUploadingChange={setUploading}
           />
-          {draft.image && (
-            <img
-              src={draft.image}
-              alt="Question"
-              className="max-h-40 rounded-lg object-contain border"
-            />
-          )}
         </div>
       )}
 
@@ -198,28 +163,18 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
                     value={c.text ?? ""}
                     onChange={(e) => setChoice(c.id, { text: e.target.value })}
                   />
-                  <div className="flex items-center gap-2">
+                  <div className="space-y-2">
                     <Label className="text-xs flex items-center gap-1">
                       <ImagePlus className="h-3 w-3" /> Or image
                     </Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      className="max-w-xs"
+                    <ImageUploadField
+                      compact
+                      value={c.imageUrl}
+                      onChange={(url) => setChoice(c.id, { imageUrl: url })}
                       disabled={uploading}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) upload(f, (url) => setChoice(c.id, { imageUrl: url }));
-                      }}
+                      onUploadingChange={setUploading}
                     />
                   </div>
-                  {c.imageUrl && (
-                    <img
-                      src={c.imageUrl}
-                      alt={`Choice ${idx + 1}`}
-                      className="h-20 w-20 object-cover rounded border"
-                    />
-                  )}
                 </div>
                 <Button
                   type="button"

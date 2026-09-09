@@ -14,12 +14,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadToImgBb } from "@/lib/imgbb-upload";
 import { toast } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -99,24 +98,22 @@ export default function AddEssayQuestionModal({
                   </FormItem>
                 )}
               />
-              <FormItem>
-                <FormLabel>Optional image</FormLabel>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    setUploading(true);
-                    try {
-                      form.setValue("image", await uploadToImgBb(f));
-                    } finally {
-                      setUploading(false);
-                    }
-                  }}
-                />
-                {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-              </FormItem>
+              <FormField
+                name="image"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Optional image</FormLabel>
+                    <ImageUploadField
+                      value={field.value}
+                      onChange={field.onChange}
+                      capturePaste
+                      onUploadingChange={setUploading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full">
                 Save to bank
               </Button>
