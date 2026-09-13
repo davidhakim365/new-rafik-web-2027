@@ -1,5 +1,7 @@
 import { ApiResponse, api } from "@/api";
-import { QuestionPageList } from "@/types/question";
+import type { Question as StoreQuestion } from "@/generated/model";
+import { useQuestionsStore } from "@/store/use-questions-store";
+import { Question, QuestionPageList } from "@/types/question";
 import { QuestionChoiceDraft } from "@/types/assessment";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -61,6 +63,32 @@ export const useDeleteQuestionMutation = () => {
       queryClient.invalidateQueries({
         queryKey: ["questions"],
       });
+    },
+  });
+};
+
+export type UpdateQuestionRequest = CreateQuestionRequest & { id: string };
+
+export const useUpdateQuestionMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<Question>, Error, UpdateQuestionRequest>({
+    mutationFn: ({ id, ...data }) => {
+      return api.put(`/api/questions/${id}`, data).then((res) => res.data);
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["questions"] });
+      queryClient.invalidateQueries({ queryKey: ["quiz"] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (key) => typeof key === "string" && /exam/i.test(key)
+          ),
+      });
+      if (res.data) {
+        useQuestionsStore
+          .getState()
+          .updateQuestion(res.data as unknown as StoreQuestion);
+      }
     },
   });
 };

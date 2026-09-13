@@ -10,6 +10,7 @@ type State = {
 
 type Actions = {
   addQuestions: (questions: Question[]) => void;
+  updateQuestion: (question: Question) => void;
   removeQuestion: (id: string) => void;
   clearQuestions: () => void;
   addDraft: (draft: DraftQuestion) => void;
@@ -24,6 +25,12 @@ export const useQuestionsStore = create<State & Actions>((set, get) => ({
   drafts: [],
   addQuestions: (q) =>
     set({ questions: _.uniqBy([...get().questions, ...q], "id") }),
+  updateQuestion: (question) =>
+    set({
+      questions: get().questions.map((q) =>
+        q.id === question.id ? { ...q, ...question } : q
+      ),
+    }),
   clearQuestions: () => set({ questions: [] }),
   removeQuestion: (id) =>
     set({ questions: get().questions.filter((q) => q.id !== id) }),

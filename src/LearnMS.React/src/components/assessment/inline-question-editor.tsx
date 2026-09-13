@@ -24,9 +24,17 @@ type Props = {
   draft: DraftQuestion;
   onChange: (patch: Partial<DraftQuestion>) => void;
   onRemove: () => void;
+  hideRemove?: boolean;
+  showDescription?: boolean;
 };
 
-export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
+export function InlineQuestionEditor({
+  draft,
+  onChange,
+  onRemove,
+  hideRemove,
+  showDescription,
+}: Props) {
   const [uploading, setUploading] = useState(false);
 
   const setChoice = (id: string, patch: Partial<QuestionChoiceDraft>) => {
@@ -82,10 +90,23 @@ export function InlineQuestionEditor({ draft, onChange, onRemove }: Props) {
             </SelectContent>
           </Select>
         </div>
-        <Button type="button" variant="destructive" size="icon" onClick={onRemove}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {!hideRemove && (
+          <Button type="button" variant="destructive" size="icon" onClick={onRemove}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
+
+      {showDescription && (
+        <div className="space-y-2">
+          <Label>Bank label / description</Label>
+          <Input
+            value={draft.description}
+            onChange={(e) => onChange({ description: e.target.value })}
+            placeholder="Short label in the question bank"
+          />
+        </div>
+      )}
 
       {draft.inputMode === "photo" ? (
         <div className="space-y-2">

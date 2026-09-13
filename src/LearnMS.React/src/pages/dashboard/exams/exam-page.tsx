@@ -1,9 +1,8 @@
 import Confirmation from "@/components/confirmation";
+import { BankQuestionCard } from "@/components/assessment/bank-question-card";
 import { InlineQuestionEditor } from "@/components/assessment/inline-question-editor";
 import Loading from "@/components/loading/loading";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -12,11 +11,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -33,14 +27,14 @@ import {
   useGetExam,
   useUpdateExam,
 } from "@/generated/api";
-import { ExamDashboard, Question } from "@/generated/model";
-import { cn, toast } from "@/lib/utils";
+import { ExamDashboard } from "@/generated/model";
+import { toast } from "@/lib/utils";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQuestionsStore } from "@/store/use-questions-store";
 import { createEmptyDraft, draftToPayload } from "@/types/assessment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Delete, Library, Plus, Trash } from "lucide-react";
+import { Library, Plus, Trash } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -275,85 +269,6 @@ const ExamPage = () => {
     </ScrollArea>
   );
 };
-
-function BankQuestionCard({
-  question,
-  onRemove,
-}: {
-  question: Question;
-  onRemove: () => void;
-}) {
-  const body = question.body as {
-    $type?: string;
-    choices?: Array<string | { id: string; text?: string; imageUrl?: string }>;
-    correctAnswer?: string | number;
-    tolerance?: number;
-  };
-  const typeName = body.$type ?? "Question";
-
-  return (
-    <Card className="relative w-full rounded-3xl overflow-clip flex flex-col sm:flex-row bg-primary/10 text-primary p-0 border-0 min-h-[120px]">
-      <Badge className="absolute top-2 left-2 z-10">{typeName}</Badge>
-      <Button
-        className="absolute top-2 right-2 z-10"
-        variant="destructive"
-        type="button"
-        onClick={onRemove}
-        size="icon"
-      >
-        <Delete />
-      </Button>
-      {question.image && (
-        <HoverCard>
-          <HoverCardTrigger className="h-[160px] w-full sm:w-[200px] p-0 shrink-0">
-            <CardHeader className="h-full p-0">
-              <img
-                src={question.image}
-                className="object-cover object-center w-full h-full"
-                alt=""
-              />
-            </CardHeader>
-          </HoverCardTrigger>
-          <HoverCardContent
-            side="left"
-            className="p-0 w-[500px] rounded overflow-clip aspect-square shadow-primary shadow-md"
-          >
-            <img src={question.image} className="w-full h-full" alt="" />
-          </HoverCardContent>
-        </HoverCard>
-      )}
-      <CardContent className={cn("flex flex-col items-start p-4 gap-2")}>
-        <h2 className="text-xl pr-10">{question.text}</h2>
-        {Array.isArray(body.choices) && (
-          <div className="flex flex-wrap gap-2">
-            {body.choices.map((o, i) => {
-              const label =
-                typeof o === "string" ? o : o.text || o.imageUrl || o.id;
-              const id = typeof o === "string" ? o : o.id;
-              return (
-                <Badge
-                  key={i}
-                  variant={
-                    String(body.correctAnswer) === String(id)
-                      ? "default"
-                      : "secondary"
-                  }
-                >
-                  {label}
-                </Badge>
-              );
-            })}
-          </div>
-        )}
-        {body.tolerance != null && (
-          <p className="text-sm">
-            Answer: {body.correctAnswer} ± {body.tolerance}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export default ExamPage;
 

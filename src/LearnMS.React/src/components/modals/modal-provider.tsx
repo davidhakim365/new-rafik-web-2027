@@ -7,6 +7,7 @@ import AddPdfLinksModal from "@/pages/dashboard/lectures/add-pdf-links-modal";
 import AddMultipleQuestionModal from "@/pages/dashboard/questions/add-multiple-question-modal";
 import AddValueQuestionModal from "@/pages/dashboard/questions/add-value-question-modal";
 import AddEssayQuestionModal from "@/pages/dashboard/questions/add-essay-question-modal";
+import EditQuestionModal from "@/pages/dashboard/questions/edit-question-modal";
 import SelectQuestionsModal from "@/pages/dashboard/questions/select-questions-modal";
 import AddApplesModal from "@/pages/dashboard/students/add-apples-modal";
 import AddCreditModal from "@/pages/dashboard/students/add-credit-modal";
@@ -25,6 +26,7 @@ const modals: Record<string, React.FC<any>> = {
   "add-multiple-question-modal": AddMultipleQuestionModal,
   "add-value-question-modal": AddValueQuestionModal,
   "add-essay-question-modal": AddEssayQuestionModal,
+  "edit-question-modal": EditQuestionModal,
   "select-questions-modal": SelectQuestionsModal,
   "select-assets-modal": SelectAssetsModal,
   "add-pdf-links-modal": AddPdfLinksModal,

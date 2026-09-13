@@ -33,6 +33,32 @@ public sealed class QuestionsController(IQuestionsService questionsService) : Co
         };
     }
 
+    [HttpPut("{questionId:guid}")]
+    public async Task<ApiWrapper.Success<Question>> Put(Guid questionId, [FromBody] UpdateQuestionRequest request)
+    {
+        var question = await questionsService.ExecuteAsync(new UpdateQuestionCommand
+        {
+            Id = questionId,
+            Image = request.Image,
+            Description = request.Description,
+            MultipleChoices = request.MultipleChoices,
+            MultipleCorrect = request.MultipleCorrect,
+            ValueCorrect = request.ValueCorrect,
+            ValueTolerance = request.ValueTolerance,
+            Text = request.Text,
+            QuestionType = request.QuestionType,
+            EssayMaxLength = request.EssayMaxLength,
+            SourceTitle = request.SourceTitle,
+            SourceIndex = request.SourceIndex
+        });
+
+        return new()
+        {
+            Message = "Question updated successfully",
+            Data = question
+        };
+    }
+
     [HttpDelete("{questionId:guid}")]
     public async Task<ApiWrapper.Success<object?>> Delete(Guid questionId)
     {

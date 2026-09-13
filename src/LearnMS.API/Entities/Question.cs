@@ -24,7 +24,7 @@ public record Question
     public QuestionBody Body
     {
         get => JsonSerializer.Deserialize<QuestionBody>(BodyJson, QuestionJson.Options)!;
-        init => BodyJson = JsonSerializer.Serialize(value, QuestionJson.Options);
+        set => BodyJson = JsonSerializer.Serialize(value, QuestionJson.Options);
     }
 
     [JsonIgnore] public List<Exam> Exams { get; } = [];

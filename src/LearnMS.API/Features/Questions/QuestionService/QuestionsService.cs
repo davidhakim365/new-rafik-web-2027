@@ -27,6 +27,37 @@ public class QuestionsService(AppDbContext db) : IQuestionsService
         await db.SaveChangesAsync();
     }
 
+    public async Task<Question> ExecuteAsync(UpdateQuestionCommand command)
+    {
+        var question = await db.Set<Question>().FirstOrDefaultAsync(x => x.Id == command.Id) ??
+                       throw new ApiException(QuestionsErrors.NotFound);
+
+        var rebuilt = BuildQuestion(
+            command.Text,
+            command.Description,
+            string.IsNullOrWhiteSpace(command.Image) ? null : command.Image,
+            command.QuestionType,
+            command.MultipleChoices,
+            command.MultipleCorrect,
+            command.ValueCorrect,
+            command.ValueTolerance,
+            command.EssayMaxLength,
+            command.SourceTitle ?? question.SourceTitle,
+            command.SourceIndex ?? question.SourceIndex);
+
+        question.Text = rebuilt.Text;
+        question.Description = rebuilt.Description;
+        question.Image = rebuilt.Image;
+        question.Body = rebuilt.Body;
+        if (command.SourceTitle is not null)
+            question.SourceTitle = rebuilt.SourceTitle;
+        if (command.SourceIndex is not null)
+            question.SourceIndex = rebuilt.SourceIndex;
+
+        await db.SaveChangesAsync();
+        return question;
+    }
+
     public async Task ExecuteAsync(DeleteQuestionCommand command)
     {
         var question = await db.Set<Question>().FirstOrDefaultAsync(x => x.Id == command.Id) ??
