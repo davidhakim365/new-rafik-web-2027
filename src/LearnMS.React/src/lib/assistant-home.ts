@@ -8,6 +8,7 @@ export function getAssistantHomePath(permissions: readonly string[]): string {
   if (has(Permission.ManageStudentApples)) return "/dashboard/student-apples-scanner";
   if (has(Permission.ManageAppleRewardsStore)) return "/dashboard/apple-rewards-store";
   if (has(Permission.AddStudents)) return "/dashboard/students/add";
+  if (has(Permission.ManagePaymentRequests)) return "/dashboard/payment-requests";
   if (has(Permission.ManageStudents)) return "/dashboard/students";
   if (has(Permission.ManageCourses) || has(Permission.ManageLecture) || has(Permission.ManageLectureStudents)) {
     return "/dashboard/courses";

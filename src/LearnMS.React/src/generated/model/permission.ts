@@ -26,4 +26,5 @@ export const Permission = {
   ManageAppleRewardsStore: 'ManageAppleRewardsStore',
   ManageCallCenter: 'ManageCallCenter',
   ViewCallCenterHistory: 'ViewCallCenterHistory',
+  ManagePaymentRequests: 'ManagePaymentRequests',
 } as const;

@@ -425,7 +425,7 @@ function App() {
                 element={
                   <RequireAuth
                     roles={["Teacher", "Assistant"]}
-                    permissions={["ManageStudents"]}
+                    permissions={["ManagePaymentRequests"]}
                   >
                     <PaymentRequestsPage />
                   </RequireAuth>

@@ -106,6 +106,11 @@ const PERMISSION_GROUPS: PermissionGroup[] = [
         label: "Manage expiration time",
         description: "Change access expiration dates.",
       },
+      {
+        key: "ManagePaymentRequests",
+        label: "Manage payment requests",
+        description: "Review transfer screenshots and confirm or reject student credit requests.",
+      },
     ],
   },
   {

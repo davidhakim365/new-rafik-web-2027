@@ -70,7 +70,7 @@ public sealed class PaymentRequestsController(
     }
 
     [HttpGet]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
     [SwaggerOperation(OperationId = "GetPaymentRequests")]
     public async Task<ApiWrapper.Success<PageList<PaymentRequestItem>>> Get(
         [FromQuery] int? page,
@@ -102,7 +102,7 @@ public sealed class PaymentRequestsController(
     }
 
     [HttpPost("{id:guid}/confirm")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
     [SwaggerOperation(OperationId = "ConfirmPaymentRequest")]
     public async Task<ApiWrapper.Success<PaymentRequestItem>> Confirm(Guid id)
     {
@@ -123,7 +123,7 @@ public sealed class PaymentRequestsController(
     }
 
     [HttpPost("{id:guid}/reject")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
     [SwaggerOperation(OperationId = "RejectPaymentRequest")]
     public async Task<ApiWrapper.Success<PaymentRequestItem>> Reject(
         Guid id,

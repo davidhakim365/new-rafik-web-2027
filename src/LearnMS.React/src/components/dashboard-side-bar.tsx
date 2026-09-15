@@ -104,7 +104,7 @@ const studentItems: NavItem[] = [
     label: "Payment Requests",
     icon: Wallet,
     match: (pathname) => pathname.startsWith("/dashboard/payment-requests"),
-    permission: Permission.ManageStudents,
+    permission: Permission.ManagePaymentRequests,
   },
   {
     to: "/dashboard/students/add",
