@@ -35,4 +35,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<RewardSystemSettings> RewardSystemSettings => Set<RewardSystemSettings>();
     public DbSet<StudentRegistrationSettings> StudentRegistrationSettings => Set<StudentRegistrationSettings>();
     public DbSet<CallCenterAction> CallCenterActions => Set<CallCenterAction>();
+    public DbSet<PaymentRequest> PaymentRequests => Set<PaymentRequest>();
 }

@@ -334,8 +334,9 @@
     "signInToBuyLecture": "Sign in to buy the lecture"
   },
   "payments": {
-    "title": "Payment History",
-    "subtitle": "View and manage your payment transactions",
+    "title": "Payments",
+    "subtitle": "Submit a bank or wallet transfer screenshot. Credits are added after the teacher confirms it.",
+    "balance": "Current balance",
     "noPayments": "No Payments Found",
     "noPaymentsDescription": "You haven't made any payments yet. Start exploring our courses to make your first purchase.",
     "course": "Course",
@@ -346,10 +347,32 @@
     "paymentCard": {
       "title": "Payment"
     },
+    "request": {
+      "title": "Transfer request",
+      "description": "Upload your InstaPay, Vodafone Cash, or bank transfer screenshot.",
+      "amount": "Amount",
+      "amountPlaceholder": "Amount in LE",
+      "note": "Note (optional)",
+      "notePlaceholder": "Transaction ID or extra details",
+      "image": "Transfer screenshot",
+      "imageHint": "JPEG, PNG, WebP or GIF — max 10MB",
+      "dropzone": "Drop a screenshot here, or click to browse",
+      "changeImage": "Change screenshot",
+      "submit": "Submit request",
+      "submitting": "Submitting...",
+      "successTitle": "Request sent",
+      "successDescription": "Waiting for the teacher to confirm. Credits will be added after confirmation.",
+      "listTitle": "Your requests",
+      "empty": "Submit a transfer request with a screenshot…",
+      "rejectedReason": "Rejection reason"
+    },
     "status": {
       "completed": "Completed",
       "pending": "Pending",
-      "failed": "Failed"
+      "failed": "Failed",
+      "Pending": "Pending",
+      "Confirmed": "Confirmed",
+      "Rejected": "Rejected"
     }
     
 

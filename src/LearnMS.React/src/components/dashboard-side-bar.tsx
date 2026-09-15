@@ -23,6 +23,7 @@ import {
   UserPlus,
   UserRound,
   Users,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -96,6 +97,13 @@ const studentItems: NavItem[] = [
     match: (pathname) =>
       pathname.startsWith("/dashboard/students") &&
       !pathname.startsWith("/dashboard/students/add"),
+    permission: Permission.ManageStudents,
+  },
+  {
+    to: "/dashboard/payment-requests",
+    label: "Payment Requests",
+    icon: Wallet,
+    match: (pathname) => pathname.startsWith("/dashboard/payment-requests"),
     permission: Permission.ManageStudents,
   },
   {

@@ -1,14 +1,21 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using LearnMS.API.Common;
 using Microsoft.Extensions.Options;
 
 namespace LearnMS.API.Common.ImgBb;
 
+public sealed class ImgBbUploadResult
+{
+    public required string Url { get; init; }
+    public string? ThumbUrl { get; init; }
+}
+
 public interface IImgBbService
 {
     Task<string> UploadAsync(Stream stream, string fileName, CancellationToken ct = default);
     Task<string> UploadAsync(IFormFile file, CancellationToken ct = default);
+    Task<ImgBbUploadResult> UploadWithThumbAsync(IFormFile file, CancellationToken ct = default);
+    Task<ImgBbUploadResult> UploadWithThumbAsync(Stream stream, string fileName, CancellationToken ct = default);
 }
 
 public sealed class ImgBbService(IHttpClientFactory httpClientFactory, IOptions<ImgBbConfig> options) : IImgBbService
@@ -17,11 +24,23 @@ public sealed class ImgBbService(IHttpClientFactory httpClientFactory, IOptions<
 
     public async Task<string> UploadAsync(IFormFile file, CancellationToken ct = default)
     {
-        await using var stream = file.OpenReadStream();
-        return await UploadAsync(stream, file.FileName, ct);
+        var result = await UploadWithThumbAsync(file, ct);
+        return result.Url;
     }
 
     public async Task<string> UploadAsync(Stream stream, string fileName, CancellationToken ct = default)
+    {
+        var result = await UploadWithThumbAsync(stream, fileName, ct);
+        return result.Url;
+    }
+
+    public async Task<ImgBbUploadResult> UploadWithThumbAsync(IFormFile file, CancellationToken ct = default)
+    {
+        await using var stream = file.OpenReadStream();
+        return await UploadWithThumbAsync(stream, file.FileName, ct);
+    }
+
+    public async Task<ImgBbUploadResult> UploadWithThumbAsync(Stream stream, string fileName, CancellationToken ct = default)
     {
         var apiKey = options.Value.ApiKey;
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -52,12 +71,24 @@ public sealed class ImgBbService(IHttpClientFactory httpClientFactory, IOptions<
                 StatusCodes.Status502BadGateway));
 
         var data = root.GetProperty("data");
+        string? url = null;
         if (data.TryGetProperty("display_url", out var displayUrl))
-            return displayUrl.GetString()!;
-        if (data.TryGetProperty("url", out var url))
-            return url.GetString()!;
+            url = displayUrl.GetString();
+        if (string.IsNullOrWhiteSpace(url) && data.TryGetProperty("url", out var imageUrl))
+            url = imageUrl.GetString();
 
-        throw new ApiException(new ApiError("ImgBb.UploadFailed", "ImgBB response missing image URL",
-            StatusCodes.Status502BadGateway));
+        if (string.IsNullOrWhiteSpace(url))
+            throw new ApiException(new ApiError("ImgBb.UploadFailed", "ImgBB response missing image URL",
+                StatusCodes.Status502BadGateway));
+
+        string? thumbUrl = null;
+        if (data.TryGetProperty("thumb", out var thumb) && thumb.TryGetProperty("url", out var thumbUrlEl))
+            thumbUrl = thumbUrlEl.GetString();
+
+        return new ImgBbUploadResult
+        {
+            Url = url,
+            ThumbUrl = string.IsNullOrWhiteSpace(thumbUrl) ? null : thumbUrl
+        };
     }
 }

@@ -271,6 +271,7 @@ declare module "i18next" {
         payments: {
           title: string;
           subtitle: string;
+          balance: string;
           noPayments: string;
           noPaymentsDescription: string;
           course: string;
@@ -281,10 +282,32 @@ declare module "i18next" {
           paymentCard: {
             title: string;
           };
+          request: {
+            title: string;
+            description: string;
+            amount: string;
+            amountPlaceholder: string;
+            note: string;
+            notePlaceholder: string;
+            image: string;
+            imageHint: string;
+            dropzone: string;
+            changeImage: string;
+            submit: string;
+            submitting: string;
+            successTitle: string;
+            successDescription: string;
+            listTitle: string;
+            empty: string;
+            rejectedReason: string;
+          };
           status: {
             completed: string;
             pending: string;
             failed: string;
+            Pending: string;
+            Confirmed: string;
+            Rejected: string;
           };
         };
         common: {

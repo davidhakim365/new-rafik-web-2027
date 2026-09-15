@@ -6,6 +6,7 @@ using LearnMS.API.Features.Courses.Lectures;
 using LearnMS.API.Features.Courses.Lectures.Lessons;
 using LearnMS.API.Features.CreditCodes;
 using LearnMS.API.Features.Parent;
+using LearnMS.API.Features.PaymentRequests;
 using LearnMS.API.Features.Profile;
 using LearnMS.API.Features.Questions;
 using LearnMS.API.Features.Rewards;
@@ -40,6 +41,7 @@ public static class FeaturesDependencyInjection
         services.AddScoped<IAppleStoreService, AppleStoreService>();
         services.AddScoped<IQuestionsService, QuestionsService>();
         services.AddScoped<ICallCenterService, CallCenterService>();
+        services.AddScoped<IPaymentRequestsService, PaymentRequestsService>();
 
         services.AddHostedService<ChooseHomeworkSyncHostedService>();
 

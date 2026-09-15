@@ -31,6 +31,7 @@ import CallCenterPage from "@/pages/dashboard/call-center/call-center-page";
 import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
 import AddStudentsPage from "@/pages/dashboard/students/add-students-page";
 import StudentDetailsPage from "@/pages/dashboard/students/student-details-page";
+import PaymentRequestsPage from "@/pages/dashboard/payment-requests/payment-requests-page";
 import StudentsPage from "@/pages/dashboard/students/students-page";
 import { StudentCoursePage } from "@/pages/student/courses/student-course-page";
 import { StudentCoursesPage } from "@/pages/student/courses/student-courses-page";
@@ -416,6 +417,17 @@ function App() {
                     permissions={["AddStudents"]}
                   >
                     <AddStudentsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="payment-requests"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageStudents"]}
+                  >
+                    <PaymentRequestsPage />
                   </RequireAuth>
                 }
               />

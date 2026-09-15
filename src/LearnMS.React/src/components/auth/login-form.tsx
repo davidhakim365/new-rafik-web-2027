@@ -8,7 +8,7 @@ import { useModalStore } from "@/store/use-modal-store";
 import InputField from "./input-field";
 import { useTranslation } from "react-i18next";
 import { Button as ShadButton } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const LoginForm = () => {
@@ -17,6 +17,8 @@ const LoginForm = () => {
   const loginMutation = useLoginMutation();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isRTL = i18n.language === "ar";
 
   const loginForm = useForm<LoginRequest>({
@@ -100,7 +102,16 @@ const LoginForm = () => {
         if (data.data.role !== "Student") {
           navigate("/dashboard");
         } else {
-          navigate("/");
+          const fromQuery = searchParams.get("from");
+          const fromState = (location.state as { from?: string } | null)?.from;
+          const from = fromQuery || fromState;
+          const dest =
+            from === "/payment" || from === "/payments"
+              ? "/payments"
+              : from?.startsWith("/") && !from.startsWith("//")
+                ? from
+                : "/";
+          navigate(dest);
         }
       },
     });

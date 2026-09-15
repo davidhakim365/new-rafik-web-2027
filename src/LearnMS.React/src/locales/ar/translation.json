@@ -335,8 +335,9 @@
     "signInToBuyLecture": "سجل الدخول لشراء المحاضرة"
   },
   "payments": {
-    "title": "سجل المدفوعات",
-    "subtitle": "عرض وإدارة معاملاتك المالية",
+    "title": "المدفوعات",
+    "subtitle": "أرسل لقطة تحويل بنكي أو محفظة. يُضاف الرصيد بعد تأكيد المعلم.",
+    "balance": "الرصيد الحالي",
     "noPayments": "لا توجد مدفوعات",
     "noPaymentsDescription": "لم تقم بأي مدفوعات بعد. ابدأ في استكشاف دوراتنا لتقوم بأول عملية شراء.",
     "course": "الدورة",
@@ -347,12 +348,33 @@
     "paymentCard": {
       "title": "دفعة"
     },
+    "request": {
+      "title": "طلب تحويل",
+      "description": "ارفع صورة تحويل إنستاباي أو فودافون كاش أو التحويل البنكي.",
+      "amount": "المبلغ",
+      "amountPlaceholder": "المبلغ بالجنيه",
+      "note": "ملاحظة (اختياري)",
+      "notePlaceholder": "رقم العملية أو تفاصيل إضافية",
+      "image": "صورة التحويل",
+      "imageHint": "JPEG أو PNG أو WebP أو GIF — حتى 10 ميجابايت",
+      "dropzone": "أسقط صورة التحويل هنا أو اضغط للاختيار",
+      "changeImage": "تغيير الصورة",
+      "submit": "إرسال الطلب",
+      "submitting": "جاري الإرسال...",
+      "successTitle": "تم إرسال الطلب",
+      "successDescription": "بانتظار تأكيد المعلم. سيُضاف الرصيد بعد التأكيد.",
+      "listTitle": "طلباتك",
+      "empty": "أرسل طلب تحويل مع لقطة الشاشة…",
+      "rejectedReason": "سبب الرفض"
+    },
     "status": {
       "completed": "مكتمل",
       "pending": "في الانتظار",
-      "failed": "فشل"
+      "failed": "فشل",
+      "Pending": "قيد المراجعة",
+      "Confirmed": "مؤكد",
+      "Rejected": "مرفوض"
     }
-    
   },
   "common": {
     "currency": "جم",

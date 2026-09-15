@@ -5,7 +5,7 @@ import { getAssistantHomePath } from "@/lib/assistant-home";
 import { toast } from "@/lib/utils";
 import LoadingPage from "@/pages/shared/loading-page";
 import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -21,6 +21,7 @@ const RequireAuth: React.FC<RequireAuthProps> = ({
   permissions,
   requireAnyPermission = false,
 }) => {
+  const location = useLocation();
   const { data: profile, isError, isLoading, isFetching } = useGetProfile();
 
   useEffect(() => {
@@ -43,7 +44,14 @@ const RequireAuth: React.FC<RequireAuthProps> = ({
   }
 
   if (!isFetching && (isError || profile?.data == null)) {
-    return <Navigate to="/sign-in-sign-up" replace />;
+    const from =
+      location.pathname === "/payments" ? "/payment" : location.pathname;
+    return (
+      <Navigate
+        to={`/sign-in-sign-up?from=${encodeURIComponent(from)}`}
+        replace
+      />
+    );
   }
 
   if (

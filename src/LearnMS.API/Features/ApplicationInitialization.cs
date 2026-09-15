@@ -1,6 +1,8 @@
 using LearnMS.API.Common;
+using LearnMS.API.Data;
 using LearnMS.API.Features.Administration;
 using LearnMS.API.Features.Administration.Contracts;
+using LearnMS.API.Features.PaymentRequests;
 using Microsoft.Extensions.Options;
 
 namespace LearnMS.API.Features;
@@ -10,6 +12,16 @@ public static class ApplicationInitialization
     public static async Task InitializeAsync(this WebApplication app)
     {
         var scope = app.Services.CreateAsyncScope();
+
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await PaymentRequestsService.EnsurePaymentRequestsTable(db);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EnsurePaymentRequestsTable failed: {ex.Message}");
+        }
 
         var administrationService = scope.ServiceProvider.GetRequiredService<IAdministrationService>();
         var administrationConfig = scope.ServiceProvider.GetRequiredService<IOptions<AdministrationConfig>>();
