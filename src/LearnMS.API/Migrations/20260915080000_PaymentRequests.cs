@@ -38,6 +38,10 @@ public partial class PaymentRequests : Migration
 
             CREATE INDEX IF NOT EXISTS "IX_PaymentRequests_StudentId"
                 ON "PaymentRequests" ("StudentId");
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_PaymentRequests_StudentId_Pending"
+                ON "PaymentRequests" ("StudentId")
+                WHERE "Status" = 'Pending';
             """);
     }
 

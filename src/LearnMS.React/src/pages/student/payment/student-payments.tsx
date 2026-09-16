@@ -135,6 +135,9 @@ const StudentPayments = () => {
   });
 
   const image = requestForm.watch("image");
+  const requests = myRequests.data?.data?.items ?? [];
+  const hasPending = requests.some((item) => item.status === "Pending");
+  const formLocked = createRequest.isPending || hasPending;
 
   useEffect(() => {
     if (!image) {
@@ -166,7 +169,7 @@ const StudentPayments = () => {
     },
     maxSize: MAX_IMAGE_BYTES,
     multiple: false,
-    disabled: createRequest.isPending,
+    disabled: formLocked,
   });
 
   if (isLoading) {
@@ -185,7 +188,6 @@ const StudentPayments = () => {
 
   const credits =
     "credits" in profile.data ? Number(profile.data.credits ?? 0) : 0;
-  const requests = myRequests.data?.data?.items ?? [];
 
   const onRedeem = (data: RedeemRequest) => {
     redeem({
@@ -196,6 +198,7 @@ const StudentPayments = () => {
   };
 
   const onSubmitRequest = (data: PaymentRequestForm) => {
+    if (hasPending) return;
     const formData = new FormData();
     formData.append("amount", String(data.amount));
     if (data.note?.trim()) formData.append("note", data.note.trim());
@@ -255,6 +258,11 @@ const StudentPayments = () => {
               <CardDescription>{t("payments.request.description")}</CardDescription>
             </CardHeader>
             <CardContent className="px-6 pb-6">
+              {hasPending && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                  {t("payments.request.pendingBlocked")}
+                </div>
+              )}
               <Form {...requestForm}>
                 <form
                   className="space-y-4"
@@ -273,7 +281,7 @@ const StudentPayments = () => {
                             max={100000}
                             step="0.01"
                             placeholder={t("payments.request.amountPlaceholder")}
-                            disabled={createRequest.isPending}
+                            disabled={formLocked}
                             value={field.value ?? ""}
                             onChange={(e) => field.onChange(e.target.value)}
                           />
@@ -292,7 +300,7 @@ const StudentPayments = () => {
                           <Textarea
                             maxLength={500}
                             placeholder={t("payments.request.notePlaceholder")}
-                            disabled={createRequest.isPending}
+                            disabled={formLocked}
                             {...field}
                           />
                         </FormControl>
@@ -314,7 +322,7 @@ const StudentPayments = () => {
                               isDragActive
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:border-primary/50",
-                              createRequest.isPending &&
+                              formLocked &&
                                 "pointer-events-none opacity-60"
                             )}
                           >
@@ -353,6 +361,7 @@ const StudentPayments = () => {
                             variant="ghost"
                             size="sm"
                             className="mt-1"
+                            disabled={formLocked}
                             onClick={() => {
                               requestForm.resetField("image");
                               setPreviewUrl(null);
@@ -368,7 +377,7 @@ const StudentPayments = () => {
                   />
                   <Button
                     type="submit"
-                    disabled={createRequest.isPending}
+                    disabled={formLocked}
                     className="w-full h-12 font-semibold"
                   >
                     {createRequest.isPending
@@ -466,12 +475,12 @@ const StudentPayments = () => {
                         </Badge>
                       </div>
                       {item.note && (
-                        <p className="truncate text-sm text-muted-foreground">
+                        <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
                           {item.note}
                         </p>
                       )}
                       {item.status === "Rejected" && item.rejectionReason && (
-                        <p className="text-sm text-rose-600">
+                        <p className="whitespace-pre-wrap break-words text-sm text-rose-600">
                           {t("payments.request.rejectedReason")}:{" "}
                           {item.rejectionReason}
                         </p>

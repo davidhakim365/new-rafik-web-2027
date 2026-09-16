@@ -300,6 +300,7 @@ declare module "i18next" {
             listTitle: string;
             empty: string;
             rejectedReason: string;
+            pendingBlocked: string;
           };
           status: {
             completed: string;

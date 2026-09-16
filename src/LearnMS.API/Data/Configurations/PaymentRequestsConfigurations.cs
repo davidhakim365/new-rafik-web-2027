@@ -32,6 +32,10 @@ public sealed class PaymentRequestsConfigurations : IEntityTypeConfiguration<Pay
         builder.HasIndex(x => x.CreatedAt);
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.StudentId);
+        builder.HasIndex(x => x.StudentId)
+            .HasFilter("\"Status\" = 'Pending'")
+            .IsUnique()
+            .HasDatabaseName("IX_PaymentRequests_StudentId_Pending");
 
         builder.HasOne(x => x.Student)
             .WithMany()

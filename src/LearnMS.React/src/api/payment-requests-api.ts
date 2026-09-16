@@ -18,6 +18,12 @@ export type PaymentRequestItem = {
   studentEmail: string;
   studentPhone: string;
   studentCode: string;
+  lastRequestAt?: string | null;
+  lastRequestAmount?: number | null;
+  lastRequestStatus?: PaymentRequestStatus | string | null;
+  lastRequestImageUrl?: string | null;
+  lastRequestImageThumbUrl?: string | null;
+  lastRequestNote?: string | null;
 };
 
 export type PaymentRequestsPage = {

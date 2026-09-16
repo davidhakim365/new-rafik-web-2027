@@ -33,6 +33,12 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         if (student is null)
             throw new ApiException(StudentsErrors.NotFound);
 
+        var hasPending = await db.PaymentRequests.AnyAsync(
+            x => x.StudentId == command.StudentId && x.Status == PaymentRequestStatus.Pending,
+            ct);
+        if (hasPending)
+            throw new ApiException(PaymentRequestsErrors.PendingExists);
+
         var upload = await imgBbService.UploadWithThumbAsync(command.Image, ct);
 
         var note = string.IsNullOrWhiteSpace(command.Note) ? null : command.Note.Trim();
@@ -51,7 +57,17 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         };
 
         await db.PaymentRequests.AddAsync(request, ct);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException?.Message.Contains(
+                "IX_PaymentRequests_StudentId_Pending",
+                StringComparison.OrdinalIgnoreCase) == true)
+        {
+            throw new ApiException(PaymentRequestsErrors.PendingExists);
+        }
 
         return await GetItemAsync(request.Id) ?? throw new ApiException(PaymentRequestsErrors.NotFound);
     }
@@ -133,7 +149,7 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
                 || account.Email.ToLower().Contains(search)
                 || student.PhoneNumber.ToLower().Contains(search)
                 || student.StudentCode.ToLower().Contains(search)
-            orderby request.CreatedAt descending
+            orderby request.CreatedAt ascending
             select new PaymentRequestItem
             {
                 Id = request.Id,
@@ -152,7 +168,9 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
                 StudentCode = student.StudentCode
             };
 
-        return await PageList<PaymentRequestItem>.CreateAsync(source, page, pageSize);
+        var result = await PageList<PaymentRequestItem>.CreateAsync(source, page, pageSize);
+        await AttachPreviousRequestsAsync(result.Items);
+        return result;
     }
 
     public static async Task EnsurePaymentRequestsTable(AppDbContext db)
@@ -183,6 +201,10 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
 
             CREATE INDEX IF NOT EXISTS "IX_PaymentRequests_StudentId"
                 ON "PaymentRequests" ("StudentId");
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_PaymentRequests_StudentId_Pending"
+                ON "PaymentRequests" ("StudentId")
+                WHERE "Status" = 'Pending';
             """);
     }
 
@@ -213,7 +235,61 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
 
     private async Task<PaymentRequestItem?> GetItemAsync(Guid id)
     {
-        return await MapItems(db.PaymentRequests.Where(x => x.Id == id)).FirstOrDefaultAsync();
+        var item = await MapItems(db.PaymentRequests.Where(x => x.Id == id)).FirstOrDefaultAsync();
+        if (item is null)
+            return null;
+
+        var items = new List<PaymentRequestItem> { item };
+        await AttachPreviousRequestsAsync(items);
+        return items[0];
+    }
+
+    private async Task AttachPreviousRequestsAsync(List<PaymentRequestItem> items, CancellationToken ct = default)
+    {
+        if (items.Count == 0)
+            return;
+
+        var studentIds = items.Select(x => x.StudentId).Distinct().ToList();
+        var history = await db.PaymentRequests
+            .AsNoTracking()
+            .Where(x => studentIds.Contains(x.StudentId))
+            .Select(x => new
+            {
+                x.Id,
+                x.StudentId,
+                x.CreatedAt,
+                x.Amount,
+                x.Status,
+                x.ImageUrl,
+                x.ImageThumbUrl,
+                x.Note
+            })
+            .ToListAsync(ct);
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var current = items[i];
+            var previous = history
+                .Where(x => x.StudentId == current.StudentId
+                    && x.Id != current.Id
+                    && x.CreatedAt <= current.CreatedAt)
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.Id)
+                .FirstOrDefault();
+
+            if (previous is null)
+                continue;
+
+            items[i] = current with
+            {
+                LastRequestAt = previous.CreatedAt,
+                LastRequestAmount = previous.Amount,
+                LastRequestStatus = previous.Status,
+                LastRequestImageUrl = previous.ImageUrl,
+                LastRequestImageThumbUrl = previous.ImageThumbUrl,
+                LastRequestNote = previous.Note
+            };
+        }
     }
 
     private static (int Page, int PageSize) NormalizePaging(int? page, int? pageSize)

@@ -153,10 +153,55 @@ const PaymentRequestsPage = () => {
         },
       },
       {
+        id: "lastRequest",
+        header: "Last request",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (!item.lastRequestAt || !item.lastRequestImageUrl) {
+            return (
+              <span className="text-sm text-muted-foreground">First request</span>
+            );
+          }
+          const sameImage =
+            item.lastRequestImageUrl === item.imageUrl ||
+            (!!item.lastRequestImageThumbUrl &&
+              item.lastRequestImageThumbUrl === item.imageThumbUrl);
+          return (
+            <div className="flex min-w-[160px] items-start gap-2 text-start">
+              <button
+                type="button"
+                className="h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted"
+                onClick={() => setPreview(item)}
+              >
+                <img
+                  src={item.lastRequestImageThumbUrl || item.lastRequestImageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </button>
+              <div className="min-w-0 space-y-0.5">
+                <p className="whitespace-nowrap text-xs text-muted-foreground">
+                  {format(new Date(item.lastRequestAt), "dd MMM yyyy, HH:mm")}
+                </p>
+                <p className="text-xs font-medium">
+                  {item.lastRequestAmount} LE · {item.lastRequestStatus}
+                </p>
+                {sameImage && (
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                    Same screenshot
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: "note",
         header: "Note",
+        size: 280,
         cell: ({ row }) => (
-          <div className="max-w-[180px] truncate text-sm text-muted-foreground">
+          <div className="max-w-[28rem] whitespace-pre-wrap break-words text-start text-sm text-muted-foreground">
             {row.original.note || "—"}
           </div>
         ),
@@ -172,7 +217,7 @@ const PaymentRequestsPage = () => {
                 {item.status}
               </Badge>
               {item.status === "Rejected" && item.rejectionReason && (
-                <p className="max-w-[180px] text-xs text-rose-600">
+                <p className="max-w-[16rem] whitespace-pre-wrap break-words text-start text-xs text-rose-600">
                   {item.rejectionReason}
                 </p>
               )}
@@ -309,7 +354,7 @@ const PaymentRequestsPage = () => {
           if (!open) setPreview(null);
         }}
       >
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {preview
@@ -318,11 +363,58 @@ const PaymentRequestsPage = () => {
             </DialogTitle>
           </DialogHeader>
           {preview && (
-            <img
-              src={preview.imageUrl}
-              alt=""
-              className="max-h-[75vh] w-full rounded-lg object-contain"
-            />
+            <div className="space-y-4">
+              {preview.note && (
+                <p className="whitespace-pre-wrap break-words rounded-lg bg-muted/60 p-3 text-sm">
+                  {preview.note}
+                </p>
+              )}
+              <div
+                className={
+                  preview.lastRequestImageUrl
+                    ? "grid gap-4 md:grid-cols-2"
+                    : "grid gap-4"
+                }
+              >
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">
+                    Current · {format(new Date(preview.createdAt), "dd MMM yyyy, HH:mm")}
+                  </p>
+                  <img
+                    src={preview.imageUrl}
+                    alt=""
+                    className="max-h-[70vh] w-full rounded-lg object-contain"
+                  />
+                </div>
+                {preview.lastRequestImageUrl && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Last request ·{" "}
+                      {preview.lastRequestAt
+                        ? format(
+                            new Date(preview.lastRequestAt),
+                            "dd MMM yyyy, HH:mm"
+                          )
+                        : "—"}{" "}
+                      · {preview.lastRequestAmount} LE · {preview.lastRequestStatus}
+                    </p>
+                    {(preview.lastRequestImageUrl === preview.imageUrl ||
+                      (!!preview.lastRequestImageThumbUrl &&
+                        preview.lastRequestImageThumbUrl ===
+                          preview.imageThumbUrl)) && (
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                        Same screenshot as current request
+                      </p>
+                    )}
+                    <img
+                      src={preview.lastRequestImageUrl}
+                      alt=""
+                      className="max-h-[70vh] w-full rounded-lg object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

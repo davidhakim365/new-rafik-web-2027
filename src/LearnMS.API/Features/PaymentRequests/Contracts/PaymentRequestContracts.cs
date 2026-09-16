@@ -73,4 +73,10 @@ public sealed record PaymentRequestItem
     public required string StudentEmail { get; init; }
     public required string StudentPhone { get; init; }
     public required string StudentCode { get; init; }
+    public DateTime? LastRequestAt { get; init; }
+    public decimal? LastRequestAmount { get; init; }
+    public PaymentRequestStatus? LastRequestStatus { get; init; }
+    public string? LastRequestImageUrl { get; init; }
+    public string? LastRequestImageThumbUrl { get; init; }
+    public string? LastRequestNote { get; init; }
 }

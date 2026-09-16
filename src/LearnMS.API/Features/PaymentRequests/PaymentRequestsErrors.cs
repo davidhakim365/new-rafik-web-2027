@@ -28,4 +28,9 @@ public static class PaymentRequestsErrors
         "payment-request/too-large",
         "Image must be less than 10MB.",
         StatusCodes.Status400BadRequest);
+
+    public static readonly ApiError PendingExists = new(
+        "payment-request/pending-exists",
+        "You already have a pending transfer request. Wait until it is confirmed or rejected before sending another.",
+        StatusCodes.Status400BadRequest);
 }

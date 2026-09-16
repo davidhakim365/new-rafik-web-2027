@@ -364,7 +364,8 @@
       "successDescription": "Waiting for the teacher to confirm. Credits will be added after confirmation.",
       "listTitle": "Your requests",
       "empty": "Submit a transfer request with a screenshot…",
-      "rejectedReason": "Rejection reason"
+      "rejectedReason": "Rejection reason",
+      "pendingBlocked": "You already have a pending request. Wait until it is confirmed or rejected before sending another."
     },
     "status": {
       "completed": "Completed",

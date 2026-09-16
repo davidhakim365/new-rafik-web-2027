@@ -123,12 +123,12 @@ export function DataTable<TData, TValue>({
                   {otherCells.map((cell) => (
                     <div
                       key={cell.id}
-                      className="flex items-center justify-between gap-3"
+                      className="flex items-start justify-between gap-3"
                     >
-                      <p className="w-16 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="w-20 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {getColumnLabel(cell.column)}
                       </p>
-                      <div className="min-w-0 flex-1 text-right text-sm [overflow-wrap:anywhere]">
+                      <div className="min-w-0 flex-1 text-right text-sm [overflow-wrap:anywhere] whitespace-pre-wrap">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
@@ -187,7 +187,7 @@ export function DataTable<TData, TValue>({
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className="p-2 text-center sm:p-3"
+                        className="p-2 text-center align-top sm:p-3"
                         style={{
                           width:
                             cell.column.getSize() !== 150
