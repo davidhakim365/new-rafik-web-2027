@@ -154,12 +154,12 @@ const PaymentRequestsPage = () => {
       },
       {
         id: "lastRequest",
-        header: "Last request",
+        header: "Last approved",
         cell: ({ row }) => {
           const item = row.original;
           if (!item.lastRequestAt || !item.lastRequestImageUrl) {
             return (
-              <span className="text-sm text-muted-foreground">First request</span>
+              <span className="text-sm text-muted-foreground">No approved request</span>
             );
           }
           const sameImage =
@@ -389,7 +389,7 @@ const PaymentRequestsPage = () => {
                 {preview.lastRequestImageUrl && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium">
-                      Last request ·{" "}
+                      Last approved ·{" "}
                       {preview.lastRequestAt
                         ? format(
                             new Date(preview.lastRequestAt),

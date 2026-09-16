@@ -252,12 +252,14 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         var studentIds = items.Select(x => x.StudentId).Distinct().ToList();
         var history = await db.PaymentRequests
             .AsNoTracking()
-            .Where(x => studentIds.Contains(x.StudentId))
+            .Where(x => studentIds.Contains(x.StudentId)
+                && x.Status == PaymentRequestStatus.Confirmed)
             .Select(x => new
             {
                 x.Id,
                 x.StudentId,
                 x.CreatedAt,
+                x.ReviewedAt,
                 x.Amount,
                 x.Status,
                 x.ImageUrl,
@@ -270,10 +272,9 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         {
             var current = items[i];
             var previous = history
-                .Where(x => x.StudentId == current.StudentId
-                    && x.Id != current.Id
-                    && x.CreatedAt <= current.CreatedAt)
-                .OrderByDescending(x => x.CreatedAt)
+                .Where(x => x.StudentId == current.StudentId && x.Id != current.Id)
+                .OrderByDescending(x => x.ReviewedAt ?? x.CreatedAt)
+                .ThenByDescending(x => x.CreatedAt)
                 .ThenByDescending(x => x.Id)
                 .FirstOrDefault();
 
