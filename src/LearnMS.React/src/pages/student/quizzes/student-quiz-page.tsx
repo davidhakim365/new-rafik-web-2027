@@ -1,4 +1,5 @@
 import Loading from "@/components/loading/loading";
+import { Button } from "@/components/ui/button";
 import { useGetProfile, useGetQuiz } from "@/generated/api";
 import { isWrongCourseLevelError } from "@/lib/error-utils";
 import { profileStudentLevel, studentCoursesHref } from "@/lib/student-level";
@@ -9,7 +10,7 @@ import { Navigate, useParams } from "react-router-dom";
 const StudentQuizPage = () => {
   const { courseId, lectureId, quizId } = useParams();
 
-  const { data: quiz, isLoading, error } = useGetQuiz(
+  const { data: quiz, isLoading, isFetching, error, refetch } = useGetQuiz(
     courseId!,
     lectureId!,
     quizId!,
@@ -28,7 +29,7 @@ const StudentQuizPage = () => {
     return <Navigate to={studentCoursesHref(studentLevel)} replace />;
   }
 
-  if (isLoading && !quiz?.data) {
+  if ((isLoading || isFetching) && !quiz?.data) {
     return (
       <div className='flex items-center justify-center w-full h-full'>
         <Loading />
@@ -57,8 +58,13 @@ const StudentQuizPage = () => {
 
   if (!quiz?.data) {
     return (
-      <div className='flex items-center justify-center w-full h-full'>
-        <Loading />
+      <div className='flex flex-col items-center justify-center w-full h-full gap-4 px-6 text-center'>
+        <p className='text-lg font-medium'>Couldn't load this quiz.</p>
+        <p className='text-sm text-muted-foreground'>
+          Check your connection and try again. If this keeps happening, open the
+          site in Chrome — not Instagram or Facebook.
+        </p>
+        <Button onClick={() => refetch()}>Try again</Button>
       </div>
     );
   }

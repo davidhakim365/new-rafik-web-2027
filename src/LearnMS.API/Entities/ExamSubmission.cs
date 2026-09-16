@@ -17,7 +17,7 @@ public sealed class ExamSubmission
     [NotMapped]
     public required List<QuestionSubmission> QuestionSubmissions
     {
-        get => JsonSerializer.Deserialize<List<QuestionSubmission>>(QuestionSubmissionsJson, QuestionJson.Options)!;
+        get => QuestionJson.DeserializeSubmissions(QuestionSubmissionsJson);
         set => QuestionSubmissionsJson = JsonSerializer.SerializeToDocument(value, QuestionJson.Options);
     }
 

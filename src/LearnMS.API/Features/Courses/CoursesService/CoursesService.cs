@@ -2654,6 +2654,8 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(x => x.CourseEnrollments.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.Quizzes.Where(x => x.Id == query.QuizId))
@@ -2691,6 +2693,7 @@ public sealed class CoursesService : ICoursesService
         )
             throw new ApiException(QuizzesErrors.NotAccessible);
 
+        var questions = AssessmentHelpers.UniqueQuestions(quiz.Questions);
         var submission = quiz.QuizSubmissions.FirstOrDefault(x => x.StudentId == query.StudentId);
 
         if (submission is null)
@@ -2708,16 +2711,16 @@ public sealed class CoursesService : ICoursesService
                 Description = quiz.Description,
                 Title = quiz.Title,
                 Id = quiz.Id,
-                MultipleChoiceQuestions = AssessmentHelpers.MapMcNotAnswered(quiz.Questions),
-                ValueToleranceQuestions = AssessmentHelpers.MapVtNotAnswered(quiz.Questions),
-                EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(quiz.Questions),
+                MultipleChoiceQuestions = AssessmentHelpers.MapMcNotAnswered(questions),
+                ValueToleranceQuestions = AssessmentHelpers.MapVtNotAnswered(questions),
+                EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(questions),
                 PassCount = quiz.PassCount,
                 ExpiryMinutes = quiz.ExpiryMinutes,
                 ExpiresAt = activeExpiresAt
             };
         }
 
-        var questionsById = quiz.Questions.ToDictionary(q => q.Id);
+        var questionsById = AssessmentHelpers.UniqueQuestionsById(questions);
         var pendingEssays = submission.QuestionSubmissions.OfType<EssaySubmission>()
             .Count(x => x.IsPendingGrade);
 
@@ -2801,6 +2804,8 @@ public sealed class CoursesService : ICoursesService
         var course =
             await _context
                 .Set<Course>()
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(x => x.Exams.Where(x => x.Id == query.Id))
                 .ThenInclude(x => x.ExamEnrollments.Where(x => x.StudentId == query.StudentId))
                 .ThenInclude(x => x.Submission)
@@ -2851,7 +2856,7 @@ public sealed class CoursesService : ICoursesService
                 EssayQuestions = AssessmentHelpers.MapEssayNotAnswered(exam.Questions)
             };
 
-        var questionsById = exam.Questions.ToDictionary(x => x.Id, x => x);
+        var questionsById = AssessmentHelpers.UniqueQuestionsById(exam.Questions);
         var pendingEssays = submission.QuestionSubmissions.OfType<EssaySubmission>()
             .Count(x => x.IsPendingGrade);
 

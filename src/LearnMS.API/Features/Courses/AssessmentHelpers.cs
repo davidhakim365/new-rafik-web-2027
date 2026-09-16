@@ -16,7 +16,7 @@ public static class AssessmentHelpers
             .GroupBy(a => a.QuestionId)
             .ToDictionary(g => g.Key, g => g.Last().Answer ?? "");
 
-        return questions.Select(question =>
+        return UniqueQuestions(questions).Select(question =>
         {
             byId.TryGetValue(question.Id, out var answer);
             return BuildSubmission(question, answer ?? "");
@@ -109,11 +109,31 @@ public static class AssessmentHelpers
         return created;
     }
 
+    public static List<Question> UniqueQuestions(IEnumerable<Question> questions) =>
+        questions.DistinctBy(q => q.Id).OrderBy(q => q.CreatedAt).ToList();
+
+    public static Dictionary<Guid, Question> UniqueQuestionsById(IEnumerable<Question> questions)
+    {
+        var dict = new Dictionary<Guid, Question>();
+        foreach (var question in questions)
+            dict.TryAdd(question.Id, question);
+        return dict;
+    }
+
+    private static (string Text, string Description, string? Image) QuestionMeta(
+        IReadOnlyDictionary<Guid, Question> questionsById,
+        Guid questionId)
+    {
+        if (questionsById.TryGetValue(questionId, out var question))
+            return (question.Text, question.Description, question.Image);
+        return ("", "", null);
+    }
+
     public static List<MultipleChoiceNotAnswered> MapMcNotAnswered(IEnumerable<Question> questions) =>
-        questions.Where(q => q.Body is MultipleChoiceQuestion)
+        UniqueQuestions(questions).Where(q => q.Body is MultipleChoiceQuestion)
             .Select(q => new MultipleChoiceNotAnswered
             {
-                Choices = ((MultipleChoiceQuestion)q.Body).Choices,
+                Choices = ((MultipleChoiceQuestion)q.Body).Choices ?? [],
                 Description = q.Description,
                 Id = q.Id,
                 Image = q.Image,
@@ -121,7 +141,7 @@ public static class AssessmentHelpers
             }).ToList();
 
     public static List<ValueToleranceNotAnswered> MapVtNotAnswered(IEnumerable<Question> questions) =>
-        questions.Where(q => q.Body is ValueToleranceQuestion)
+        UniqueQuestions(questions).Where(q => q.Body is ValueToleranceQuestion)
             .Select(q => new ValueToleranceNotAnswered
             {
                 Description = q.Description,
@@ -132,7 +152,7 @@ public static class AssessmentHelpers
             }).ToList();
 
     public static List<EssayNotAnswered> MapEssayNotAnswered(IEnumerable<Question> questions) =>
-        questions.Where(q => q.Body is EssayQuestion)
+        UniqueQuestions(questions).Where(q => q.Body is EssayQuestion)
             .Select(q => new EssayNotAnswered
             {
                 Description = q.Description,
@@ -145,85 +165,109 @@ public static class AssessmentHelpers
     public static List<MultipleChoiceWithCorrectAnswer> MapMcWithCorrect(
         IEnumerable<MultipleChoiceSubmission> subs,
         IReadOnlyDictionary<Guid, Question> questionsById) =>
-        subs.Select(x => new MultipleChoiceWithCorrectAnswer
+        subs.Select(x =>
         {
-            Choices = x.Choices,
-            CorrectAnswer = x.CorrectAnswer,
-            Id = x.QuestionId,
-            IsCorrect = x.IsCorrect,
-            StudentAnswer = x.StudentAnswer,
-            Description = questionsById[x.QuestionId].Description,
-            Image = questionsById[x.QuestionId].Image,
-            Text = questionsById[x.QuestionId].Text
+            var meta = QuestionMeta(questionsById, x.QuestionId);
+            return new MultipleChoiceWithCorrectAnswer
+            {
+                Choices = x.Choices ?? [],
+                CorrectAnswer = x.CorrectAnswer,
+                Id = x.QuestionId,
+                IsCorrect = x.IsCorrect,
+                StudentAnswer = x.StudentAnswer,
+                Description = meta.Description,
+                Image = meta.Image,
+                Text = meta.Text
+            };
         }).ToList();
 
     public static List<ValueToleranceWithCorrectAnswer> MapVtWithCorrect(
         IEnumerable<ValueToleranceSubmission> subs,
         IReadOnlyDictionary<Guid, Question> questionsById) =>
-        subs.Select(x => new ValueToleranceWithCorrectAnswer
+        subs.Select(x =>
         {
-            CorrectAnswer = x.CorrectAnswer,
-            IsCorrect = x.IsCorrect,
-            Id = x.QuestionId,
-            Description = questionsById[x.QuestionId].Description,
-            Image = questionsById[x.QuestionId].Image,
-            StudentAnswer = x.StudentAnswer,
-            Text = questionsById[x.QuestionId].Text,
-            Tolerance = x.Tolerance
+            var meta = QuestionMeta(questionsById, x.QuestionId);
+            return new ValueToleranceWithCorrectAnswer
+            {
+                CorrectAnswer = x.CorrectAnswer,
+                IsCorrect = x.IsCorrect,
+                Id = x.QuestionId,
+                Description = meta.Description,
+                Image = meta.Image,
+                StudentAnswer = x.StudentAnswer,
+                Text = meta.Text,
+                Tolerance = x.Tolerance
+            };
         }).ToList();
 
     public static List<EssayWithCorrectAnswer> MapEssayWithCorrect(
         IEnumerable<EssaySubmission> subs,
         IReadOnlyDictionary<Guid, Question> questionsById) =>
-        subs.Select(x => new EssayWithCorrectAnswer
+        subs.Select(x =>
         {
-            Id = x.QuestionId,
-            Description = questionsById[x.QuestionId].Description,
-            Image = questionsById[x.QuestionId].Image,
-            Text = questionsById[x.QuestionId].Text,
-            StudentAnswer = x.StudentAnswer,
-            IsGradedCorrect = x.IsGradedCorrect,
-            IsPendingGrade = x.IsPendingGrade,
-            IsCorrect = x.IsGradedCorrect
+            var meta = QuestionMeta(questionsById, x.QuestionId);
+            return new EssayWithCorrectAnswer
+            {
+                Id = x.QuestionId,
+                Description = meta.Description,
+                Image = meta.Image,
+                Text = meta.Text,
+                StudentAnswer = x.StudentAnswer,
+                IsGradedCorrect = x.IsGradedCorrect,
+                IsPendingGrade = x.IsPendingGrade,
+                IsCorrect = x.IsGradedCorrect
+            };
         }).ToList();
 
     public static List<MultipleChoiceWithStudentAnswer> MapMcWithStudent(
         IEnumerable<MultipleChoiceSubmission> subs,
         IReadOnlyDictionary<Guid, Question> questionsById) =>
-        subs.Select(x => new MultipleChoiceWithStudentAnswer
+        subs.Select(x =>
         {
-            Choices = x.Choices,
-            Description = questionsById[x.QuestionId].Description,
-            Image = questionsById[x.QuestionId].Image,
-            Text = questionsById[x.QuestionId].Text,
-            StudentAnswer = x.StudentAnswer,
-            Id = x.QuestionId
+            var meta = QuestionMeta(questionsById, x.QuestionId);
+            return new MultipleChoiceWithStudentAnswer
+            {
+                Choices = x.Choices ?? [],
+                Description = meta.Description,
+                Image = meta.Image,
+                Text = meta.Text,
+                StudentAnswer = x.StudentAnswer,
+                Id = x.QuestionId
+            };
         }).ToList();
 
     public static List<ValueToleranceWithStudentAnswer> MapVtWithStudent(
         IEnumerable<ValueToleranceSubmission> subs,
         IReadOnlyDictionary<Guid, Question> questionsById) =>
-        subs.Select(x => new ValueToleranceWithStudentAnswer
+        subs.Select(x =>
         {
-            Description = questionsById[x.QuestionId].Description,
-            Image = questionsById[x.QuestionId].Image,
-            StudentAnswer = x.StudentAnswer,
-            Text = questionsById[x.QuestionId].Text,
-            Tolerance = x.Tolerance,
-            Id = x.QuestionId
+            var meta = QuestionMeta(questionsById, x.QuestionId);
+            return new ValueToleranceWithStudentAnswer
+            {
+                Description = meta.Description,
+                Image = meta.Image,
+                StudentAnswer = x.StudentAnswer,
+                Text = meta.Text,
+                Tolerance = x.Tolerance,
+                Id = x.QuestionId
+            };
         }).ToList();
 
     public static List<EssayWithStudentAnswer> MapEssayWithStudent(
         IEnumerable<EssaySubmission> subs,
         IReadOnlyDictionary<Guid, Question> questionsById) =>
-        subs.Select(x => new EssayWithStudentAnswer
+        subs.Select(x =>
         {
-            Description = questionsById[x.QuestionId].Description,
-            Image = questionsById[x.QuestionId].Image,
-            Text = questionsById[x.QuestionId].Text,
-            StudentAnswer = x.StudentAnswer,
-            Id = x.QuestionId,
-            IsGradedCorrect = x.IsGradedCorrect,
-            IsPendingGrade = x.IsPendingGrade
+            var meta = QuestionMeta(questionsById, x.QuestionId);
+            return new EssayWithStudentAnswer
+            {
+                Description = meta.Description,
+                Image = meta.Image,
+                Text = meta.Text,
+                StudentAnswer = x.StudentAnswer,
+                Id = x.QuestionId,
+                IsGradedCorrect = x.IsGradedCorrect,
+                IsPendingGrade = x.IsPendingGrade
+            };
         }).ToList();
 }

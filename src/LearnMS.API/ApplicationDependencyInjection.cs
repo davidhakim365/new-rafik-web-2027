@@ -126,7 +126,9 @@ services.AddEndpointsApiExplorer();
     {
         services.AddDbContext<AppDbContext>(opt =>
         {
-            opt.UseNpgsql(cfg.GetConnectionString("DefaultConnection"));
+            opt.UseNpgsql(
+                cfg.GetConnectionString("DefaultConnection"),
+                npgsql => npgsql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(3), null));
             opt.ConfigureWarnings(w => w.Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning));
         });
     }

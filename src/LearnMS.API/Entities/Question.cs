@@ -23,7 +23,7 @@ public record Question
     [Required]
     public QuestionBody Body
     {
-        get => JsonSerializer.Deserialize<QuestionBody>(BodyJson, QuestionJson.Options)!;
+        get => QuestionJson.DeserializeBody(BodyJson) ?? new EssayQuestion();
         set => BodyJson = JsonSerializer.Serialize(value, QuestionJson.Options);
     }
 
@@ -42,6 +42,105 @@ public static class QuestionJson
         PropertyNameCaseInsensitive = true,
         Converters = { new QuestionChoiceListConverter() }
     };
+
+    public static QuestionBody? DeserializeBody(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json == "null")
+            return null;
+
+        try
+        {
+            var body = JsonSerializer.Deserialize<QuestionBody>(json, Options);
+            if (body is not null)
+                return body;
+        }
+        catch (JsonException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                return null;
+
+            if (HasProperty(doc.RootElement, "choices"))
+                return JsonSerializer.Deserialize<MultipleChoiceQuestion>(json, Options)
+                       ?? new MultipleChoiceQuestion { CorrectAnswer = "", Choices = [] };
+
+            if (HasProperty(doc.RootElement, "tolerance"))
+                return JsonSerializer.Deserialize<ValueToleranceQuestion>(json, Options);
+
+            return JsonSerializer.Deserialize<EssayQuestion>(json, Options) ?? new EssayQuestion();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static List<QuestionSubmission> DeserializeSubmissions(JsonDocument? document)
+    {
+        if (document is null)
+            return [];
+
+        try
+        {
+            var list = JsonSerializer.Deserialize<List<QuestionSubmission>>(document, Options);
+            if (list is not null)
+                return list;
+        }
+        catch (JsonException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        try
+        {
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+                return [];
+
+            var list = new List<QuestionSubmission>();
+            foreach (var element in document.RootElement.EnumerateArray())
+            {
+                try
+                {
+                    var item = JsonSerializer.Deserialize<QuestionSubmission>(element.GetRawText(), Options);
+                    if (item is not null)
+                        list.Add(item);
+                }
+                catch (JsonException)
+                {
+                }
+                catch (NotSupportedException)
+                {
+                }
+            }
+
+            return list;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static bool HasProperty(JsonElement root, string name)
+    {
+        if (root.TryGetProperty(name, out _))
+            return true;
+        if (name.Length == 0)
+            return false;
+        var alt = char.IsLower(name[0])
+            ? char.ToUpperInvariant(name[0]) + name[1..]
+            : char.ToLowerInvariant(name[0]) + name[1..];
+        return root.TryGetProperty(alt, out _);
+    }
 }
 
 public class QuestionChoice
@@ -175,6 +274,12 @@ public sealed class QuestionChoiceListConverter : JsonConverter<List<QuestionCho
     public override void Write(Utf8JsonWriter writer, List<QuestionChoice> value, JsonSerializerOptions options)
     {
         writer.WriteStartArray();
+        if (value is null)
+        {
+            writer.WriteEndArray();
+            return;
+        }
+
         foreach (var choice in value)
         {
             writer.WriteStartObject();
