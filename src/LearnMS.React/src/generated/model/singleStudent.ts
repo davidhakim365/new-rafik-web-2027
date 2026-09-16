@@ -10,6 +10,8 @@ export interface SingleStudent {
   apples?: number;
   credit: number;
   deviceLinked: boolean;
+  /** When true, student cannot sign in until unblocked. */
+  isBlocked?: boolean;
   email: string;
   fullName: string;
   id: string;

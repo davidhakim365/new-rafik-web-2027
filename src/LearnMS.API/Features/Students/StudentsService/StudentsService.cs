@@ -177,6 +177,47 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
         await db.SaveChangesAsync();
     }
 
+    public async Task<SetStudentBlockedResult> ExecuteAsync(SetStudentBlockedCommand command)
+    {
+        var student =
+            await db.Set<Student>().FirstOrDefaultAsync(x => x.Id == command.StudentId)
+            ?? throw new ApiException(StudentsErrors.NotFound);
+
+        if (student.IsBlocked == command.IsBlocked)
+        {
+            return new SetStudentBlockedResult
+            {
+                Id = student.Id,
+                FullName = student.FullName,
+                StudentCode = student.StudentCode,
+                IsBlocked = student.IsBlocked
+            };
+        }
+
+        student.IsBlocked = command.IsBlocked;
+        student.Events.Add(new StudentEvent
+        {
+            Message = command.IsBlocked
+                ? command.ActorId is null
+                    ? "Account blocked"
+                    : $"Account blocked by assistant {command.ActorId}"
+                : command.ActorId is null
+                    ? "Account unblocked"
+                    : $"Account unblocked by assistant {command.ActorId}"
+        });
+
+        db.Update(student);
+        await db.SaveChangesAsync();
+
+        return new SetStudentBlockedResult
+        {
+            Id = student.Id,
+            FullName = student.FullName,
+            StudentCode = student.StudentCode,
+            IsBlocked = student.IsBlocked
+        };
+    }
+
     public async Task<UnlinkAllStudentDevicesResult> ExecuteAsync(UnlinkAllStudentDevicesCommand _)
     {
         string? emptyDeviceKey = null;
@@ -212,6 +253,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
             {
                 Id = students.Id,
                 DeviceLinked = !string.IsNullOrWhiteSpace(students.DeviceKey),
+                IsBlocked = students.IsBlocked,
                 Email = accounts.Email,
                 Credit = students.Credit,
                 Apples = students.Apples,

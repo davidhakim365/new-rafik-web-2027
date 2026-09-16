@@ -35,6 +35,13 @@ export type PaymentRequestsPage = {
   hasPreviousPage: boolean;
 };
 
+export type PaymentRequestStats = {
+  pending: number;
+  confirmed: number;
+  rejected: number;
+  total: number;
+};
+
 type ApiSuccess<T> = {
   data: T;
   message?: string;
@@ -58,6 +65,10 @@ export function getMyPaymentRequestsQueryKey(params?: {
   pageSize?: number;
 }) {
   return [PAYMENT_REQUESTS_QUERY_KEY, "mine", params ?? {}] as const;
+}
+
+export function getPaymentRequestStatsQueryKey() {
+  return [PAYMENT_REQUESTS_QUERY_KEY, "stats"] as const;
 }
 
 const getPaymentRequests = (params: GetPaymentRequestsParams) => {
@@ -87,6 +98,11 @@ const getMyPaymentRequests = (params?: { page?: number; pageSize?: number }) => 
     )
     .then((res) => res.data);
 };
+
+const getPaymentRequestStats = () =>
+  api
+    .get<ApiSuccess<PaymentRequestStats>>("/api/payment-requests/stats")
+    .then((res) => res.data);
 
 const createPaymentRequest = (formData: FormData) =>
   api
@@ -120,6 +136,13 @@ export function useMyPaymentRequestsQuery(params?: {
   return useQuery({
     queryKey: getMyPaymentRequestsQueryKey(params),
     queryFn: () => getMyPaymentRequests(params),
+  });
+}
+
+export function usePaymentRequestStatsQuery() {
+  return useQuery({
+    queryKey: getPaymentRequestStatsQueryKey(),
+    queryFn: getPaymentRequestStats,
   });
 }
 

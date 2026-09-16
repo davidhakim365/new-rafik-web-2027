@@ -257,6 +257,32 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpPut("{studentId:guid}/block")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "SetStudentBlocked")]
+    public async Task<ApiWrapper.Success<SetStudentBlockedResult>> SetBlocked(
+        Guid studentId,
+        [FromBody] SetStudentBlockedRequest request)
+    {
+        var currentUser = await currentUserService.GetUserAsync()
+            ?? throw new ApiException(AuthErrors.Unauthorized);
+
+        var result = await studentsService.ExecuteAsync(new SetStudentBlockedCommand
+        {
+            StudentId = studentId,
+            IsBlocked = request.IsBlocked,
+            ActorId = currentUser.Id
+        });
+
+        return new ApiWrapper.Success<SetStudentBlockedResult>
+        {
+            Data = result,
+            Message = result.IsBlocked
+                ? "Student account blocked successfully"
+                : "Student account unblocked successfully"
+        };
+    }
+
     [HttpPost("unlink-all-devices")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
     [SwaggerOperation(OperationId = "UnlinkAllStudentDevices")]

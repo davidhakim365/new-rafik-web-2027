@@ -229,6 +229,33 @@ export const useUnlinkAllStudentDevicesMutation = () => {
   });
 };
 
+export type SetStudentBlockedResult = {
+  id: string;
+  fullName: string;
+  studentCode: string;
+  isBlocked: boolean;
+};
+
+export const useSetStudentBlockedMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<SetStudentBlockedResult>,
+    Error,
+    { studentId: string; isBlocked: boolean }
+  >({
+    throwOnError: false,
+    mutationFn: ({ studentId, isBlocked }) =>
+      api
+        .put(`/api/students/${studentId}/block`, { isBlocked })
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["/api/students"] });
+      qc.invalidateQueries({ queryKey: ["students", "statistics"] });
+    },
+  });
+};
+
 export const useStudentQuery = ({ id }: { id: string }) => {
   return useQuery<ApiResponse<Student>>({
     queryKey: ["student", { id }],

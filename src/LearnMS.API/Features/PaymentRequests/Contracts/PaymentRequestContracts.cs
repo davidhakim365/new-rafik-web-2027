@@ -80,3 +80,11 @@ public sealed record PaymentRequestItem
     public string? LastRequestImageThumbUrl { get; init; }
     public string? LastRequestNote { get; init; }
 }
+
+public sealed record PaymentRequestStats
+{
+    public int Pending { get; init; }
+    public int Confirmed { get; init; }
+    public int Rejected { get; init; }
+    public int Total => Pending + Confirmed + Rejected;
+}

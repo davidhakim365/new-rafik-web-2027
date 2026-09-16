@@ -42,7 +42,7 @@ const QuizPage = () => {
   const { courseId, lectureId, quizId } = useParams();
   const { openModal } = useModalStore();
   const {
-    addQuestions,
+    setQuestions,
     resetAll,
     questions,
     removeQuestion,
@@ -50,6 +50,7 @@ const QuizPage = () => {
     addDraft,
     updateDraft,
     removeDraft,
+    clearDrafts,
   } = useQuestionsStore();
   const navigate = useNavigate();
 
@@ -97,11 +98,11 @@ const QuizPage = () => {
 
   useEffect(() => {
     resetAll();
-  }, []);
+  }, [quizId, resetAll]);
 
   useEffect(() => {
     if (quiz?.status && quiz?.data) {
-      addQuestions(quiz.data.questions as Question[]);
+      setQuestions(quiz.data.questions as Question[]);
       form.setValue("id", quiz.data.id);
       form.setValue("title", quiz.data.title);
       form.setValue("description", quiz.data.description);
@@ -112,7 +113,7 @@ const QuizPage = () => {
         (quiz.data as { expiryMinutes?: number }).expiryMinutes ?? 0
       );
     }
-  }, [quiz, addQuestions]);
+  }, [quiz, setQuestions, form]);
 
   if (isLoading) {
     return (
@@ -139,6 +140,10 @@ const QuizPage = () => {
             description: res.message,
             title: "Success",
           });
+          clearDrafts();
+          if (res.data?.questions) {
+            setQuestions(res.data.questions as Question[]);
+          }
           if (!quizId)
             navigate(
               `/dashboard/courses/${courseId}/lectures/${lectureId}/quizzes/${res.data.id}`,

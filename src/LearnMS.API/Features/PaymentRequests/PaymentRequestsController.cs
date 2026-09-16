@@ -69,6 +69,20 @@ public sealed class PaymentRequestsController(
         };
     }
 
+    [HttpGet("stats")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
+    [SwaggerOperation(OperationId = "GetPaymentRequestStats")]
+    public async Task<ApiWrapper.Success<PaymentRequestStats>> GetStats(CancellationToken ct)
+    {
+        var result = await paymentRequestsService.QueryStatsAsync(ct);
+
+        return new ApiWrapper.Success<PaymentRequestStats>
+        {
+            Data = result,
+            Message = "successfully retrieved payment request stats"
+        };
+    }
+
     [HttpGet]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
     [SwaggerOperation(OperationId = "GetPaymentRequests")]

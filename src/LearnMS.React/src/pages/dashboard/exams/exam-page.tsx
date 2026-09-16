@@ -281,7 +281,7 @@ function useUpdateExamForm({
   courseId: string;
   examId?: string;
 }) {
-  const { addQuestions, questions, drafts, resetAll } = useQuestionsStore();
+  const { setQuestions, questions, drafts, resetAll } = useQuestionsStore();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const updateExamMutation = useUpdateExam({
@@ -296,6 +296,9 @@ function useUpdateExamForm({
         });
         qc.invalidateQueries({ queryKey: ["questions"] });
         qc.invalidateQueries({ queryKey: ["course", { id: courseId }] });
+        if (data?.questions) {
+          setQuestions(data.questions as any);
+        }
         if (!examId && data?.id) {
           navigate(`/dashboard/courses/${courseId}/exams/${data.id}`, {
             replace: true,
@@ -340,11 +343,11 @@ function useUpdateExamForm({
 
   useEffect(() => {
     resetAll();
-  }, []);
+  }, [examId, resetAll]);
 
   useEffect(() => {
     if (exam) {
-      addQuestions(exam.questions);
+      setQuestions(exam.questions);
       form.setValue("id", exam.id);
       form.setValue("title", exam.title);
       form.setValue("description", exam.description);
@@ -354,7 +357,7 @@ function useUpdateExamForm({
       form.setValue("retakePrice", exam.retakePrice);
       form.setValue("expiryHours", exam.expiryHours);
     }
-  }, [exam, addQuestions]);
+  }, [exam, setQuestions, form]);
 
   return {
     form,

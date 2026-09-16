@@ -969,89 +969,72 @@ public sealed class CoursesService : ICoursesService
 
     public async Task<UpdateQuizResult> ExecuteAsync(UpdateQuizCommand command)
     {
-        var strategy = _context.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        var lecture =
+            await _context
+                .Set<Lecture>()
+                .Include(x => x.Quizzes)
+                .ThenInclude(x => x.Questions.OrderBy(x => x.CreatedAt))
+                .Include(x => x.Lessons)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == command.LectureId && x.CourseId == command.CourseId
+                ) ?? throw new ApiException(LecturesErrors.NotFound);
+
+        Quiz quiz;
+
+        var isNew = command.Id == null;
+
+        if (!isNew)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            quiz =
+                lecture.Quizzes.FirstOrDefault(x => x.Id == command.Id)
+                ?? throw new ApiException(QuizzesErrors.NotFound);
+        }
+        else
+        {
+            quiz = new Quiz { Id = Guid.NewGuid() };
+            lecture.AddItem(quiz);
+        }
 
-            var lecture =
-                await _context
-                    .Set<Lecture>()
-                    .Include(x => x.Quizzes)
-                    .ThenInclude(x => x.Questions.OrderBy(x => x.CreatedAt))
-                    .Include(x => x.Lessons)
-                    .FirstOrDefaultAsync(x =>
-                        x.Id == command.LectureId && x.CourseId == command.CourseId
-                    ) ?? throw new ApiException(LecturesErrors.NotFound);
+        quiz.Description = command.Description;
+        quiz.Title = command.Title;
+        quiz.ResultType = command.ResultType;
+        quiz.PassCount = command.PassCount;
+        quiz.ExpiryMinutes = command.ExpiryMinutes;
 
-            Quiz quiz;
+        var existingQuestions = await _context
+            .Set<Question>()
+            .Where(x => command.Questions.Contains(x.Id))
+            .ToListAsync();
 
-            var isNew = command.Id == null;
+        var inlineQuestions = AssessmentHelpers.CreateInlineQuestions(
+            quiz.Title,
+            command.NewQuestions,
+            existingQuestions.Count + 1);
+        if (inlineQuestions.Count > 0)
+            await _context.Set<Question>().AddRangeAsync(inlineQuestions);
 
-            if (!isNew)
-            {
-                quiz =
-                    lecture.Quizzes.FirstOrDefault(x => x.Id == command.Id)
-                    ?? throw new ApiException(QuizzesErrors.NotFound);
-            }
-            else
-            {
-                quiz = new Quiz { Id = Guid.NewGuid() };
-                lecture.AddItem(quiz);
-            }
+        var allQuestions = AssessmentHelpers.UniqueQuestions(
+            existingQuestions.Concat(inlineQuestions));
+        if (allQuestions.Count == 0)
+            throw new ApiException(QuizzesErrors.NotFound);
 
-            quiz.Description = command.Description;
-            quiz.Title = command.Title;
-            quiz.ResultType = command.ResultType;
-            quiz.PassCount = command.PassCount;
-            quiz.ExpiryMinutes = command.ExpiryMinutes;
+        quiz.Questions.Clear();
+        foreach (var question in allQuestions)
+            quiz.Questions.Add(question);
 
-            var existingQuestions = await _context
-                .Set<Question>()
-                .Where(x => command.Questions.Contains(x.Id))
-                .ToListAsync();
+        _context.Update(lecture);
+        await _context.SaveChangesAsync();
 
-            var startIndex = existingQuestions.Count + 1;
-            var inlineQuestions = AssessmentHelpers.CreateInlineQuestions(
-                quiz.Title,
-                command.NewQuestions,
-                startIndex);
-            if (inlineQuestions.Count > 0)
-                await _context.Set<Question>().AddRangeAsync(inlineQuestions);
-
-            var allQuestions = existingQuestions.Concat(inlineQuestions).ToList();
-            if (allQuestions.Count == 0)
-                throw new ApiException(QuizzesErrors.NotFound);
-
-            _context.Update(lecture);
-            if (!isNew)
-                _context.Update(quiz);
-            else
-                await _context.AddAsync(quiz);
-            await _context.SaveChangesAsync();
-
-            quiz.QuizQuestions.Clear();
-            _context.Update(quiz);
-            await _context.SaveChangesAsync();
-
-            foreach (var question in allQuestions)
-                quiz.Questions.Add(question);
-            _context.Update(quiz);
-            await _context.SaveChangesAsync();
-
-            await transaction.CommitAsync();
-
-            return new UpdateQuizResult
-            {
-                PassCount = quiz.PassCount,
-                Description = quiz.Description,
-                ResultType = quiz.ResultType,
-                Title = quiz.Title,
-                Id = quiz.Id,
-                ExpiryMinutes = quiz.ExpiryMinutes,
-                Questions = allQuestions
-            };
-        });
+        return new UpdateQuizResult
+        {
+            PassCount = quiz.PassCount,
+            Description = quiz.Description,
+            ResultType = quiz.ResultType,
+            Title = quiz.Title,
+            Id = quiz.Id,
+            ExpiryMinutes = quiz.ExpiryMinutes,
+            Questions = allQuestions
+        };
     }
 
     public async Task ExecuteAsync(DeleteQuizCommand command)
@@ -2647,7 +2630,7 @@ public sealed class CoursesService : ICoursesService
             PassCount = result.PassCount,
             Description = result.Description,
             Title = result.Title,
-            Questions = result.Questions.OrderBy(q => q.CreatedAt).ToList(),
+            Questions = AssessmentHelpers.UniqueQuestions(result.Questions),
             ResultType = result.ResultType,
             ExpiryMinutes = result.ExpiryMinutes
         };

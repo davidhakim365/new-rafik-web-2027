@@ -9,4 +9,5 @@ public interface IPaymentRequestsService
     Task<PaymentRequestItem> ExecuteAsync(RejectPaymentRequestCommand command);
     Task<PageList<PaymentRequestItem>> QueryAsync(GetMyPaymentRequestsQuery query);
     Task<PageList<PaymentRequestItem>> QueryAsync(GetPaymentRequestsQuery query);
+    Task<PaymentRequestStats> QueryStatsAsync(CancellationToken ct = default);
 }

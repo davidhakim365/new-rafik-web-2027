@@ -1,6 +1,10 @@
-import { useDeleteStudentMutation } from "@/api/students-api";
+import {
+  useDeleteStudentMutation,
+  useSetStudentBlockedMutation,
+} from "@/api/students-api";
 import { useAddStudentCredit } from "@/generated/api"; // already imported
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,12 +27,14 @@ import { useModalStore } from "@/store/use-modal-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import {
+  Ban,
   CheckCircle,
   Circle,
   CreditCard,
   MoreHorizontal,
   MoreVertical,
   Network,
+  ShieldCheck,
   Trash,
 } from "lucide-react";
 import { FaChrome } from "react-icons/fa";
@@ -76,6 +82,8 @@ export const studentsColumns: ColumnDef<SingleStudent>[] = [
       const { openModal } = useModalStore();
       const qc = useQueryClient();
       const deleteStudentMutation = useDeleteStudentMutation();
+      const setBlockedMutation = useSetStudentBlockedMutation();
+      const isBlocked = student.isBlocked === true;
       
       const unlinkDeviceMutation = useUnlinkStudentDevice({
     mutation: {
@@ -91,6 +99,31 @@ export const studentsColumns: ColumnDef<SingleStudent>[] = [
 
       const onDeleting = () => {
         deleteStudentMutation.mutate({ id: student.id });
+      };
+
+      const onToggleBlock = () => {
+        const nextBlocked = !isBlocked;
+        setBlockedMutation.mutate(
+          { studentId: student.id, isBlocked: nextBlocked },
+          {
+            onSuccess: () => {
+              qc.invalidateQueries({ queryKey: getGetAllStudentsQueryKey() });
+              toast({
+                title: nextBlocked ? "Student blocked" : "Student unblocked",
+                description: nextBlocked
+                  ? `${student.fullName} cannot sign in until unblocked.`
+                  : `${student.fullName} can use their account again.`,
+              });
+            },
+            onError: () => {
+              toast({
+                title: nextBlocked ? "Block failed" : "Unblock failed",
+                description: "Could not update block status.",
+                variant: "destructive",
+              });
+            },
+          }
+        );
       };
 
 const addStudentCredit = useAddStudentCredit({
@@ -123,6 +156,18 @@ const onQuickAddCredit = () => {
         <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 items-center">
           {/* Mobile Layout - Stacked Buttons */}
           <div className="flex flex-col gap-1 w-full sm:hidden">
+            {isBlocked && (
+              <Button
+                onClick={onToggleBlock}
+                className="w-full gap-1 text-xs"
+                variant="outline"
+                size="sm"
+                disabled={setBlockedMutation.isPending}
+              >
+                <ShieldCheck className="w-3 h-3" />
+                Unblock
+              </Button>
+            )}
             <Button
               onClick={onUnlink}
               className="w-full gap-1 text-red-500 border-none hover:bg-red-500 hover:text-white text-xs"
@@ -144,6 +189,18 @@ const onQuickAddCredit = () => {
 
           {/* Desktop Layout - Horizontal Buttons */}
           <div className="hidden sm:flex gap-2 items-center">
+            {isBlocked && (
+              <Button
+                onClick={onToggleBlock}
+                className="gap-2"
+                variant="outline"
+                size="sm"
+                disabled={setBlockedMutation.isPending}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span className="hidden lg:inline">Unblock</span>
+              </Button>
+            )}
             <Button
               onClick={onUnlink}
               className="gap-2 text-red-500 border-none hover:bg-red-500 hover:text-white"
@@ -193,6 +250,14 @@ const onQuickAddCredit = () => {
               >
                 <CreditCard />
                 Add Apples
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onToggleBlock}
+                disabled={setBlockedMutation.isPending}
+                className="flex items-center gap-2 hover:cursor-pointer hover:bg-primary hover:text-white"
+              >
+                {isBlocked ? <ShieldCheck /> : <Ban />}
+                {isBlocked ? "Unblock Student" : "Block Student"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <Link to={`/dashboard/students/${student.id}`}>
@@ -287,6 +352,30 @@ const onQuickAddCredit = () => {
       return (
         <div className="text-xs sm:text-sm">
           {levelMap[student.level]}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "isBlocked",
+    header: "Status",
+    size: 90,
+    cell: ({ row }) => {
+      const isBlocked = row.original.isBlocked === true;
+      return (
+        <div className="flex items-center justify-center">
+          {isBlocked ? (
+            <Badge className="bg-zinc-800 hover:bg-zinc-800 text-white">
+              Blocked
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="border-emerald-500/40 text-emerald-700"
+            >
+              Active
+            </Badge>
+          )}
         </div>
       );
     },

@@ -34,14 +34,17 @@ import { toast } from "@/components/ui/use-toast";
 import {
   PaymentRequestItem,
   useConfirmPaymentRequestMutation,
+  usePaymentRequestStatsQuery,
   usePaymentRequestsQuery,
   useRejectPaymentRequestMutation,
 } from "@/api/payment-requests-api";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Search, Wallet } from "lucide-react";
+import { CheckCircle2, Clock, Search, Wallet, XCircle } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 function statusBadgeClass(status: string) {
   if (status === "Confirmed") {
@@ -51,6 +54,51 @@ function statusBadgeClass(status: string) {
     return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300";
   }
   return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300";
+}
+
+function StatusCountCard({
+  title,
+  value,
+  icon: Icon,
+  active,
+  className,
+  iconClassName,
+  onClick,
+}: {
+  title: string;
+  value: number;
+  icon: LucideIcon;
+  active: boolean;
+  className: string;
+  iconClassName: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-start justify-between gap-3 rounded-xl border p-4 text-left transition-colors",
+        className,
+        active && "ring-2 ring-offset-2 ring-offset-background"
+      )}
+    >
+      <div className="min-w-0 space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
+          {title}
+        </p>
+        <p className="text-2xl font-bold tracking-tight">{value}</p>
+      </div>
+      <div
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          iconClassName
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+    </button>
+  );
 }
 
 const PaymentRequestsPage = () => {
@@ -73,6 +121,7 @@ const PaymentRequestsPage = () => {
     search,
     status,
   });
+  const statsQuery = usePaymentRequestStatsQuery();
   const confirmMutation = useConfirmPaymentRequestMutation();
   const rejectMutation = useRejectPaymentRequestMutation();
 
@@ -295,6 +344,45 @@ const PaymentRequestsPage = () => {
       icon={Wallet}
       fullWidth
     >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatusCountCard
+          title="Pending"
+          value={statsQuery.data?.data?.pending ?? 0}
+          icon={Clock}
+          active={status === "Pending"}
+          className="border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-100"
+          iconClassName="bg-amber-500/20 text-amber-600"
+          onClick={() => {
+            setStatus("Pending");
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+          }}
+        />
+        <StatusCountCard
+          title="Approved"
+          value={statsQuery.data?.data?.confirmed ?? 0}
+          icon={CheckCircle2}
+          active={status === "Confirmed"}
+          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+          iconClassName="bg-emerald-500/20 text-emerald-600"
+          onClick={() => {
+            setStatus("Confirmed");
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+          }}
+        />
+        <StatusCountCard
+          title="Declined"
+          value={statsQuery.data?.data?.rejected ?? 0}
+          icon={XCircle}
+          active={status === "Rejected"}
+          className="border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-200"
+          iconClassName="bg-rose-500/20 text-rose-600"
+          onClick={() => {
+            setStatus("Rejected");
+            setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+          }}
+        />
+      </div>
+
       <DashboardCard>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">

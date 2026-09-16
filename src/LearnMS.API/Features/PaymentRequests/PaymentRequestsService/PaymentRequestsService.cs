@@ -173,6 +173,22 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         return result;
     }
 
+    public async Task<PaymentRequestStats> QueryStatsAsync(CancellationToken ct = default)
+    {
+        var rows = await db.PaymentRequests
+            .AsNoTracking()
+            .GroupBy(x => x.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
+        return new PaymentRequestStats
+        {
+            Pending = rows.FirstOrDefault(x => x.Status == PaymentRequestStatus.Pending)?.Count ?? 0,
+            Confirmed = rows.FirstOrDefault(x => x.Status == PaymentRequestStatus.Confirmed)?.Count ?? 0,
+            Rejected = rows.FirstOrDefault(x => x.Status == PaymentRequestStatus.Rejected)?.Count ?? 0
+        };
+    }
+
     public static async Task EnsurePaymentRequestsTable(AppDbContext db)
     {
         await db.Database.ExecuteSqlRawAsync("""
