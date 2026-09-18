@@ -2,7 +2,7 @@ import {
   useDeleteStudentMutation,
   useSetStudentBlockedMutation,
 } from "@/api/students-api";
-import { useAddStudentCredit } from "@/generated/api"; // already imported
+import { getStudent, useAddStudentCredit } from "@/generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,7 +30,9 @@ import {
   Ban,
   CheckCircle,
   Circle,
+  Copy,
   CreditCard,
+  Loader2,
   MoreHorizontal,
   MoreVertical,
   Network,
@@ -63,6 +65,7 @@ import { toast } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useState } from "react";
 const levelMap = {
   Level0: "3rd Prep School",
   Level1: "1st Secondary ",
@@ -84,6 +87,51 @@ export const studentsColumns: ColumnDef<SingleStudent>[] = [
       const deleteStudentMutation = useDeleteStudentMutation();
       const setBlockedMutation = useSetStudentBlockedMutation();
       const isBlocked = student.isBlocked === true;
+      const [isCopyingCredentials, setIsCopyingCredentials] = useState(false);
+
+      const onCopyCredentials = async () => {
+        if (isCopyingCredentials) return;
+        setIsCopyingCredentials(true);
+        try {
+          const response = await getStudent(student.id);
+          const email = response.data?.email?.trim();
+          const password = response.data?.password?.trim();
+
+          if (!email) {
+            toast({
+              title: "Copy failed",
+              description: "Student email was not found.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (!password) {
+            toast({
+              title: "Copy failed",
+              description: "No saved password for this student.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const credentials = `Email: ${email}\nPassword: ${password}`;
+          await navigator.clipboard.writeText(credentials);
+          toast({
+            title: "Credentials copied",
+            description: `${student.fullName} email and password are on the clipboard.`,
+          });
+        } catch {
+          toast({
+            title: "Copy failed",
+            description: "Could not load student credentials.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsCopyingCredentials(false);
+        }
+      };
+
       
       const unlinkDeviceMutation = useUnlinkStudentDevice({
     mutation: {
@@ -169,6 +217,20 @@ const onQuickAddCredit = () => {
               </Button>
             )}
             <Button
+              onClick={onCopyCredentials}
+              className="w-full gap-1 text-xs"
+              variant="outline"
+              size="sm"
+              disabled={isCopyingCredentials}
+            >
+              {isCopyingCredentials ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+              Copy Credentials
+            </Button>
+            <Button
               onClick={onUnlink}
               className="w-full gap-1 text-red-500 border-none hover:bg-red-500 hover:text-white text-xs"
               variant="outline"
@@ -201,6 +263,20 @@ const onQuickAddCredit = () => {
                 <span className="hidden lg:inline">Unblock</span>
               </Button>
             )}
+            <Button
+              onClick={onCopyCredentials}
+              className="gap-2"
+              variant="outline"
+              size="sm"
+              disabled={isCopyingCredentials}
+            >
+              {isCopyingCredentials ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+              <span className="hidden lg:inline">Copy Credentials</span>
+            </Button>
             <Button
               onClick={onUnlink}
               className="gap-2 text-red-500 border-none hover:bg-red-500 hover:text-white"
@@ -250,6 +326,18 @@ const onQuickAddCredit = () => {
               >
                 <CreditCard />
                 Add Apples
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onCopyCredentials}
+                disabled={isCopyingCredentials}
+                className="flex items-center gap-2 hover:cursor-pointer hover:bg-primary hover:text-white"
+              >
+                {isCopyingCredentials ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Copy />
+                )}
+                Copy Credentials
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onToggleBlock}
