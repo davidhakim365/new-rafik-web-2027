@@ -2655,6 +2655,8 @@ public sealed class CoursesService : ICoursesService
                 .ThenInclude(x => x.QuizAttempts.Where(x => x.StudentId == query.StudentId))
                 .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
                 .ThenInclude(x => x.LectureEnrollments.Where(x => x.StudentId == query.StudentId))
+                .Include(x => x.Lectures.Where(x => x.Id == query.LectureId))
+                .ThenInclude(x => x.QuizAnswerAssets)
                 .FirstOrDefaultAsync(x => x.Id == query.CourseId && x.IsPublished)
             ?? throw new ApiException(CoursesErrors.NotFound);
 
@@ -2710,6 +2712,10 @@ public sealed class CoursesService : ICoursesService
         var questionsById = AssessmentHelpers.UniqueQuestionsById(questions);
         var pendingEssays = submission.QuestionSubmissions.OfType<EssaySubmission>()
             .Count(x => x.IsPendingGrade);
+        var modelAnswers = await GetPassedQuizModelAnswersAsync(
+            query.StudentId,
+            lecture,
+            submission.NumOfCorrect >= quiz.PassCount);
 
         if (quiz.ResultType == ResultType.ResultWithAnswer)
             return new QuizResultWithAnswer
@@ -2726,7 +2732,8 @@ public sealed class CoursesService : ICoursesService
                 PassCount = quiz.PassCount,
                 Title = quiz.Title,
                 Id = quiz.Id,
-                PendingEssayCount = pendingEssays
+                PendingEssayCount = pendingEssays,
+                QuizAnswerAssets = modelAnswers
             };
 
         if (quiz.ResultType == ResultType.ResultOnly)
@@ -2744,7 +2751,8 @@ public sealed class CoursesService : ICoursesService
                 EssayQuestions = AssessmentHelpers.MapEssayWithStudent(
                     submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
                 NumOfCorrect = submission.NumOfCorrect,
-                PendingEssayCount = pendingEssays
+                PendingEssayCount = pendingEssays,
+                QuizAnswerAssets = modelAnswers
             };
 
         return new QuizHidden()
@@ -2759,7 +2767,8 @@ public sealed class CoursesService : ICoursesService
                 submission.QuestionSubmissions.OfType<ValueToleranceSubmission>(), questionsById),
             EssayQuestions = AssessmentHelpers.MapEssayWithStudent(
                 submission.QuestionSubmissions.OfType<EssaySubmission>(), questionsById),
-            PassCount = quiz.PassCount
+            PassCount = quiz.PassCount,
+            QuizAnswerAssets = modelAnswers
         };
     }
 
@@ -3075,5 +3084,32 @@ public sealed class CoursesService : ICoursesService
             ?? throw new ApiException(ProfileErrors.NoStudentFound);
 
         EnsureStudentCourseLevel(courseLevel, studentLevel);
+    }
+
+    private async Task<List<QuizAnswerAssetDto>> GetPassedQuizModelAnswersAsync(
+        Guid studentId,
+        Lecture lecture,
+        bool passedThisQuiz)
+    {
+        if (!passedThisQuiz || !lecture.AreAttachmentsPublished)
+            return [];
+
+        var studentCode = await _context.Set<Student>()
+            .Where(s => s.Id == studentId)
+            .Select(s => s.StudentCode)
+            .FirstOrDefaultAsync();
+
+        if (!LectureQuizAnswerAccess.IsOnlineStudent(studentCode))
+            return [];
+
+        return lecture.QuizAnswerAssets
+            .Select(asset => new QuizAnswerAssetDto
+            {
+                Id = asset.Id,
+                Name = asset.Name,
+                Type = asset.Type,
+                Url = asset.Url
+            })
+            .ToList();
     }
 }

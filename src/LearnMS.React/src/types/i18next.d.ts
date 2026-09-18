@@ -254,6 +254,7 @@ declare module "i18next" {
           noAttachmentsAvailable: string;
           noAssetsAvailable: string;
           quizAnswers: string;
+          quizModelAnswers: string;
           noQuizAnswersAvailable: string;
           quizAnswersLockedAttendance: string;
           quizAnswersLockedEnroll: string;

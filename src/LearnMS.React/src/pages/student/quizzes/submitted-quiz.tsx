@@ -13,20 +13,33 @@ import {
   QuizResultWithAnswer,
 } from "@/generated/model";
 import { cn } from "@/lib/utils";
+import { getPdfViewerUrl } from "@/lib/pdf-url";
 import { useQueryClient } from "@tanstack/react-query";
 import MDEditor from '@uiw/react-md-editor';
 
 import React from "react";
 import { useParams } from "react-router-dom";
 import rehypeSanitize from "rehype-sanitize";
+import { useTranslation } from "react-i18next";
+import { FaFilePdf } from "react-icons/fa";
 
 const SubmittedQuiz: React.FC<{
   quiz: QuizResultOnly | QuizResultWithAnswer | QuizHidden;
 }> = ({ quiz }) => {
+  const { t } = useTranslation();
   const questions = [];
   
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const pdfUrls = quiz.description?.match(urlRegex) ?? [];
+  const modelAnswers = (
+    quiz as {
+      quizAnswerAssets?: Array<{
+        id: string;
+        name?: string;
+        url?: string | null;
+      }>;
+    }
+  ).quizAnswerAssets ?? [];
   
   const { courseId, lectureId } = useParams();
   const qc = useQueryClient();
@@ -228,6 +241,28 @@ const SubmittedQuiz: React.FC<{
                 />
               </div>
             )}
+          </div>
+        )}
+        {modelAnswers.length > 0 && (
+          <div className="my-8 flex w-full flex-col gap-4 px-4">
+            <h2 className="flex items-center justify-center gap-2 text-center text-2xl font-semibold">
+              <FaFilePdf className="h-6 w-6 text-red-200" />
+              {t("courses.quizModelAnswers")}
+            </h2>
+            {modelAnswers.map((asset) => (
+              <div
+                key={asset.id}
+                className="overflow-hidden rounded-lg shadow-lg"
+                style={{ height: "70vh", width: "100%" }}
+              >
+                <iframe
+                  src={getPdfViewerUrl(asset)}
+                  className="h-full w-full"
+                  title={asset.name || t("courses.quizModelAnswers")}
+                  style={{ border: "none" }}
+                />
+              </div>
+            ))}
           </div>
         )}
        {pdfUrls.map((url, index) => {

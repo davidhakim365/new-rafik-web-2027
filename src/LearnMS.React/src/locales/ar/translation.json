@@ -320,6 +320,7 @@
     "noAttachmentsAvailable": "لا توجد مرفقات",
     "noAssetsAvailable": "لا توجد مرفقات متاحة",
     "quizAnswers": "إجابات الاختبار",
+    "quizModelAnswers": "نموذج إجابات الاختبار",
     "noQuizAnswersAvailable": "لا توجد إجابات اختبار متاحة",
     "quizAnswersLockedAttendance": "احضر هذه المحاضرة في السنتر لعرض إجابات الاختبار.",
     "quizAnswersLockedEnroll": "سجّل في المحاضرة واجتز الاختبار لعرض إجابات الاختبار.",

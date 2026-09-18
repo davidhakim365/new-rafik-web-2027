@@ -64,7 +64,18 @@ public enum ResultType
 [JsonDerivedType(typeof(QuizHidden), nameof(QuizHidden))]
 [JsonDerivedType(typeof(QuizResultOnly), nameof(QuizResultOnly))]
 [JsonDerivedType(typeof(QuizResultWithAnswer), nameof(QuizResultWithAnswer))]
-public abstract record QuizResult { };
+public abstract record QuizResult
+{
+    public List<QuizAnswerAssetDto> QuizAnswerAssets { get; init; } = [];
+};
+
+public sealed record QuizAnswerAssetDto
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required AssetType Type { get; init; }
+    public string? Url { get; init; }
+}
 
 public sealed record QuizDashboard : QuizResult
 {
