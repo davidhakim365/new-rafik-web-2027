@@ -17,21 +17,24 @@ public static class LectureQuizAnswerAccess
         bool hasAnyQuiz,
         bool passedAllQuizzes)
     {
-        if (string.IsNullOrWhiteSpace(studentCode))
+        // Center attendance always unlocks (offline students).
+        if (hasAttended)
+            return (true, null);
+
+        if (!isEnrolled)
             return (false, LockEnroll);
 
-        if (IsOnlineStudent(studentCode))
-        {
-            if (!isEnrolled)
-                return (false, LockEnroll);
-            if (hasAnyQuiz && !passedAllQuizzes)
-                return (false, LockPassQuiz);
+        // Any enrolled student who passed the lecture quiz(es) can view.
+        // Do not require an ONL- student code — many online students do not have that prefix.
+        if (hasAnyQuiz && passedAllQuizzes)
             return (true, null);
-        }
 
-        if (!hasAttended)
-            return (false, LockAttendance);
+        if (hasAnyQuiz)
+            return (false, LockPassQuiz);
 
-        return (true, null);
+        if (IsOnlineStudent(studentCode))
+            return (true, null);
+
+        return (false, LockAttendance);
     }
 }

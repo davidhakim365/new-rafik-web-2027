@@ -2205,16 +2205,14 @@ public sealed class CoursesService : ICoursesService
                 : [];
 
         var enrollment = EnrollmentStatus.FromExpiresAt(expiresAt);
-        var (canViewQuizAnswers, quizAnswersLockReason) = lecture.AreAttachmentsPublished
-            ? LectureQuizAnswerAccess.Evaluate(
-                student.StudentCode,
-                enrollment == Enrollment.Active,
-                hasAttendedLecture,
-                hasQuizzes,
-                hasQuizzes && lecture.Quizzes.All(IsQuizPassed)
-            )
-            : (false, (string?)null);
-        var hasQuizAnswers = lecture.AreAttachmentsPublished && lecture.QuizAnswerAssets.Count > 0;
+        var (canViewQuizAnswers, quizAnswersLockReason) = LectureQuizAnswerAccess.Evaluate(
+            student.StudentCode,
+            enrollment == Enrollment.Active,
+            hasAttendedLecture,
+            hasQuizzes,
+            hasQuizzes && lecture.Quizzes.All(IsQuizPassed)
+        );
+        var hasQuizAnswers = lecture.QuizAnswerAssets.Count > 0;
         var quizAnswerAssets = canViewQuizAnswers
             ? lecture.QuizAnswerAssets
             : [];
@@ -2713,7 +2711,6 @@ public sealed class CoursesService : ICoursesService
         var pendingEssays = submission.QuestionSubmissions.OfType<EssaySubmission>()
             .Count(x => x.IsPendingGrade);
         var modelAnswers = await GetPassedQuizModelAnswersAsync(
-            query.StudentId,
             lecture,
             submission.NumOfCorrect >= quiz.PassCount);
 
@@ -3087,22 +3084,36 @@ public sealed class CoursesService : ICoursesService
     }
 
     private async Task<List<QuizAnswerAssetDto>> GetPassedQuizModelAnswersAsync(
-        Guid studentId,
         Lecture lecture,
         bool passedThisQuiz)
     {
-        if (!passedThisQuiz || !lecture.AreAttachmentsPublished)
+        if (!passedThisQuiz)
             return [];
 
-        var studentCode = await _context.Set<Student>()
-            .Where(s => s.Id == studentId)
-            .Select(s => s.StudentCode)
-            .FirstOrDefaultAsync();
+        var included = lecture.QuizAnswerAssets ?? [];
+        if (included.Count > 0)
+            return MapQuizAnswerAssets(included);
 
-        if (!LectureQuizAnswerAccess.IsOnlineStudent(studentCode))
+        var assetIds = await _context.Set<LectureQuizAnswerAsset>()
+            .AsNoTracking()
+            .Where(x => x.LectureId == lecture.Id)
+            .Select(x => x.AssetId)
+            .ToListAsync();
+
+        if (assetIds.Count == 0)
             return [];
 
-        return lecture.QuizAnswerAssets
+        var assets = await _context.Set<Asset>()
+            .AsNoTracking()
+            .Where(asset => assetIds.Contains(asset.Id))
+            .ToListAsync();
+
+        return MapQuizAnswerAssets(assets);
+    }
+
+    private static List<QuizAnswerAssetDto> MapQuizAnswerAssets(IEnumerable<Asset> assets) =>
+        assets
+            .Where(asset => !string.IsNullOrWhiteSpace(asset.Id))
             .Select(asset => new QuizAnswerAssetDto
             {
                 Id = asset.Id,
@@ -3111,5 +3122,4 @@ public sealed class CoursesService : ICoursesService
                 Url = asset.Url
             })
             .ToList();
-    }
 }

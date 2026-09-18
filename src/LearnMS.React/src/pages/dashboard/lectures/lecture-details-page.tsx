@@ -982,7 +982,7 @@ function LectureQuizAnswerAssetsForm({
     <LecturePdfCollectionForm
       title="Quiz Answers"
       emptyText="NO QUIZ ANSWERS"
-      description="These PDFs publish with attachments. Offline students can open them after attending at a center. Online students must be enrolled and pass the quiz when quizzes are published."
+      description="Students who pass the lecture quiz can open these PDFs. Offline students can also open them after attending at a center."
       oldAssets={oldAssets ?? []}
       lectureId={id}
       courseId={courseId}

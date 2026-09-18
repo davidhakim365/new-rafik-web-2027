@@ -63,11 +63,11 @@ public class Lecture : IOrdered
     public Guid CourseId { get; init; }
     public Course Course { get; } = null!;
 
-    public List<Asset> Assets = [];
-    public List<LectureAsset> LectureAssets = [];
+    public List<Asset> Assets { get; set; } = [];
+    public List<LectureAsset> LectureAssets { get; set; } = [];
 
-    public List<Asset> QuizAnswerAssets = [];
-    public List<LectureQuizAnswerAsset> LectureQuizAnswerAssets = [];
+    public List<Asset> QuizAnswerAssets { get; set; } = [];
+    public List<LectureQuizAnswerAsset> LectureQuizAnswerAssets { get; set; } = [];
 
     public void AddItem(Lesson lesson)
     {

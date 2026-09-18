@@ -6,13 +6,19 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getGetLectureQueryKey, getGetQuizQueryKey, useRetakeQuiz } from "@/generated/api";
+import {
+  getGetLectureQueryKey,
+  getGetQuizQueryKey,
+  useGetLecture,
+  useRetakeQuiz,
+} from "@/generated/api";
 import {
   QuizHidden,
   QuizResultOnly,
   QuizResultWithAnswer,
 } from "@/generated/model";
 import { cn } from "@/lib/utils";
+import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
 import { getPdfViewerUrl } from "@/lib/pdf-url";
 import { useQueryClient } from "@tanstack/react-query";
 import MDEditor from '@uiw/react-md-editor';
@@ -23,25 +29,65 @@ import rehypeSanitize from "rehype-sanitize";
 import { useTranslation } from "react-i18next";
 import { FaFilePdf } from "react-icons/fa";
 
+type ModelAnswerPdf = {
+  id: string;
+  name?: string;
+  url?: string | null;
+};
+
+function readModelAnswers(source: unknown): ModelAnswerPdf[] {
+  if (!source || typeof source !== "object") return [];
+  const record = source as Record<string, unknown>;
+  const raw =
+    record.quizAnswerAssets ??
+    record.QuizAnswerAssets ??
+    record.modelAnswerPdfs;
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const result: ModelAnswerPdf[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const pdf = item as ModelAnswerPdf;
+    if (typeof pdf.id !== "string" || seen.has(pdf.id)) continue;
+    seen.add(pdf.id);
+    result.push(pdf);
+  }
+  return result;
+}
+
 const SubmittedQuiz: React.FC<{
   quiz: QuizResultOnly | QuizResultWithAnswer | QuizHidden;
 }> = ({ quiz }) => {
   const { t } = useTranslation();
   const questions = [];
-  
+  const { courseId, lectureId } = useParams();
+  const { data: lectureData } = useGetLecture(courseId!, lectureId!, {
+    query: {
+      enabled: !!courseId && !!lectureId,
+      throwOnError: false,
+    },
+  });
+
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const pdfUrls = quiz.description?.match(urlRegex) ?? [];
-  const modelAnswers = (
-    quiz as {
-      quizAnswerAssets?: Array<{
-        id: string;
-        name?: string;
-        url?: string | null;
-      }>;
-    }
-  ).quizAnswerAssets ?? [];
-  
-  const { courseId, lectureId } = useParams();
+  const numOfCorrect =
+    "numOfCorrect" in quiz && typeof quiz.numOfCorrect === "number"
+      ? quiz.numOfCorrect
+      : undefined;
+  const passed =
+    typeof numOfCorrect === "number" && quiz.passCount <= numOfCorrect;
+  const lectureCanView = Boolean(
+    (lectureData?.data as { canViewQuizAnswers?: boolean } | undefined)
+      ?.canViewQuizAnswers
+  );
+  const fromQuiz = readModelAnswers(quiz);
+  const fromLecture = readModelAnswers(lectureData?.data);
+  const modelAnswers = readModelAnswers({
+    quizAnswerAssets: [
+      ...fromQuiz,
+      ...(passed || lectureCanView ? fromLecture : []),
+    ],
+  });
   const qc = useQueryClient();
   const { mutate: retakeQuiz, isPending } = useRetakeQuiz({
     mutation: {
@@ -249,9 +295,23 @@ const SubmittedQuiz: React.FC<{
               <FaFilePdf className="h-6 w-6 text-red-200" />
               {t("courses.quizModelAnswers")}
             </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {modelAnswers.map((asset) => (
+                <PdfOpenButton
+                  key={asset.id}
+                  asset={asset}
+                  className="flex items-center gap-3 rounded-lg border border-white/30 bg-card/30 p-3 text-left hover:bg-card/50"
+                >
+                  <FaFilePdf className="h-5 w-5 shrink-0 text-red-200" />
+                  <span className="truncate font-medium">
+                    {asset.name || t("courses.quizModelAnswers")}
+                  </span>
+                </PdfOpenButton>
+              ))}
+            </div>
             {modelAnswers.map((asset) => (
               <div
-                key={asset.id}
+                key={`${asset.id}-preview`}
                 className="overflow-hidden rounded-lg shadow-lg"
                 style={{ height: "70vh", width: "100%" }}
               >

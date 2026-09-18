@@ -64,10 +64,7 @@ public enum ResultType
 [JsonDerivedType(typeof(QuizHidden), nameof(QuizHidden))]
 [JsonDerivedType(typeof(QuizResultOnly), nameof(QuizResultOnly))]
 [JsonDerivedType(typeof(QuizResultWithAnswer), nameof(QuizResultWithAnswer))]
-public abstract record QuizResult
-{
-    public List<QuizAnswerAssetDto> QuizAnswerAssets { get; init; } = [];
-};
+public abstract record QuizResult { };
 
 public sealed record QuizAnswerAssetDto
 {
@@ -155,6 +152,8 @@ public record QuizHidden : QuizResult
 
     [Required]
     public required List<EssayWithStudentAnswer> EssayQuestions { get; set; }
+
+    public List<QuizAnswerAssetDto> QuizAnswerAssets { get; init; } = [];
 }
 
 public record QuizResultOnly : QuizResult
@@ -187,6 +186,8 @@ public record QuizResultOnly : QuizResult
     public required List<EssayWithStudentAnswer> EssayQuestions { get; set; }
 
     public int PendingEssayCount { get; set; }
+
+    public List<QuizAnswerAssetDto> QuizAnswerAssets { get; init; } = [];
 }
 
 public record QuizResultWithAnswer : QuizResult
@@ -219,4 +220,6 @@ public record QuizResultWithAnswer : QuizResult
     public required List<EssayWithCorrectAnswer> EssayQuestions { get; set; }
 
     public int PendingEssayCount { get; set; }
+
+    public List<QuizAnswerAssetDto> QuizAnswerAssets { get; init; } = [];
 }

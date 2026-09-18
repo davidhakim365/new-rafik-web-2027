@@ -240,15 +240,13 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             var contentPublished = l.IsPublished;
             var hasAnyQuiz = contentPublished && l.Quizzes.Count > 0;
             var passedAllQuizzes = hasAnyQuiz && l.Quizzes.All(q => q.IsPassed == true);
-            var (canViewQuizAnswers, quizAnswersLockReason) = l.AreAttachmentsPublished
-                ? LectureQuizAnswerAccess.Evaluate(
-                    studentInfo?.StudentCode,
-                    enrollment == Enrollment.Active,
-                    l.HasAttended,
-                    hasAnyQuiz,
-                    passedAllQuizzes
-                )
-                : (false, (string?)null);
+            var (canViewQuizAnswers, quizAnswersLockReason) = LectureQuizAnswerAccess.Evaluate(
+                studentInfo?.StudentCode,
+                enrollment == Enrollment.Active,
+                l.HasAttended,
+                hasAnyQuiz,
+                passedAllQuizzes
+            );
             return new StudentLectureDto()
             {
                 Id = l.Id,
@@ -271,7 +269,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                 Assets = l.AreAttachmentsPublished ? l.Assets : [],
                 QuizAnswerAssets = canViewQuizAnswers ? l.QuizAnswerAssets : [],
                 CanViewQuizAnswers = canViewQuizAnswers,
-                HasQuizAnswers = l.AreAttachmentsPublished && l.QuizAnswerAssets.Count > 0,
+                HasQuizAnswers = l.QuizAnswerAssets.Count > 0,
                 QuizAnswersLockReason = quizAnswersLockReason,
                 ExpirationDays = l.ExpirationDays,
                 Items = contentPublished
