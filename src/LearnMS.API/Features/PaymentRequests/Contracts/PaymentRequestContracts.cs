@@ -88,3 +88,17 @@ public sealed record PaymentRequestStats
     public int Rejected { get; init; }
     public int Total => Pending + Confirmed + Rejected;
 }
+
+public sealed class CreatePaymentRequestRejectionReasonRequest
+{
+    [Required]
+    [MaxLength(500)]
+    public string Text { get; init; } = "";
+}
+
+public sealed record PaymentRequestRejectionReasonItem
+{
+    public required Guid Id { get; init; }
+    public required string Text { get; init; }
+    public required int SortOrder { get; init; }
+}

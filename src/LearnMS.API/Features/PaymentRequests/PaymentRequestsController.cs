@@ -83,6 +83,37 @@ public sealed class PaymentRequestsController(
         };
     }
 
+    [HttpGet("rejection-reasons")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
+    [SwaggerOperation(OperationId = "GetPaymentRequestRejectionReasons")]
+    public async Task<ApiWrapper.Success<IReadOnlyList<PaymentRequestRejectionReasonItem>>> GetRejectionReasons(
+        CancellationToken ct)
+    {
+        var result = await paymentRequestsService.QueryRejectionReasonsAsync(ct);
+
+        return new ApiWrapper.Success<IReadOnlyList<PaymentRequestRejectionReasonItem>>
+        {
+            Data = result,
+            Message = "successfully retrieved rejection reasons"
+        };
+    }
+
+    [HttpPost("rejection-reasons")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
+    [SwaggerOperation(OperationId = "CreatePaymentRequestRejectionReason")]
+    public async Task<ApiWrapper.Success<PaymentRequestRejectionReasonItem>> CreateRejectionReason(
+        [FromBody] CreatePaymentRequestRejectionReasonRequest request,
+        CancellationToken ct)
+    {
+        var result = await paymentRequestsService.AddRejectionReasonAsync(request.Text, ct);
+
+        return new ApiWrapper.Success<PaymentRequestRejectionReasonItem>
+        {
+            Data = result,
+            Message = "Rejection comment saved as a constant option"
+        };
+    }
+
     [HttpGet]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManagePaymentRequests])]
     [SwaggerOperation(OperationId = "GetPaymentRequests")]

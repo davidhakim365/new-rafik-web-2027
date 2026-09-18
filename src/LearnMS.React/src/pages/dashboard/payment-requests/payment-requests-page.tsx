@@ -34,13 +34,15 @@ import { toast } from "@/components/ui/use-toast";
 import {
   PaymentRequestItem,
   useConfirmPaymentRequestMutation,
+  useCreatePaymentRequestRejectionReasonMutation,
+  usePaymentRequestRejectionReasonsQuery,
   usePaymentRequestStatsQuery,
   usePaymentRequestsQuery,
   useRejectPaymentRequestMutation,
 } from "@/api/payment-requests-api";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CheckCircle2, Clock, Search, Wallet, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Plus, Search, Wallet, XCircle } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -55,6 +57,8 @@ function statusBadgeClass(status: string) {
   }
   return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300";
 }
+
+const OTHER_REJECTION_OPTION = "other";
 
 function StatusCountCard({
   title,
@@ -113,7 +117,8 @@ const PaymentRequestsPage = () => {
   const [rejectTarget, setRejectTarget] = useState<PaymentRequestItem | null>(
     null
   );
-  const [rejectReason, setRejectReason] = useState("");
+  const [rejectOption, setRejectOption] = useState("");
+  const [otherReason, setOtherReason] = useState("");
 
   const query = usePaymentRequestsQuery({
     page: pageIndex + 1,
@@ -122,8 +127,11 @@ const PaymentRequestsPage = () => {
     status,
   });
   const statsQuery = usePaymentRequestStatsQuery();
+  const reasonsQuery = usePaymentRequestRejectionReasonsQuery();
   const confirmMutation = useConfirmPaymentRequestMutation();
   const rejectMutation = useRejectPaymentRequestMutation();
+  const addReasonMutation = useCreatePaymentRequestRejectionReasonMutation();
+  const rejectionReasons = reasonsQuery.data?.data ?? [];
 
   const pendingId = confirmMutation.isPending
     ? confirmMutation.variables
@@ -308,7 +316,8 @@ const PaymentRequestsPage = () => {
                 className="border-rose-300 text-rose-600 hover:bg-rose-500 hover:text-white"
                 disabled={busy}
                 onClick={() => {
-                  setRejectReason("");
+                  setRejectOption("");
+                  setOtherReason("");
                   setRejectTarget(item);
                 }}
               >
@@ -322,19 +331,52 @@ const PaymentRequestsPage = () => {
     [confirmMutation, pendingId]
   );
 
+  const resetRejectForm = () => {
+    setRejectTarget(null);
+    setRejectOption("");
+    setOtherReason("");
+  };
+
+  const selectedReasonText =
+    rejectOption === OTHER_REJECTION_OPTION
+      ? otherReason.trim()
+      : rejectionReasons.find((reason) => reason.id === rejectOption)?.text ??
+        "";
+
   const onReject = () => {
     if (!rejectTarget) return;
+    const reason = selectedReasonText;
+    if (!reason) {
+      toast({
+        title: "Choose a rejection comment",
+        variant: "destructive",
+      });
+      return;
+    }
     const id = rejectTarget.id;
     rejectMutation.mutate(
-      { id, reason: rejectReason.trim() || undefined },
+      { id, reason },
       {
         onSuccess: (res) => {
           toast({ title: res.message ?? "Payment request rejected" });
-          setRejectTarget(null);
-          setRejectReason("");
+          resetRejectForm();
         },
       }
     );
+  };
+
+  const onSaveOtherOption = () => {
+    const text = otherReason.trim();
+    if (!text) return;
+    addReasonMutation.mutate(text, {
+      onSuccess: (res) => {
+        if (res.data?.id) {
+          setRejectOption(res.data.id);
+          setOtherReason("");
+        }
+        toast({ title: res.message ?? "Comment saved as a constant option" });
+      },
+    });
   };
 
   return (
@@ -511,8 +553,7 @@ const PaymentRequestsPage = () => {
         open={!!rejectTarget}
         onOpenChange={(open) => {
           if (!open && !rejectMutation.isPending) {
-            setRejectTarget(null);
-            setRejectReason("");
+            resetRejectForm();
           }
         }}
       >
@@ -520,22 +561,62 @@ const PaymentRequestsPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Reject payment request?</AlertDialogTitle>
             <AlertDialogDescription>
-              {rejectTarget?.studentName} will see this request as rejected. The
-              balance will not change.
+              {rejectTarget?.studentName} will see this comment. The balance
+              will not change.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea
-            maxLength={500}
-            placeholder="Optional reason (visible to the student)"
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-          />
+          <div className="space-y-3">
+            <Select
+              value={rejectOption || undefined}
+              onValueChange={setRejectOption}
+              disabled={rejectMutation.isPending}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a rejection comment" />
+              </SelectTrigger>
+              <SelectContent className="z-[200]">
+                {rejectionReasons.map((reason) => (
+                  <SelectItem key={reason.id} value={reason.id}>
+                    <span className="whitespace-normal text-start">
+                      {reason.text}
+                    </span>
+                  </SelectItem>
+                ))}
+                <SelectItem value={OTHER_REJECTION_OPTION}>Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {rejectOption === OTHER_REJECTION_OPTION && (
+              <div className="space-y-2">
+                <Textarea
+                  maxLength={500}
+                  placeholder="Write a new constant comment"
+                  value={otherReason}
+                  onChange={(e) => setOtherReason(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={
+                    !otherReason.trim() || addReasonMutation.isPending
+                  }
+                  onClick={onSaveOtherOption}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Save as constant option
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  This comment is saved to the dropdown for next time.
+                </p>
+              </div>
+            )}
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={rejectMutation.isPending}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              disabled={rejectMutation.isPending}
+              disabled={rejectMutation.isPending || !selectedReasonText}
               onClick={(e) => {
                 e.preventDefault();
                 onReject();

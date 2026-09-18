@@ -33,4 +33,9 @@ public static class PaymentRequestsErrors
         "payment-request/pending-exists",
         "You already have a pending transfer request. Wait until it is confirmed or rejected before sending another.",
         StatusCodes.Status400BadRequest);
+
+    public static readonly ApiError InvalidRejectionReason = new(
+        "payment-request/invalid-rejection-reason",
+        "A rejection comment is required.",
+        StatusCodes.Status400BadRequest);
 }

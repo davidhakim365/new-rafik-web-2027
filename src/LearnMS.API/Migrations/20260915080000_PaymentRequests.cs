@@ -42,6 +42,38 @@ public partial class PaymentRequests : Migration
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_PaymentRequests_StudentId_Pending"
                 ON "PaymentRequests" ("StudentId")
                 WHERE "Status" = 'Pending';
+
+            CREATE TABLE IF NOT EXISTS "PaymentRequestRejectionReasons" (
+                "Id" uuid NOT NULL,
+                "Text" character varying(500) NOT NULL,
+                "SortOrder" integer NOT NULL,
+                "CreatedAt" timestamp with time zone NOT NULL,
+                CONSTRAINT "PK_PaymentRequestRejectionReasons" PRIMARY KEY ("Id")
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_PaymentRequestRejectionReasons_Text"
+                ON "PaymentRequestRejectionReasons" (LOWER("Text"));
+
+            INSERT INTO "PaymentRequestRejectionReasons" ("Id", "Text", "SortOrder", "CreatedAt")
+            SELECT 'a11c0001-15e0-4a11-9e01-000000000001', 'التاريخ فى صورة التحويل قديم', 1, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentRequestRejectionReasons"
+                WHERE LOWER("Text") = LOWER('التاريخ فى صورة التحويل قديم')
+            );
+
+            INSERT INTO "PaymentRequestRejectionReasons" ("Id", "Text", "SortOrder", "CreatedAt")
+            SELECT 'a11c0001-15e0-4a11-9e01-000000000002', 'صورة التحويل مستخدمة من قبل', 2, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentRequestRejectionReasons"
+                WHERE LOWER("Text") = LOWER('صورة التحويل مستخدمة من قبل')
+            );
+
+            INSERT INTO "PaymentRequestRejectionReasons" ("Id", "Text", "SortOrder", "CreatedAt")
+            SELECT 'a11c0001-15e0-4a11-9e01-000000000003', 'تاريخ التحويل مش ظاهر فى الصوره', 3, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentRequestRejectionReasons"
+                WHERE LOWER("Text") = LOWER('تاريخ التحويل مش ظاهر فى الصوره')
+            );
             """);
     }
 

@@ -42,6 +42,12 @@ export type PaymentRequestStats = {
   total: number;
 };
 
+export type PaymentRequestRejectionReason = {
+  id: string;
+  text: string;
+  sortOrder: number;
+};
+
 type ApiSuccess<T> = {
   data: T;
   message?: string;
@@ -69,6 +75,10 @@ export function getMyPaymentRequestsQueryKey(params?: {
 
 export function getPaymentRequestStatsQueryKey() {
   return [PAYMENT_REQUESTS_QUERY_KEY, "stats"] as const;
+}
+
+export function getPaymentRequestRejectionReasonsQueryKey() {
+  return [PAYMENT_REQUESTS_QUERY_KEY, "rejection-reasons"] as const;
 }
 
 const getPaymentRequests = (params: GetPaymentRequestsParams) => {
@@ -102,6 +112,21 @@ const getMyPaymentRequests = (params?: { page?: number; pageSize?: number }) => 
 const getPaymentRequestStats = () =>
   api
     .get<ApiSuccess<PaymentRequestStats>>("/api/payment-requests/stats")
+    .then((res) => res.data);
+
+const getPaymentRequestRejectionReasons = () =>
+  api
+    .get<ApiSuccess<PaymentRequestRejectionReason[]>>(
+      "/api/payment-requests/rejection-reasons"
+    )
+    .then((res) => res.data);
+
+const createPaymentRequestRejectionReason = (text: string) =>
+  api
+    .post<ApiSuccess<PaymentRequestRejectionReason>>(
+      "/api/payment-requests/rejection-reasons",
+      { text }
+    )
     .then((res) => res.data);
 
 const createPaymentRequest = (formData: FormData) =>
@@ -143,6 +168,26 @@ export function usePaymentRequestStatsQuery() {
   return useQuery({
     queryKey: getPaymentRequestStatsQueryKey(),
     queryFn: getPaymentRequestStats,
+  });
+}
+
+export function usePaymentRequestRejectionReasonsQuery() {
+  return useQuery({
+    queryKey: getPaymentRequestRejectionReasonsQueryKey(),
+    queryFn: getPaymentRequestRejectionReasons,
+  });
+}
+
+export function useCreatePaymentRequestRejectionReasonMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    throwOnError: false,
+    mutationFn: (text: string) => createPaymentRequestRejectionReason(text),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: getPaymentRequestRejectionReasonsQueryKey(),
+      });
+    },
   });
 }
 

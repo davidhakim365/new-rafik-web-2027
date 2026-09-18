@@ -10,4 +10,6 @@ public interface IPaymentRequestsService
     Task<PageList<PaymentRequestItem>> QueryAsync(GetMyPaymentRequestsQuery query);
     Task<PageList<PaymentRequestItem>> QueryAsync(GetPaymentRequestsQuery query);
     Task<PaymentRequestStats> QueryStatsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<PaymentRequestRejectionReasonItem>> QueryRejectionReasonsAsync(CancellationToken ct = default);
+    Task<PaymentRequestRejectionReasonItem> AddRejectionReasonAsync(string text, CancellationToken ct = default);
 }

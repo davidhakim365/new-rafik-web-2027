@@ -111,6 +111,9 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         if (reason is { Length: > 500 })
             reason = reason[..500];
 
+        if (reason is not null)
+            await AddRejectionReasonAsync(reason);
+
         request.Status = PaymentRequestStatus.Rejected;
         request.RejectionReason = reason;
         request.ReviewedById = command.ReviewedById;
@@ -189,6 +192,88 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         };
     }
 
+    public async Task<IReadOnlyList<PaymentRequestRejectionReasonItem>> QueryRejectionReasonsAsync(
+        CancellationToken ct = default)
+    {
+        return await db.PaymentRequestRejectionReasons
+            .AsNoTracking()
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.CreatedAt)
+            .Select(x => new PaymentRequestRejectionReasonItem
+            {
+                Id = x.Id,
+                Text = x.Text,
+                SortOrder = x.SortOrder
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<PaymentRequestRejectionReasonItem> AddRejectionReasonAsync(
+        string text,
+        CancellationToken ct = default)
+    {
+        var reason = text.Trim();
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ApiException(PaymentRequestsErrors.InvalidRejectionReason);
+
+        if (reason.Length > 500)
+            reason = reason[..500];
+
+        var existing = await db.PaymentRequestRejectionReasons
+            .FirstOrDefaultAsync(x => x.Text.ToLower() == reason.ToLower(), ct);
+
+        if (existing is not null)
+        {
+            return new PaymentRequestRejectionReasonItem
+            {
+                Id = existing.Id,
+                Text = existing.Text,
+                SortOrder = existing.SortOrder
+            };
+        }
+
+        var maxOrder = await db.PaymentRequestRejectionReasons
+            .Select(x => (int?)x.SortOrder)
+            .MaxAsync(ct) ?? 0;
+
+        var item = new PaymentRequestRejectionReason
+        {
+            Text = reason,
+            SortOrder = maxOrder + 1,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await db.PaymentRequestRejectionReasons.AddAsync(item, ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            var duplicate = await db.PaymentRequestRejectionReasons
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Text.ToLower() == reason.ToLower(), ct);
+            if (duplicate is not null)
+            {
+                return new PaymentRequestRejectionReasonItem
+                {
+                    Id = duplicate.Id,
+                    Text = duplicate.Text,
+                    SortOrder = duplicate.SortOrder
+                };
+            }
+
+            throw;
+        }
+
+        return new PaymentRequestRejectionReasonItem
+        {
+            Id = item.Id,
+            Text = item.Text,
+            SortOrder = item.SortOrder
+        };
+    }
+
     public static async Task EnsurePaymentRequestsTable(AppDbContext db)
     {
         await db.Database.ExecuteSqlRawAsync("""
@@ -221,6 +306,52 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_PaymentRequests_StudentId_Pending"
                 ON "PaymentRequests" ("StudentId")
                 WHERE "Status" = 'Pending';
+
+            CREATE TABLE IF NOT EXISTS "PaymentRequestRejectionReasons" (
+                "Id" uuid NOT NULL,
+                "Text" character varying(500) NOT NULL,
+                "SortOrder" integer NOT NULL,
+                "CreatedAt" timestamp with time zone NOT NULL,
+                CONSTRAINT "PK_PaymentRequestRejectionReasons" PRIMARY KEY ("Id")
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_PaymentRequestRejectionReasons_Text"
+                ON "PaymentRequestRejectionReasons" (LOWER("Text"));
+
+            DELETE FROM "PaymentRequestRejectionReasons"
+            WHERE LOWER("Text") IN (
+                LOWER('Screenshot is not clear'),
+                LOWER('Amount does not match the transfer'),
+                LOWER('Transfer was not received'),
+                LOWER('This screenshot was used before')
+            )
+            OR "Id" IN (
+                'a11c0001-15e0-4a11-9e01-000000000001',
+                'a11c0001-15e0-4a11-9e01-000000000002',
+                'a11c0001-15e0-4a11-9e01-000000000003',
+                'a11c0001-15e0-4a11-9e01-000000000004'
+            );
+
+            INSERT INTO "PaymentRequestRejectionReasons" ("Id", "Text", "SortOrder", "CreatedAt")
+            SELECT 'a11c0001-15e0-4a11-9e01-000000000001', 'التاريخ فى صورة التحويل قديم', 1, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentRequestRejectionReasons"
+                WHERE LOWER("Text") = LOWER('التاريخ فى صورة التحويل قديم')
+            );
+
+            INSERT INTO "PaymentRequestRejectionReasons" ("Id", "Text", "SortOrder", "CreatedAt")
+            SELECT 'a11c0001-15e0-4a11-9e01-000000000002', 'صورة التحويل مستخدمة من قبل', 2, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentRequestRejectionReasons"
+                WHERE LOWER("Text") = LOWER('صورة التحويل مستخدمة من قبل')
+            );
+
+            INSERT INTO "PaymentRequestRejectionReasons" ("Id", "Text", "SortOrder", "CreatedAt")
+            SELECT 'a11c0001-15e0-4a11-9e01-000000000003', 'تاريخ التحويل مش ظاهر فى الصوره', 3, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentRequestRejectionReasons"
+                WHERE LOWER("Text") = LOWER('تاريخ التحويل مش ظاهر فى الصوره')
+            );
             """);
     }
 
