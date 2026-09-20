@@ -37,7 +37,7 @@ public class QuizQuestion
     public Guid QuestionId { get; set; }
     public Question Question { get; set; } = null!;
 
-    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>Tracks when a student started a timed quiz.</summary>

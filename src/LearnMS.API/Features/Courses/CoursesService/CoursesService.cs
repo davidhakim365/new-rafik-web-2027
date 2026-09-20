@@ -972,9 +972,7 @@ public sealed class CoursesService : ICoursesService
         var lecture =
             await _context
                 .Set<Lecture>()
-                .AsSplitQuery()
                 .Include(x => x.Quizzes)
-                .Include(x => x.Lessons)
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
@@ -984,19 +982,21 @@ public sealed class CoursesService : ICoursesService
 
         if (isNew)
         {
+            var lessonCount = await _context.Set<Lesson>()
+                .CountAsync(x => x.LectureId == lecture.Id);
             quiz = new Quiz
             {
                 Id = Guid.NewGuid(),
-                LectureId = lecture.Id
+                LectureId = lecture.Id,
+                Order = lessonCount + lecture.Quizzes.Count + 1
             };
-            lecture.AddItem(quiz);
+            lecture.Quizzes.Add(quiz);
         }
         else
         {
             quiz =
                 lecture.Quizzes.FirstOrDefault(x => x.Id == command.Id)
                 ?? throw new ApiException(QuizzesErrors.NotFound);
-            await _context.Entry(quiz).Collection(x => x.Questions).LoadAsync();
         }
 
         quiz.Description = command.Description;
@@ -1028,15 +1028,36 @@ public sealed class CoursesService : ICoursesService
         if (allQuestions.Count == 0)
             throw new ApiException(QuizzesErrors.NoQuestions);
 
-        AssessmentHelpers.SyncQuestions(quiz.Questions, allQuestions);
+        await SaveQuizChangesAsync();
 
-        await _context.SaveChangesAsync();
+        var desiredIds = allQuestions.Select(q => q.Id).ToHashSet();
+        var links = await _context.Set<QuizQuestion>()
+            .Where(x => x.QuizId == quiz.Id)
+            .ToListAsync();
 
-        var savedIds = allQuestions.Select(q => q.Id).ToList();
+        foreach (var link in links.Where(l => !desiredIds.Contains(l.QuestionId)).ToList())
+            _context.Set<QuizQuestion>().Remove(link);
+
+        var presentIds = links.Select(l => l.QuestionId).ToHashSet();
+        foreach (var question in allQuestions)
+        {
+            if (!presentIds.Add(question.Id))
+                continue;
+
+            _context.Set<QuizQuestion>().Add(new QuizQuestion
+            {
+                QuizId = quiz.Id,
+                QuestionId = question.Id,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await SaveQuizChangesAsync();
+
         var savedQuestions = await _context
             .Set<Question>()
             .AsNoTracking()
-            .Where(x => savedIds.Contains(x.Id))
+            .Where(x => desiredIds.Contains(x.Id))
             .OrderBy(x => x.CreatedAt)
             .ToListAsync();
 
@@ -1050,6 +1071,34 @@ public sealed class CoursesService : ICoursesService
             ExpiryMinutes = quiz.ExpiryMinutes,
             Questions = savedQuestions.Count > 0 ? savedQuestions : allQuestions
         };
+    }
+
+    private async Task SaveQuizChangesAsync()
+    {
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsMissingQuizSchema(ex))
+        {
+            await QuizSchema.EnsureAsync(_context);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            Serilog.Log.Error(ex, "Quiz save failed");
+            throw new ApiException(QuizzesErrors.SaveFailed);
+        }
+    }
+
+    private static bool IsMissingQuizSchema(DbUpdateException ex)
+    {
+        var message = $"{ex.Message} {ex.InnerException?.Message}";
+        return message.Contains("42703", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("ExpiryMinutes", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("SourceTitle", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("SourceIndex", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("does not exist", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task ExecuteAsync(DeleteQuizCommand command)
