@@ -112,6 +112,20 @@ public static class AssessmentHelpers
     public static List<Question> UniqueQuestions(IEnumerable<Question> questions) =>
         questions.DistinctBy(q => q.Id).OrderBy(q => q.CreatedAt).ToList();
 
+    public static void SyncQuestions(ICollection<Question> current, IReadOnlyList<Question> desired)
+    {
+        var desiredIds = desired.Select(q => q.Id).ToHashSet();
+        foreach (var question in current.Where(q => !desiredIds.Contains(q.Id)).ToList())
+            current.Remove(question);
+
+        var presentIds = current.Select(q => q.Id).ToHashSet();
+        foreach (var question in desired)
+        {
+            if (presentIds.Add(question.Id))
+                current.Add(question);
+        }
+    }
+
     public static Dictionary<Guid, Question> UniqueQuestionsById(IEnumerable<Question> questions)
     {
         var dict = new Dictionary<Guid, Question>();

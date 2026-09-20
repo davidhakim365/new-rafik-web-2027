@@ -1001,14 +1001,20 @@ public sealed class CoursesService : ICoursesService
         quiz.PassCount = command.PassCount;
         quiz.ExpiryMinutes = command.ExpiryMinutes;
 
-        var existingQuestions = await _context
-            .Set<Question>()
-            .Where(x => command.Questions.Contains(x.Id))
-            .ToListAsync();
+        var questionIds = (command.Questions ?? [])
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var existingQuestions = questionIds.Count == 0
+            ? []
+            : await _context
+                .Set<Question>()
+                .Where(x => questionIds.Contains(x.Id))
+                .ToListAsync();
 
         var inlineQuestions = AssessmentHelpers.CreateInlineQuestions(
             quiz.Title,
-            command.NewQuestions,
+            command.NewQuestions ?? [],
             existingQuestions.Count + 1);
         if (inlineQuestions.Count > 0)
             await _context.Set<Question>().AddRangeAsync(inlineQuestions);
@@ -1018,11 +1024,8 @@ public sealed class CoursesService : ICoursesService
         if (allQuestions.Count == 0)
             throw new ApiException(QuizzesErrors.NotFound);
 
-        quiz.Questions.Clear();
-        foreach (var question in allQuestions)
-            quiz.Questions.Add(question);
+        AssessmentHelpers.SyncQuestions(quiz.Questions, allQuestions);
 
-        _context.Update(lecture);
         await _context.SaveChangesAsync();
 
         return new UpdateQuizResult
@@ -1351,23 +1354,27 @@ public sealed class CoursesService : ICoursesService
         exam.RetakePrice = command.RetakePrice;
         exam.PassCount = command.PassCount;
         exam.ExpiryHours = command.ExpiryHours;
-        exam.Questions.Clear();
 
-        var existingQuestions = await _context.Set<Question>()
-            .Where(x => command.Questions.Contains(x.Id))
-            .ToListAsync();
+        var questionIds = (command.Questions ?? [])
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var existingQuestions = questionIds.Count == 0
+            ? []
+            : await _context.Set<Question>()
+                .Where(x => questionIds.Contains(x.Id))
+                .ToListAsync();
         var inlineQuestions = AssessmentHelpers.CreateInlineQuestions(
             exam.Title,
-            command.NewQuestions,
+            command.NewQuestions ?? [],
             existingQuestions.Count + 1);
         if (inlineQuestions.Count > 0)
             await _context.Set<Question>().AddRangeAsync(inlineQuestions);
 
-        var allQuestions = existingQuestions.Concat(inlineQuestions).ToList();
-        foreach (var q in allQuestions)
-            exam.Questions.Add(q);
+        var allQuestions = AssessmentHelpers.UniqueQuestions(
+            existingQuestions.Concat(inlineQuestions));
+        AssessmentHelpers.SyncQuestions(exam.Questions, allQuestions);
 
-        _context.Update(exam);
         await _context.SaveChangesAsync();
 
         return new UpdateExamResult
