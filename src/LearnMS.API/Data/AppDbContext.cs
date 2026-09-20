@@ -8,6 +8,37 @@ namespace LearnMS.API.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        NormalizeDateTimes();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        NormalizeDateTimes();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void NormalizeDateTimes()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified))
+                continue;
+
+            foreach (var property in entry.Properties)
+            {
+                if (property.CurrentValue is not DateTime value || value.Kind == DateTimeKind.Utc)
+                    continue;
+
+                property.CurrentValue = value.Kind == DateTimeKind.Local
+                    ? value.ToUniversalTime()
+                    : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            }
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

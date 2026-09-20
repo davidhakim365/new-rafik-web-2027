@@ -66,8 +66,8 @@ const QuizPage = () => {
 
   const FormSchema = z
     .object({
-      id: z.string().uuid().optional(),
-      title: z.string().min(1),
+      id: z.string().uuid().optional().or(z.literal("")),
+      title: z.string().min(3).max(100),
       description: z.string().min(1),
       resultType: z.enum(["Hidden", "ResultOnly", "ResultWithAnswer"]),
       passCount: z.coerce.number().min(0),
@@ -124,13 +124,21 @@ const QuizPage = () => {
   }
 
   const onSubmit = (data: z.infer<typeof FormSchema>) => {
+    const questionIds = questions
+      .map((q) => q.id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
     updateQuizMutation.mutate(
       {
         courseId: courseId as string,
         lectureId: lectureId as string,
         data: {
-          ...data,
-          questions: questions.map((q) => q.id),
+          ...(data.id ? { id: data.id } : {}),
+          title: data.title,
+          description: data.description,
+          resultType: data.resultType,
+          passCount: data.passCount,
+          expiryMinutes: Number.isFinite(data.expiryMinutes) ? data.expiryMinutes : 0,
+          questions: questionIds,
           newQuestions: drafts.map(draftToPayload),
         },
       },

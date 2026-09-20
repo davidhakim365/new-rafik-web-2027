@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using LearnMS.API.Common;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Questions.Contracts;
 
@@ -6,6 +8,7 @@ namespace LearnMS.API.Features.Courses.Contracts;
 
 public sealed record UpdateQuizRequest
 {
+    [JsonConverter(typeof(EmptyGuidConverter))]
     public Guid? Id { get; set; }
     [Required, MinLength(3), MaxLength(100)]
     public required string Title { get; set; }

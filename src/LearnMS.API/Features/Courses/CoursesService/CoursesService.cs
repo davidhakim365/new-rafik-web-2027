@@ -972,34 +972,38 @@ public sealed class CoursesService : ICoursesService
         var lecture =
             await _context
                 .Set<Lecture>()
+                .AsSplitQuery()
                 .Include(x => x.Quizzes)
-                .ThenInclude(x => x.Questions.OrderBy(x => x.CreatedAt))
                 .Include(x => x.Lessons)
                 .FirstOrDefaultAsync(x =>
                     x.Id == command.LectureId && x.CourseId == command.CourseId
                 ) ?? throw new ApiException(LecturesErrors.NotFound);
 
+        var isNew = command.Id is null || command.Id == Guid.Empty;
         Quiz quiz;
 
-        var isNew = command.Id == null;
-
-        if (!isNew)
+        if (isNew)
+        {
+            quiz = new Quiz
+            {
+                Id = Guid.NewGuid(),
+                LectureId = lecture.Id
+            };
+            lecture.AddItem(quiz);
+        }
+        else
         {
             quiz =
                 lecture.Quizzes.FirstOrDefault(x => x.Id == command.Id)
                 ?? throw new ApiException(QuizzesErrors.NotFound);
-        }
-        else
-        {
-            quiz = new Quiz { Id = Guid.NewGuid() };
-            lecture.AddItem(quiz);
+            await _context.Entry(quiz).Collection(x => x.Questions).LoadAsync();
         }
 
         quiz.Description = command.Description;
         quiz.Title = command.Title;
         quiz.ResultType = command.ResultType;
         quiz.PassCount = command.PassCount;
-        quiz.ExpiryMinutes = command.ExpiryMinutes;
+        quiz.ExpiryMinutes = Math.Max(0, command.ExpiryMinutes);
 
         var questionIds = (command.Questions ?? [])
             .Where(id => id != Guid.Empty)
@@ -1022,11 +1026,19 @@ public sealed class CoursesService : ICoursesService
         var allQuestions = AssessmentHelpers.UniqueQuestions(
             existingQuestions.Concat(inlineQuestions));
         if (allQuestions.Count == 0)
-            throw new ApiException(QuizzesErrors.NotFound);
+            throw new ApiException(QuizzesErrors.NoQuestions);
 
         AssessmentHelpers.SyncQuestions(quiz.Questions, allQuestions);
 
         await _context.SaveChangesAsync();
+
+        var savedIds = allQuestions.Select(q => q.Id).ToList();
+        var savedQuestions = await _context
+            .Set<Question>()
+            .AsNoTracking()
+            .Where(x => savedIds.Contains(x.Id))
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync();
 
         return new UpdateQuizResult
         {
@@ -1036,7 +1048,7 @@ public sealed class CoursesService : ICoursesService
             Title = quiz.Title,
             Id = quiz.Id,
             ExpiryMinutes = quiz.ExpiryMinutes,
-            Questions = allQuestions
+            Questions = savedQuestions.Count > 0 ? savedQuestions : allQuestions
         };
     }
 
