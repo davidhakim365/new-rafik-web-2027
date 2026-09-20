@@ -969,33 +969,30 @@ public sealed class CoursesService : ICoursesService
 
     public async Task<UpdateQuizResult> ExecuteAsync(UpdateQuizCommand command)
     {
-        var lecture =
-            await _context
-                .Set<Lecture>()
-                .Include(x => x.Quizzes)
-                .FirstOrDefaultAsync(x =>
-                    x.Id == command.LectureId && x.CourseId == command.CourseId
-                ) ?? throw new ApiException(LecturesErrors.NotFound);
+        var lectureId = await _context.Set<Lecture>()
+            .Where(x => x.Id == command.LectureId && x.CourseId == command.CourseId)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync() ?? throw new ApiException(LecturesErrors.NotFound);
 
         var isNew = command.Id is null || command.Id == Guid.Empty;
         Quiz quiz;
 
         if (isNew)
         {
-            var lessonCount = await _context.Set<Lesson>()
-                .CountAsync(x => x.LectureId == lecture.Id);
+            var lessonCount = await _context.Set<Lesson>().CountAsync(x => x.LectureId == lectureId);
+            var quizCount = await _context.Set<Quiz>().CountAsync(x => x.LectureId == lectureId);
             quiz = new Quiz
             {
                 Id = Guid.NewGuid(),
-                LectureId = lecture.Id,
-                Order = lessonCount + lecture.Quizzes.Count + 1
+                LectureId = lectureId,
+                Order = lessonCount + quizCount + 1
             };
-            lecture.Quizzes.Add(quiz);
+            _context.Set<Quiz>().Add(quiz);
         }
         else
         {
-            quiz =
-                lecture.Quizzes.FirstOrDefault(x => x.Id == command.Id)
+            quiz = await _context.Set<Quiz>()
+                .FirstOrDefaultAsync(x => x.Id == command.Id && x.LectureId == lectureId)
                 ?? throw new ApiException(QuizzesErrors.NotFound);
         }
 
@@ -1013,6 +1010,7 @@ public sealed class CoursesService : ICoursesService
             ? []
             : await _context
                 .Set<Question>()
+                .AsNoTracking()
                 .Where(x => questionIds.Contains(x.Id))
                 .ToListAsync();
 
@@ -1029,35 +1027,22 @@ public sealed class CoursesService : ICoursesService
             throw new ApiException(QuizzesErrors.NoQuestions);
 
         await SaveQuizChangesAsync();
-
-        var desiredIds = allQuestions.Select(q => q.Id).ToHashSet();
-        var links = await _context.Set<QuizQuestion>()
-            .Where(x => x.QuizId == quiz.Id)
-            .ToListAsync();
-
-        foreach (var link in links.Where(l => !desiredIds.Contains(l.QuestionId)).ToList())
-            _context.Set<QuizQuestion>().Remove(link);
-
-        var presentIds = links.Select(l => l.QuestionId).ToHashSet();
-        foreach (var question in allQuestions)
+        try
         {
-            if (!presentIds.Add(question.Id))
-                continue;
-
-            _context.Set<QuizQuestion>().Add(new QuizQuestion
-            {
-                QuizId = quiz.Id,
-                QuestionId = question.Id,
-                CreatedAt = DateTime.UtcNow
-            });
+            await QuizSchema.EnsureAsync(_context);
+            await SyncQuizQuestionLinksAsync(quiz.Id, allQuestions.Select(q => q.Id).ToList());
+        }
+        catch (Exception ex) when (ex is not ApiException)
+        {
+            Serilog.Log.Error(ex, "Quiz question link save failed");
+            throw new ApiException(QuizzesErrors.SaveFailedWith(FormatDbError(ex)));
         }
 
-        await SaveQuizChangesAsync();
-
+        var savedIds = allQuestions.Select(q => q.Id).ToList();
         var savedQuestions = await _context
             .Set<Question>()
             .AsNoTracking()
-            .Where(x => desiredIds.Contains(x.Id))
+            .Where(x => savedIds.Contains(x.Id))
             .OrderBy(x => x.CreatedAt)
             .ToListAsync();
 
@@ -1071,6 +1056,22 @@ public sealed class CoursesService : ICoursesService
             ExpiryMinutes = quiz.ExpiryMinutes,
             Questions = savedQuestions.Count > 0 ? savedQuestions : allQuestions
         };
+    }
+
+    private async Task SyncQuizQuestionLinksAsync(Guid quizId, IReadOnlyCollection<Guid> questionIds)
+    {
+        await _context.Database.ExecuteSqlAsync(
+            $"""DELETE FROM "QuizQuestion" WHERE "QuizId" = {quizId}""");
+
+        foreach (var questionId in questionIds)
+        {
+            await _context.Database.ExecuteSqlAsync(
+                $"""
+                INSERT INTO "QuizQuestion" ("QuizId", "QuestionId", "CreatedAt")
+                VALUES ({quizId}, {questionId}, NOW())
+                ON CONFLICT DO NOTHING
+                """);
+        }
     }
 
     private async Task SaveQuizChangesAsync()
@@ -1087,7 +1088,7 @@ public sealed class CoursesService : ICoursesService
         catch (DbUpdateException ex)
         {
             Serilog.Log.Error(ex, "Quiz save failed");
-            throw new ApiException(QuizzesErrors.SaveFailed);
+            throw new ApiException(QuizzesErrors.SaveFailedWith(FormatDbError(ex)));
         }
     }
 
@@ -1099,6 +1100,13 @@ public sealed class CoursesService : ICoursesService
                || message.Contains("SourceTitle", StringComparison.OrdinalIgnoreCase)
                || message.Contains("SourceIndex", StringComparison.OrdinalIgnoreCase)
                || message.Contains("does not exist", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatDbError(Exception ex)
+    {
+        var detail = ex.InnerException?.Message ?? ex.Message;
+        detail = detail.ReplaceLineEndings(" ").Trim();
+        return detail.Length <= 180 ? detail : detail[..180];
     }
 
     public async Task ExecuteAsync(DeleteQuizCommand command)
