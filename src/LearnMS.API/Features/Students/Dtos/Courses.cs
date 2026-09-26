@@ -61,6 +61,8 @@ public sealed record StudentLectureDto : StudentCourseItemDto
     public string? QuizAnswersLockReason { get; init; }
     [Required] public required decimal Price { get; init; }
     [Required] public required decimal RenewalPrice { get; init; }
+    public decimal? DiscountPercentage { get; init; }
+    public DiscountTarget? DiscountAppliesTo { get; init; }
     public string? ImageUrl { get; init; }
     public string? HomeworkVideoUrl { get; init; }
     public string? ChooseHomeworkFormUrl { get; init; }

@@ -27,4 +27,5 @@ export const Permission = {
   ManageCallCenter: 'ManageCallCenter',
   ViewCallCenterHistory: 'ViewCallCenterHistory',
   ManagePaymentRequests: 'ManagePaymentRequests',
+  ManageDiscounts: 'ManageDiscounts',
 } as const;

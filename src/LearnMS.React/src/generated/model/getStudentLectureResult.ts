@@ -21,6 +21,8 @@ export type GetStudentLectureResult = GetLectureResult & {
   areAttachmentsPublished?: boolean | null;
   price: number;
   renewalPrice: number;
+  discountPercentage?: number | null;
+  discountAppliesTo?: "Lecture" | "Renewal" | "Both" | null;
   canViewQuizAnswers?: boolean;
   hasQuizAnswers?: boolean;
   quizAnswersLockReason?: string | null;

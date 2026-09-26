@@ -3,6 +3,7 @@ using LearnMS.API.Data;
 using LearnMS.API.Features.Administration;
 using LearnMS.API.Features.Administration.Contracts;
 using LearnMS.API.Features.Courses;
+using LearnMS.API.Features.Discounts;
 using LearnMS.API.Features.PaymentRequests;
 using Microsoft.Extensions.Options;
 
@@ -32,6 +33,16 @@ public static class ApplicationInitialization
         catch (Exception ex)
         {
             Console.WriteLine($"EnsureQuizSchema failed: {ex.Message}");
+        }
+
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await DiscountsSchema.EnsureAsync(db);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EnsureStudentDiscounts failed: {ex.Message}");
         }
 
         var administrationService = scope.ServiceProvider.GetRequiredService<IAdministrationService>();

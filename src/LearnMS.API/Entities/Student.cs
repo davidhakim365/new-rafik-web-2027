@@ -1,5 +1,6 @@
 using LearnMS.API.Common;
 using LearnMS.API.Features.Courses;
+using LearnMS.API.Features.Discounts;
 using LearnMS.API.Features.Profile;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
@@ -38,6 +39,8 @@ public class Student : User
     public List<LectureQuiz> LectureQuizzes { get; } = [];
     public List<LectureAttendance> LectureAttendances { get; } = [];
     public List<LectureStudentCallLog> LectureStudentCallLogs { get; } = [];
+    public StudentDiscount? Discount { get; set; }
+
     public List<Exam> PurchasedExams { get; } = [];
     public List<ExamEnrollment> ExamEnrollments { get; } = [];
 
@@ -163,23 +166,27 @@ public class Student : User
 
         if (lectureEnrollment != null)
         {
-            if (_credit < lecture.RenewalPrice)
+            var charge = DiscountPricing.Apply(lecture.RenewalPrice ?? 0, Discount, DiscountTarget.Renewal);
+            if (_credit < charge)
                 throw new ApiException(ProfileErrors.InsufficientCredits);
-            _credit -= lecture.RenewalPrice ?? 0;
+            _credit -= charge;
             lectureEnrollment.ExpiresAt = DateTime.UtcNow.AddDays(lecture.ExpirationDays ?? 0);
             lectureEnrollment.IsFromAttendance = false;
             Events.Add(
                 new StudentEvent()
                 {
-                    Message = $"Lecture {lecture.Title} renewed for  {lecture.RenewalPrice} LE"
+                    Message = ChargeMessage(
+                        $"Lecture {lecture.Title} renewed for {charge} LE",
+                        DiscountTarget.Renewal)
                 }
             );
         }
         else
         {
-            if (_credit < lecture.Price)
+            var charge = DiscountPricing.Apply(lecture.Price ?? 0, Discount, DiscountTarget.Lecture);
+            if (_credit < charge)
                 throw new ApiException(ProfileErrors.InsufficientCredits);
-            _credit -= lecture.Price ?? 0;
+            _credit -= charge;
             lecture.LectureEnrollments.Add(
                 new LectureEnrollment
                 {
@@ -191,10 +198,20 @@ public class Student : User
             Events.Add(
                 new StudentEvent()
                 {
-                    Message = $"Lecture {lecture.Title} purchased for  {lecture.Price} LE"
+                    Message = ChargeMessage(
+                        $"Lecture {lecture.Title} purchased for {charge} LE",
+                        DiscountTarget.Lecture)
                 }
             );
         }
+    }
+
+    private string ChargeMessage(string message, DiscountTarget target)
+    {
+        if (!DiscountPricing.Applies(Discount, target))
+            return message;
+
+        return $"{message} ({Discount!.Percentage:0.##}% discount)";
     }
 
     public void BuyOrRetakeExam(Exam exam)

@@ -8,6 +8,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  BadgePercent,
   Clock,
   FileText,
   Gift,
@@ -133,6 +134,13 @@ const studentItems: NavItem[] = [
     icon: Clock,
     match: (pathname) => pathname.startsWith("/dashboard/expiration-time"),
     permission: Permission.ManageExpirationTime,
+  },
+  {
+    to: "/dashboard/discounts",
+    label: "Discounts",
+    icon: BadgePercent,
+    match: (pathname) => pathname.startsWith("/dashboard/discounts"),
+    permission: Permission.ManageDiscounts,
   },
 ];
 

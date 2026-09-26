@@ -1,4 +1,5 @@
 import { useBuyLectureMutation } from "@/api/lectures-api";
+import { LectureDiscountTag } from "@/components/lecture-discount-tag";
 import { useBuyExamMutation } from "@/api/exams-api";
 import { ChooseHomeworkFormEmbed } from "@/components/choose-homework-form-embed";
 import { PdfOpenButton } from "@/components/pdf-viewer-dialog";
@@ -532,6 +533,11 @@ function LectureAccordionHeader({
                       ? `${lecture.renewalPrice || 0} ${t("common.currency")}`
                       : `${lecture.price || 0} ${t("common.currency")}`}
                   </div>
+                  <LectureDiscountTag
+                    percentage={lecture.discountPercentage}
+                    appliesTo={lecture.discountAppliesTo}
+                    enrollment={lecture.enrollment}
+                  />
                 </div>
                 <div className="text-xs text-muted-foreground whitespace-nowrap">
                   {lecture.expirationDays || 0} days
@@ -592,6 +598,11 @@ function LectureAccordionHeader({
                     ? `${lecture.renewalPrice || 0} ${t("common.currency")}`
                     : `${lecture.price || 0} ${t("common.currency")}`}
                 </div>
+                <LectureDiscountTag
+                  percentage={lecture.discountPercentage}
+                  appliesTo={lecture.discountAppliesTo}
+                  enrollment={lecture.enrollment}
+                />
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                 {lecture.expirationDays || 0} days
@@ -809,6 +820,11 @@ function LectureAccordionContent({ lecture }: { lecture: StudentLectureDto }) {
                         ? `${lecture.renewalPrice || 0} ${t("common.currency")}`
                         : `${lecture.price || 0} ${t("common.currency")}`}
                     </span>
+                    <LectureDiscountTag
+                      percentage={lecture.discountPercentage}
+                      appliesTo={lecture.discountAppliesTo}
+                      enrollment={lecture.enrollment}
+                    />
                   </div>
                 </div>
                 <div className="space-y-1 text-right">

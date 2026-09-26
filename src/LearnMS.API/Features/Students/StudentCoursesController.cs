@@ -3,6 +3,7 @@ using LearnMS.API.Common;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Courses;
+using LearnMS.API.Features.Discounts;
 using LearnMS.API.Features.Students.Dtos;
 using LearnMS.API.Security;
 using LearnMS.API.ThirdParties.GoogleForms;
@@ -231,6 +232,14 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         if (studentInfo is not null && course.Level != studentInfo.Level)
             throw new ApiException(CoursesErrors.WrongLevel);
 
+        StudentDiscount? discount = null;
+        if (studentId is Guid sid)
+        {
+            discount = await context.StudentDiscounts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.StudentId == sid);
+        }
+
         DateTime? courseExpires = course.ExpiresAt;
 
         List<StudentLectureDto> lectures = course.Lectures.Select(l =>
@@ -252,8 +261,10 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                 Id = l.Id,
                 Title = l.Title,
                 Description = l.Description,
-                Price = l.Price!.Value,
-                RenewalPrice = l.RenewalPrice!.Value,
+                Price = DiscountPricing.Apply(l.Price!.Value, discount, DiscountTarget.Lecture),
+                RenewalPrice = DiscountPricing.Apply(l.RenewalPrice!.Value, discount, DiscountTarget.Renewal),
+                DiscountPercentage = discount?.Percentage,
+                DiscountAppliesTo = discount?.AppliesTo,
                 Order = l.Order,
                 ImageUrl = l.ImageUrl,
                 HomeworkVideoUrl = contentPublished ? l.HomeworkVideoUrl : null,

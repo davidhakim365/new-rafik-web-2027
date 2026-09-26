@@ -114,6 +114,8 @@ public sealed record GetStudentLectureResult : GetLectureResult
     public required decimal Price { get; set; }
     [Required]
     public required decimal RenewalPrice { get; set; }
+    public decimal? DiscountPercentage { get; set; }
+    public DiscountTarget? DiscountAppliesTo { get; set; }
     [Required]
     public required int ExpirationDays { get; init; }
     public required bool? IsPublished {get; set;}

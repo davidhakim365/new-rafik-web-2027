@@ -18,6 +18,7 @@ export function getAssistantHomePath(permissions: readonly string[]): string {
   }
   if (has(Permission.ManageFiles)) return "/dashboard/files";
   if (has(Permission.ManageAssistants)) return "/dashboard/assistants";
+  if (has(Permission.ManageDiscounts)) return "/dashboard/discounts";
   if (has(Permission.ManageGrantedAccess)) return "/dashboard/granted-access";
   if (has(Permission.ManageExpirationTime)) return "/dashboard/expiration-time";
 

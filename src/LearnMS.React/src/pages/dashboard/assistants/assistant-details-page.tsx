@@ -111,6 +111,11 @@ const PERMISSION_GROUPS: PermissionGroup[] = [
         label: "Manage payment requests",
         description: "Review transfer screenshots and confirm or reject student credit requests.",
       },
+      {
+        key: "ManageDiscounts",
+        label: "Manage discounts",
+        description: "Give selected students a percentage off lecture price, renewal price, or both.",
+      },
     ],
   },
   {

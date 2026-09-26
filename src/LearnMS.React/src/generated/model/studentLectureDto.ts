@@ -28,4 +28,6 @@ export type StudentLectureDto = StudentCourseItemDto & {
   areAttachmentsPublished?: boolean;
   price: number;
   renewalPrice: number;
+  discountPercentage?: number | null;
+  discountAppliesTo?: "Lecture" | "Renewal" | "Both" | null;
 };

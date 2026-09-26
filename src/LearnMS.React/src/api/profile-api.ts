@@ -20,7 +20,8 @@ export type Permission =
   | "ManageAppleRewardsStore"
   | "ManageCallCenter"
   | "ViewCallCenterHistory"
-  | "ManagePaymentRequests";
+  | "ManagePaymentRequests"
+  | "ManageDiscounts";
 
 export type Profile = {
   id: string;

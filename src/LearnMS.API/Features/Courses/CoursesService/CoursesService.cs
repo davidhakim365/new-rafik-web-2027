@@ -5,6 +5,7 @@ using LearnMS.API.Common.StorageService;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Centers;
+using LearnMS.API.Features.Discounts;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Features.Profile;
 using LearnMS.API.Features.Students;
@@ -667,7 +668,9 @@ public sealed class CoursesService : ICoursesService
     public async Task ExecuteAsync(BuyLectureCommand command)
     {
         var student =
-            await _context.Students.FirstOrDefaultAsync(x => x.Id == command.StudentId)
+            await _context.Students
+                .Include(x => x.Discount)
+                .FirstOrDefaultAsync(x => x.Id == command.StudentId)
             ?? throw new ApiException(ProfileErrors.NoStudentFound);
 
         var course =
@@ -2161,7 +2164,9 @@ public sealed class CoursesService : ICoursesService
     public async Task<GetStudentLectureResult> QueryAsync(GetStudentLectureQuery query)
     {
         var student =
-            await _context.Set<Student>().FirstOrDefaultAsync(x => x.Id == query.StudentId)
+            await _context.Set<Student>()
+                .Include(x => x.Discount)
+                .FirstOrDefaultAsync(x => x.Id == query.StudentId)
             ?? throw new ApiException(ProfileErrors.NoStudentFound);
 
         var course =
@@ -2331,9 +2336,11 @@ public sealed class CoursesService : ICoursesService
             ImageUrl = lecture.ImageUrl!,
             HomeworkVideoUrl = lecture.IsPublished ? lecture.HomeworkVideoUrl : null,
             ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
-            Price = lecture.Price!.Value,
+            Price = DiscountPricing.Apply(lecture.Price!.Value, student.Discount, DiscountTarget.Lecture),
             ExpirationDays = lecture.ExpirationDays!.Value,
-            RenewalPrice = lecture.RenewalPrice!.Value,
+            RenewalPrice = DiscountPricing.Apply(lecture.RenewalPrice!.Value, student.Discount, DiscountTarget.Renewal),
+            DiscountPercentage = student.Discount?.Percentage,
+            DiscountAppliesTo = student.Discount?.AppliesTo,
             IsPublished = lecture.IsPublished,
             AreAttachmentsPublished = lecture.AreAttachmentsPublished,
             // added

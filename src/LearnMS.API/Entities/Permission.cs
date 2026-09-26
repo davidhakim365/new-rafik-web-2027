@@ -22,5 +22,6 @@ public enum Permission
     ManageAppleRewardsStore,
     ManageCallCenter,
     ViewCallCenterHistory,
-    ManagePaymentRequests
+    ManagePaymentRequests,
+    ManageDiscounts
 }

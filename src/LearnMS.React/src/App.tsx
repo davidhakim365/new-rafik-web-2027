@@ -11,6 +11,7 @@ import DashboardCoursePage from "@/pages/dashboard/courses/dashboard-course-page
 import CreditCodesPage from "@/pages/dashboard/credit-codes/credit-code-page";
 import ExamPage from "@/pages/dashboard/exams/exam-page";
 import ExamStudentsPage from "@/pages/dashboard/exams/exam-students-page";
+import DiscountsPage from "@/pages/dashboard/discounts/discounts-page";
 import ExpirationTimePage from "@/pages/dashboard/expiration-time/expiration-time-page";
 import FilesPage from "@/pages/dashboard/files/files-page";
 import GrantedAccessPage from "@/pages/dashboard/granted-access/granted-access-page";
@@ -472,6 +473,17 @@ function App() {
                     permissions={["ManageExpirationTime"]}
                   >
                     <ExpirationTimePage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="discounts"
+                element={
+                  <RequireAuth
+                    roles={["Teacher", "Assistant"]}
+                    permissions={["ManageDiscounts"]}
+                  >
+                    <DiscountsPage />
                   </RequireAuth>
                 }
               />

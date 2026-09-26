@@ -67,5 +67,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StudentRegistrationSettings> StudentRegistrationSettings => Set<StudentRegistrationSettings>();
     public DbSet<CallCenterAction> CallCenterActions => Set<CallCenterAction>();
     public DbSet<PaymentRequest> PaymentRequests => Set<PaymentRequest>();
+    public DbSet<StudentDiscount> StudentDiscounts => Set<StudentDiscount>();
     public DbSet<PaymentRequestRejectionReason> PaymentRequestRejectionReasons => Set<PaymentRequestRejectionReason>();
 }

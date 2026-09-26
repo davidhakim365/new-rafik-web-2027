@@ -1,4 +1,5 @@
 import { useBuyLectureMutation } from "@/api/lectures-api";
+import { LectureDiscountTag } from "@/components/lecture-discount-tag";
 import { ChooseHomeworkFormEmbed } from "@/components/choose-homework-form-embed";
 import Confirmation from "@/components/confirmation";
 import Loading from "@/components/loading/loading";
@@ -310,28 +311,35 @@ function LectureHeader({
                   }
 
                   return (
-                    <Confirmation
-                      button={
-                        <Button
-                          size="lg"
-                          className="w-full font-semibold transition-all border shadow-lg bg-background text-primary hover:bg-background/90 border-primary/20 hover:shadow-xl sm:w-fit"
-                        >
-                          {lecture.enrollment === "Expired"
-                            ? t("lectures.renewFor", {
-                                price: lecture.renewalPrice,
-                                days: lecture.expirationDays,
-                              })
-                            : t("lectures.buyFor", {
-                                price: lecture.price,
-                                days: lecture.expirationDays,
-                              })}
-                        </Button>
-                      }
-                      description={t("lectures.confirmPurchaseDescription")}
-                      onConfirm={onBuying}
-                      title={t("lectures.confirmPurchase")}
-                      disabled={buyLectureMutation.isPending}
-                    />
+                    <div className="flex flex-col items-start gap-2">
+                      <LectureDiscountTag
+                        percentage={lecture.discountPercentage}
+                        appliesTo={lecture.discountAppliesTo}
+                        enrollment={lecture.enrollment}
+                      />
+                      <Confirmation
+                        button={
+                          <Button
+                            size="lg"
+                            className="w-full font-semibold transition-all border shadow-lg bg-background text-primary hover:bg-background/90 border-primary/20 hover:shadow-xl sm:w-fit"
+                          >
+                            {lecture.enrollment === "Expired"
+                              ? t("lectures.renewFor", {
+                                  price: lecture.renewalPrice,
+                                  days: lecture.expirationDays,
+                                })
+                              : t("lectures.buyFor", {
+                                  price: lecture.price,
+                                  days: lecture.expirationDays,
+                                })}
+                          </Button>
+                        }
+                        description={t("lectures.confirmPurchaseDescription")}
+                        onConfirm={onBuying}
+                        title={t("lectures.confirmPurchase")}
+                        disabled={buyLectureMutation.isPending}
+                      />
+                    </div>
                   );
                 })()}
 
