@@ -152,7 +152,6 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
                 || account.Email.ToLower().Contains(search)
                 || student.PhoneNumber.ToLower().Contains(search)
                 || student.StudentCode.ToLower().Contains(search)
-            orderby request.CreatedAt ascending
             select new PaymentRequestItem
             {
                 Id = request.Id,
@@ -171,7 +170,11 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
                 StudentCode = student.StudentCode
             };
 
-        var result = await PageList<PaymentRequestItem>.CreateAsync(source, page, pageSize);
+        var ordered = query.Status == PaymentRequestStatus.Confirmed
+            ? source.OrderByDescending(x => x.ReviewedAt ?? x.CreatedAt)
+            : source.OrderBy(x => x.CreatedAt);
+
+        var result = await PageList<PaymentRequestItem>.CreateAsync(ordered, page, pageSize);
         await AttachPreviousRequestsAsync(result.Items);
         return result;
     }
