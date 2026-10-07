@@ -132,20 +132,10 @@ public sealed class GoogleDriveController(
     {
         var payload = success ? "drive-connected" : "drive-failed";
         var safeMessage = HtmlEncoder.Default.Encode(message);
-        var envLine = string.IsNullOrWhiteSpace(refreshToken)
-            ? ""
-            : HtmlEncoder.Default.Encode($"GoogleForms__DriveRefreshToken={refreshToken}");
         var tokenBlock = string.IsNullOrWhiteSpace(refreshToken)
             ? "<p>You can close this window.</p>"
-            : $$"""
-              <p style="margin-top:1.5rem;font-weight:600;">Your refresh token (copy this now):</p>
-              <textarea id="token" readonly style="width:100%;min-height:8rem;font-family:monospace;font-size:12px;padding:8px;">{{envLine}}</textarea>
-              <p>
-                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('token').value).then(() => { this.textContent = 'Copied'; })" style="margin-top:8px;padding:8px 12px;">
-                  Copy refresh token
-                </button>
-              </p>
-              <p>Paste it into env, then you will not need to connect again. Close this window after copying.</p>
+            : """
+              <p>This connection is saved on the server. Close this window. You do not need to copy a new token into env.</p>
               """;
         var messageJson = System.Text.Json.JsonSerializer.Serialize(new
         {

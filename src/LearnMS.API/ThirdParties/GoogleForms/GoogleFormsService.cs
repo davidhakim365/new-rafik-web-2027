@@ -73,7 +73,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
     private readonly GoogleFormsConfig _config;
     private readonly GoogleDriveSettingsStore _driveSettings;
-    private volatile bool _envRefreshRejected;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _rejectedRefreshTokens = new();
 
     public GoogleFormsService(IOptions<GoogleFormsConfig> options, GoogleDriveSettingsStore driveSettings)
     {
@@ -281,15 +281,13 @@ public sealed class GoogleFormsService : IGoogleFormsService
         var email = local.Email;
 
         var refreshToken = EffectiveRefreshToken(local);
-        var fromEnv = HasEnvRefreshToken();
+        var stored = string.Equals(refreshToken, NormalizeRefreshToken(local.RefreshToken), StringComparison.Ordinal);
         var folderId = EffectiveFolderId(local);
         var folderName = string.IsNullOrWhiteSpace(local.FolderName)
             ? (string.IsNullOrWhiteSpace(folderId) ? "My Drive" : folderId)
             : local.FolderName;
-        // When env already has the token, do not send a local/rotated value to the UI.
-        var tokenForClient = fromEnv ? null : refreshToken;
         if (!string.IsNullOrWhiteSpace(refreshToken))
-            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", tokenForClient, folderId, folderName, fromEnv);
+            return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, email, sharedDriveId, "user", null, folderId, folderName, !stored);
         if (HasImpersonateUser())
             return new GoogleDriveConnectionStatus(true, _config.HasOAuthClient, _config.ImpersonateUser, sharedDriveId, "impersonate", null, folderId, folderName);
         if (!string.IsNullOrWhiteSpace(sharedDriveId) && IsConfigured)
@@ -530,7 +528,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
             throw new ApiException(
                 new ApiError(
                     "google-drive/not-connected",
-                    "Google Drive is not connected yet. Set GoogleForms:DriveRefreshToken in env, or open Add PDF and click Connect Gmail once.",
+                    "Google Drive is not connected yet. Open Add PDF and click Connect Gmail once. The connection is saved on the server.",
                     StatusCodes.Status400BadRequest
                 )
             );
@@ -577,22 +575,17 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
         if (_config.HasOAuthClient)
         {
-            var envToken = NormalizeRefreshToken(_config.DriveRefreshToken);
-            var localToken = NormalizeRefreshToken(local.RefreshToken);
-            var candidates = new List<string>();
-            if (!string.IsNullOrWhiteSpace(envToken) && !_envRefreshRejected)
-                candidates.Add(envToken);
-            if (!string.IsNullOrWhiteSpace(localToken)
-                && !candidates.Contains(localToken, StringComparer.Ordinal))
-                candidates.Add(localToken);
-
+            var candidates = RefreshTokenCandidates(local);
             Exception? lastAuthError = null;
             foreach (var refreshToken in candidates)
             {
                 try
                 {
-                    var fromEnv = string.Equals(refreshToken, envToken, StringComparison.Ordinal);
-                    var reuseAccess = string.Equals(refreshToken, localToken, StringComparison.Ordinal);
+                    var reuseAccess = string.Equals(
+                        refreshToken,
+                        NormalizeRefreshToken(local.RefreshToken),
+                        StringComparison.Ordinal
+                    );
                     var flow = CreateAuthFlow();
                     var credential = new UserCredential(
                         flow,
@@ -609,31 +602,26 @@ public sealed class GoogleFormsService : IGoogleFormsService
 
                     if (string.IsNullOrWhiteSpace(credential.Token.AccessToken) || credential.Token.IsStale)
                     {
-                        await credential.RefreshTokenAsync(cancellationToken);
-                        if (string.IsNullOrWhiteSpace(credential.Token.AccessToken))
+                        if (!await credential.RefreshTokenAsync(cancellationToken)
+                            || string.IsNullOrWhiteSpace(credential.Token.AccessToken))
+                        {
                             throw new InvalidOperationException("Google did not return an access token.");
+                        }
                     }
 
+                    var nextRefresh = NormalizeRefreshToken(credential.Token.RefreshToken) ?? refreshToken;
                     local.AccessToken = credential.Token.AccessToken;
                     local.AccessTokenIssuedUtc = DateTime.UtcNow;
-                    if (!fromEnv)
-                    {
-                        var nextRefresh = credential.Token.RefreshToken;
-                        if (!string.IsNullOrWhiteSpace(nextRefresh)
-                            && !string.Equals(local.RefreshToken, nextRefresh, StringComparison.Ordinal))
-                            local.RefreshToken = nextRefresh;
-                    }
+                    local.RefreshToken = nextRefresh;
                     _driveSettings.Write(local);
-                    if (fromEnv)
-                        _envRefreshRejected = false;
+                    _rejectedRefreshTokens.TryRemove(nextRefresh, out _);
                     initializer = credential;
                     break;
                 }
                 catch (Exception ex) when (IsInvalidGrant(ex))
                 {
                     lastAuthError = ex;
-                    if (string.Equals(refreshToken, envToken, StringComparison.Ordinal))
-                        _envRefreshRejected = true;
+                    _rejectedRefreshTokens[refreshToken] = 1;
                 }
             }
 
@@ -682,7 +670,7 @@ public sealed class GoogleFormsService : IGoogleFormsService
             new ApiError(
                 revoked ? "google-drive/token-revoked" : "google-drive/auth-failed",
                 revoked
-                    ? "The Google refresh token in env is expired or revoked. Click Connect Gmail once, copy the new token into env, then restart the API."
+                    ? "Google disconnected this account. Click Connect Gmail once — the new connection is saved automatically, so you do not need to change the env token. If this returns about every 7 days, open Google Cloud Console → Google Auth Platform → Audience and set the app to In production. Testing mode expires the connection every week."
                     : $"Could not use the Google Drive token. {detail}",
                 StatusCodes.Status400BadRequest
             )
@@ -715,15 +703,30 @@ public sealed class GoogleFormsService : IGoogleFormsService
         );
     }
 
-    private bool HasEnvRefreshToken() =>
-        NormalizeRefreshToken(_config.DriveRefreshToken) is not null && !_envRefreshRejected;
+    private List<string> RefreshTokenCandidates(GoogleDriveLocalSettings local)
+    {
+        var tokens = new List<string>();
+        AddCandidate(tokens, local.RefreshToken);
+        AddCandidate(tokens, _config.DriveRefreshToken);
+        AddCandidate(tokens, Environment.GetEnvironmentVariable("GoogleForms__DriveRefreshToken"));
+        AddCandidate(tokens, Environment.GetEnvironmentVariable("GoogleAPIs__DriveRefreshToken"));
+        AddCandidate(tokens, Environment.GetEnvironmentVariable("DRIVE_REFRESH_TOKEN"));
+        return tokens;
+    }
+
+    private void AddCandidate(List<string> tokens, string? value)
+    {
+        var token = NormalizeRefreshToken(value);
+        if (string.IsNullOrWhiteSpace(token) || _rejectedRefreshTokens.ContainsKey(token))
+            return;
+        if (!tokens.Contains(token, StringComparer.Ordinal))
+            tokens.Add(token);
+    }
 
     private string? EffectiveRefreshToken(GoogleDriveLocalSettings local)
     {
-        var env = NormalizeRefreshToken(_config.DriveRefreshToken);
-        if (env is not null && !_envRefreshRejected)
-            return env;
-        return NormalizeRefreshToken(local.RefreshToken);
+        var candidates = RefreshTokenCandidates(local);
+        return candidates.Count == 0 ? null : candidates[0];
     }
 
     internal static string? NormalizeRefreshToken(string? value)

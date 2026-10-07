@@ -91,7 +91,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "The Google token in env may be expired. Click Connect Gmail once, copy the new token into env, then restart the API.";
+          : "Click Connect Gmail once. The connection is saved on the server, so you do not need to change the env token.";
       toast({
         title: "Could not load Drive folders",
         description: message,
@@ -150,9 +150,7 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
       void refreshDriveStatus();
       toast({
         title: "Google Drive connected",
-        description: token
-          ? "Copy the refresh token shown below into env so you never connect again."
-          : "You can upload PDFs from this lecture now.",
+        description: "You can upload PDFs now. This connection is saved, so you do not need to update the env token.",
       });
     };
 
@@ -446,46 +444,16 @@ const AddPdfLinksModal: React.FC<AddPdfLinksModalProps> = ({
           </div>
           {driveStatus?.canUpload ? (
             <p className="text-xs text-muted-foreground">
-              {driveStatus.refreshTokenFromEnv
-                ? "Using the refresh token from env. Host restarts stay connected — do not reconnect unless Google revoked that token."
-                : driveStatus.mode === "user" && driveStatus.email
-                  ? `Connected as ${driveStatus.email}`
-                  : driveStatus.sharedDriveId
-                    ? `Shared Drive ${driveStatus.sharedDriveId}`
-                    : "Ready for uploads."}
+              {driveStatus.mode === "user" && driveStatus.email
+                ? `Connected as ${driveStatus.email}. This stays connected after a restart.`
+                : driveStatus.sharedDriveId
+                  ? `Shared Drive ${driveStatus.sharedDriveId}`
+                  : "Connected. This stays connected after a restart."}
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Connect Gmail once, then choose the folder for PDFs.
+              Connect Gmail once, then choose the folder for PDFs. You do not need to copy a token into env.
             </p>
-          )}
-          {driveStatus?.refreshToken && !driveStatus.refreshTokenFromEnv && (
-            <details className="rounded-md bg-muted/40 p-2">
-              <summary className="cursor-pointer text-xs text-muted-foreground">
-                Refresh token
-              </summary>
-              <div className="mt-2 space-y-2">
-                <p className="max-h-14 overflow-y-auto break-all font-mono text-[11px] leading-snug">
-                  GoogleForms__DriveRefreshToken={driveStatus.refreshToken}
-                </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(
-                      `GoogleForms__DriveRefreshToken=${driveStatus.refreshToken}`
-                    );
-                    toast({
-                      title: "Refresh token copied",
-                      description: "Paste it into your env, then restart the API.",
-                    });
-                  }}
-                >
-                  Copy refresh token
-                </Button>
-              </div>
-            </details>
           )}
           {driveStatus?.canUpload && (
             <div className="space-y-2">
