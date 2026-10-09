@@ -48,6 +48,7 @@ export function LectureDiscountsPanel() {
   const lectures = lecturesData?.data ?? [];
   const [lectureId, setLectureId] = useState<string>("");
   const [minAttendance, setMinAttendance] = useState("1");
+  const [studyMode, setStudyMode] = useState<"all" | "online" | "offline">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Record<string, LectureDiscountCandidate>>({});
@@ -68,6 +69,7 @@ export function LectureDiscountsPanel() {
       pageSize: 20,
       search,
       minAttendance: minValid ? minimum : 0,
+      studyMode,
     });
   const candidates = candidatesData?.data;
 
@@ -232,7 +234,23 @@ export function LectureDiscountsPanel() {
                   : ""}
               </p>
             </div>
-            <div className="flex w-full max-w-md gap-2">
+            <div className="flex w-full max-w-xl flex-col gap-2 sm:flex-row">
+              <Select
+                value={studyMode}
+                onValueChange={(value) => {
+                  setStudyMode(value as "all" | "online" | "offline");
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="sm:w-36" aria-label="Online or offline">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All students</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 placeholder="Search name, ID, or phone..."
                 value={search}
@@ -293,7 +311,10 @@ export function LectureDiscountsPanel() {
                           <p className="truncate font-medium">{student.fullName}</p>
                           <p className="truncate text-sm text-muted-foreground">
                             {student.studentCode} · {student.phoneNumber} ·{" "}
-                            {levelMap[student.level]}
+                            {levelMap[student.level]} ·{" "}
+                            {student.studentCode.toUpperCase().startsWith("ONL-")
+                              ? "Online"
+                              : "Offline"}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">

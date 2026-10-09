@@ -247,13 +247,14 @@ public sealed class DiscountsController(AppDbContext context) : ControllerBase
         [FromQuery] int? minAttendance,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] string? studyMode)
     {
         var pageNumber = page is null or < 1 ? 1 : page.Value;
         var size = pageSize is null or < 1 ? 20 : Math.Min(pageSize.Value, 100);
         var minimum = minAttendance is null or < 0 ? 0 : minAttendance.Value;
 
-        var result = await CandidateQuery(lectureId, minimum, search, pageNumber, size);
+        var result = await CandidateQuery(lectureId, minimum, search, studyMode, pageNumber, size);
 
         return new ApiWrapper.Success<PageList<LectureDiscountCandidate>>
         {
@@ -410,6 +411,7 @@ public sealed class DiscountsController(AppDbContext context) : ControllerBase
         Guid lectureId,
         int minAttendance,
         string? search,
+        string? studyMode,
         int page,
         int pageSize)
     {
@@ -454,6 +456,12 @@ public sealed class DiscountsController(AppDbContext context) : ControllerBase
 
         if (minAttendance > 0)
             query = query.Where(x => x.AttendedCount >= minAttendance);
+
+        var mode = studyMode?.Trim().ToLowerInvariant();
+        if (mode == "online")
+            query = query.Where(x => x.StudentCode.ToLower().StartsWith("onl-"));
+        else if (mode == "offline")
+            query = query.Where(x => !x.StudentCode.ToLower().StartsWith("onl-"));
 
         if (!string.IsNullOrWhiteSpace(search))
         {

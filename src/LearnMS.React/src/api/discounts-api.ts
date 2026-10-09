@@ -147,13 +147,22 @@ const getDiscountLectures = () =>
 
 const getLectureDiscountCandidates = (
   lectureId: string,
-  params: { page?: number; pageSize?: number; search?: string; minAttendance?: number }
+  params: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    minAttendance?: number;
+    studyMode?: "all" | "online" | "offline";
+  }
 ) => {
   const searchParams = new URLSearchParams();
   searchParams.set("page", String(params.page ?? 1));
   searchParams.set("pageSize", String(params.pageSize ?? 20));
   searchParams.set("minAttendance", String(params.minAttendance ?? 0));
   if (params.search) searchParams.set("search", params.search);
+  if (params.studyMode && params.studyMode !== "all") {
+    searchParams.set("studyMode", params.studyMode);
+  }
 
   return api
     .get<ApiSuccess<LectureDiscountCandidatesPage>>(
@@ -263,7 +272,13 @@ export function useDiscountLecturesQuery() {
 
 export function useLectureDiscountCandidatesQuery(
   lectureId: string | null,
-  params: { page?: number; pageSize?: number; search?: string; minAttendance?: number }
+  params: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    minAttendance?: number;
+    studyMode?: "all" | "online" | "offline";
+  }
 ) {
   return useQuery({
     queryKey: [LECTURE_DISCOUNTS_QUERY_KEY, "candidates", lectureId, params],
