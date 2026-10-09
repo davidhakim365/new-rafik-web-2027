@@ -4,6 +4,7 @@ import RequireAuth from "@/components/require-auth";
 import PasswordResetPage from "@/pages/auth/password-reset-page";
 import SignInSignUpPage from "@/pages/auth/sign-in-sign-up-page";
 import AssistantDetailsPage from "@/pages/dashboard/assistants/assistant-details-page";
+import AssistantTracesPage from "@/pages/dashboard/assistant-traces/assistant-traces-page";
 import AssistantsPage from "@/pages/dashboard/assistants/assistants-page";
 import AddCoursePage from "@/pages/dashboard/courses/add-course-page";
 import CoursesPage from "@/pages/dashboard/courses/courses-page";
@@ -342,6 +343,14 @@ function App() {
                     permissions={["ManageAssistants"]}
                   >
                     <AssistantDetailsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="assistant-trace"
+                element={
+                  <RequireAuth roles={["Teacher"]}>
+                    <AssistantTracesPage />
                   </RequireAuth>
                 }
               />

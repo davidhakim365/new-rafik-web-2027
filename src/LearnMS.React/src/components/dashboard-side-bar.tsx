@@ -13,6 +13,7 @@ import {
   FileText,
   Gift,
   HelpCircle,
+  History,
   LayoutDashboard,
   LogOut,
   Apple,
@@ -151,6 +152,13 @@ const teamItems: NavItem[] = [
     icon: Shield,
     match: (pathname) => pathname.startsWith("/dashboard/assistants"),
     permission: Permission.ManageAssistants,
+  },
+  {
+    to: "/dashboard/assistant-trace",
+    label: "Assistant Trace",
+    icon: History,
+    match: (pathname) => pathname.startsWith("/dashboard/assistant-trace"),
+    teacherOnly: true,
   },
   {
     to: "/dashboard/my-profile",

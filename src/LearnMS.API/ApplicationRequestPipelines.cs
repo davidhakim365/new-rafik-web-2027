@@ -1,4 +1,5 @@
 using LearnMS.API.Common.StorageService;
+using LearnMS.API.Features.AssistantTraces;
 using LearnMS.API.ThirdParties.VdoCipher;
 using Serilog;
 
@@ -24,6 +25,7 @@ public static class ApplicationRequestPipelines
     {
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseMiddleware<AssistantTraceMiddleware>();
     }
 
     private static void MapSpaClient(WebApplication app)
