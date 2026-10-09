@@ -1,25 +1,18 @@
-using LearnMS.API.Data;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace LearnMS.API.Features.Discounts;
+#nullable disable
 
-public static class DiscountsSchema
+namespace LearnMS.API.Migrations;
+
+[DbContext(typeof(Data.AppDbContext))]
+[Migration("20261009190000_LectureStudentDiscounts")]
+public partial class LectureStudentDiscounts : Migration
 {
-    public static Task EnsureAsync(AppDbContext db)
+    /// <inheritdoc />
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        return db.Database.ExecuteSqlRawAsync("""
-            CREATE TABLE IF NOT EXISTS "StudentDiscounts" (
-                "Id" uuid NOT NULL,
-                "StudentId" uuid NOT NULL,
-                "Percentage" numeric(5,2) NOT NULL,
-                "AppliesTo" character varying(16) NOT NULL,
-                "CreatedAt" timestamp with time zone NOT NULL,
-                CONSTRAINT "PK_StudentDiscounts" PRIMARY KEY ("Id"),
-                CONSTRAINT "FK_StudentDiscounts_Students_StudentId" FOREIGN KEY ("StudentId") REFERENCES "Students" ("Id") ON DELETE CASCADE
-            );
-
-            CREATE UNIQUE INDEX IF NOT EXISTS "IX_StudentDiscounts_StudentId" ON "StudentDiscounts" ("StudentId");
-
+        migrationBuilder.Sql("""
             CREATE TABLE IF NOT EXISTS "LectureStudentDiscounts" (
                 "Id" uuid NOT NULL,
                 "StudentId" uuid NOT NULL,
@@ -34,6 +27,14 @@ public static class DiscountsSchema
 
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_LectureStudentDiscounts_StudentId_LectureId"
                 ON "LectureStudentDiscounts" ("StudentId", "LectureId");
+            """);
+    }
+
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql("""
+            DROP TABLE IF EXISTS "LectureStudentDiscounts";
             """);
     }
 }

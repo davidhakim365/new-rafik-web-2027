@@ -687,7 +687,11 @@ public sealed class CoursesService : ICoursesService
         if (course.Lectures.FirstOrDefault() is not { } lecture)
             throw new ApiException(LecturesErrors.NotFound);
 
-        student.BuyOrRenewLecture(course, lecture);
+        var lectureDiscount = await _context.LectureStudentDiscounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.StudentId == command.StudentId && d.LectureId == lecture.Id);
+
+        student.BuyOrRenewLecture(course, lecture, lectureDiscount);
 
         var lessonAttendances = await _context
             .Set<LessonAttendance>()
@@ -2325,6 +2329,11 @@ public sealed class CoursesService : ICoursesService
             ? lessons.Union(quizzes).OrderBy(x => x.Order).ToList()
             : [];
 
+        var lectureSpecificDiscount = await _context.LectureStudentDiscounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.StudentId == query.StudentId && d.LectureId == lecture.Id);
+        var lectureDiscount = DiscountPricing.Resolve(student.Discount, lectureSpecificDiscount);
+
         return new GetStudentLectureResult
         {
             Id = lecture.Id,
@@ -2336,11 +2345,11 @@ public sealed class CoursesService : ICoursesService
             ImageUrl = lecture.ImageUrl!,
             HomeworkVideoUrl = lecture.IsPublished ? lecture.HomeworkVideoUrl : null,
             ChooseHomeworkFormUrl = chooseHomeworkFormUrl,
-            Price = DiscountPricing.Apply(lecture.Price!.Value, student.Discount, DiscountTarget.Lecture),
+            Price = DiscountPricing.Apply(lecture.Price!.Value, lectureDiscount, DiscountTarget.Lecture),
             ExpirationDays = lecture.ExpirationDays!.Value,
-            RenewalPrice = DiscountPricing.Apply(lecture.RenewalPrice!.Value, student.Discount, DiscountTarget.Renewal),
-            DiscountPercentage = student.Discount?.Percentage,
-            DiscountAppliesTo = student.Discount?.AppliesTo,
+            RenewalPrice = DiscountPricing.Apply(lecture.RenewalPrice!.Value, lectureDiscount, DiscountTarget.Renewal),
+            DiscountPercentage = lectureDiscount?.Percentage,
+            DiscountAppliesTo = lectureDiscount?.AppliesTo,
             IsPublished = lecture.IsPublished,
             AreAttachmentsPublished = lecture.AreAttachmentsPublished,
             // added

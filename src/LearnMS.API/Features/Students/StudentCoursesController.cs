@@ -233,11 +233,16 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
             throw new ApiException(CoursesErrors.WrongLevel);
 
         StudentDiscount? discount = null;
+        Dictionary<Guid, LectureStudentDiscount> lectureDiscounts = [];
         if (studentId is Guid sid)
         {
             discount = await context.StudentDiscounts
                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.StudentId == sid);
+            lectureDiscounts = await context.LectureStudentDiscounts
+                .AsNoTracking()
+                .Where(d => d.StudentId == sid)
+                .ToDictionaryAsync(d => d.LectureId);
         }
 
         DateTime? courseExpires = course.ExpiresAt;
@@ -256,15 +261,17 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
                 hasAnyQuiz,
                 passedAllQuizzes
             );
+            lectureDiscounts.TryGetValue(l.Id, out var lectureSpecific);
+            var effective = DiscountPricing.Resolve(discount, lectureSpecific);
             return new StudentLectureDto()
             {
                 Id = l.Id,
                 Title = l.Title,
                 Description = l.Description,
-                Price = DiscountPricing.Apply(l.Price!.Value, discount, DiscountTarget.Lecture),
-                RenewalPrice = DiscountPricing.Apply(l.RenewalPrice!.Value, discount, DiscountTarget.Renewal),
-                DiscountPercentage = discount?.Percentage,
-                DiscountAppliesTo = discount?.AppliesTo,
+                Price = DiscountPricing.Apply(l.Price!.Value, effective, DiscountTarget.Lecture),
+                RenewalPrice = DiscountPricing.Apply(l.RenewalPrice!.Value, effective, DiscountTarget.Renewal),
+                DiscountPercentage = effective?.Percentage,
+                DiscountAppliesTo = effective?.AppliesTo,
                 Order = l.Order,
                 ImageUrl = l.ImageUrl,
                 HomeworkVideoUrl = contentPublished ? l.HomeworkVideoUrl : null,

@@ -23,4 +23,9 @@ public static class DiscountsErrors
         "discount/no-students",
         "Choose at least one student.",
         StatusCodes.Status400BadRequest);
+
+    public static readonly ApiError LectureNotFound = new(
+        "discount/lecture-not-found",
+        "Lecture not found.",
+        StatusCodes.Status404NotFound);
 }

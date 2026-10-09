@@ -152,8 +152,9 @@ public class Student : User
         }
     }
 
-    public void BuyOrRenewLecture(Course course, Lecture lecture)
+    public void BuyOrRenewLecture(Course course, Lecture lecture, LectureStudentDiscount? lectureDiscount = null)
     {
+        var discount = DiscountPricing.Resolve(Discount, lectureDiscount);
         // Already covered by an active course purchase — treat as success (idempotent).
         if (course.CourseEnrollments.Any(x => x.StudentId == Id && x.ExpiresAt > DateTime.UtcNow))
             return;
@@ -166,7 +167,7 @@ public class Student : User
 
         if (lectureEnrollment != null)
         {
-            var charge = DiscountPricing.Apply(lecture.RenewalPrice ?? 0, Discount, DiscountTarget.Renewal);
+            var charge = DiscountPricing.Apply(lecture.RenewalPrice ?? 0, discount, DiscountTarget.Renewal);
             if (_credit < charge)
                 throw new ApiException(ProfileErrors.InsufficientCredits);
             _credit -= charge;
@@ -177,13 +178,14 @@ public class Student : User
                 {
                     Message = ChargeMessage(
                         $"Lecture {lecture.Title} renewed for {charge} LE",
+                        discount,
                         DiscountTarget.Renewal)
                 }
             );
         }
         else
         {
-            var charge = DiscountPricing.Apply(lecture.Price ?? 0, Discount, DiscountTarget.Lecture);
+            var charge = DiscountPricing.Apply(lecture.Price ?? 0, discount, DiscountTarget.Lecture);
             if (_credit < charge)
                 throw new ApiException(ProfileErrors.InsufficientCredits);
             _credit -= charge;
@@ -200,18 +202,19 @@ public class Student : User
                 {
                     Message = ChargeMessage(
                         $"Lecture {lecture.Title} purchased for {charge} LE",
+                        discount,
                         DiscountTarget.Lecture)
                 }
             );
         }
     }
 
-    private string ChargeMessage(string message, DiscountTarget target)
+    private static string ChargeMessage(string message, AppliedDiscount? discount, DiscountTarget target)
     {
-        if (!DiscountPricing.Applies(Discount, target))
+        if (!DiscountPricing.Applies(discount, target) || discount is null)
             return message;
 
-        return $"{message} ({Discount!.Percentage:0.##}% discount)";
+        return $"{message} ({discount.Value.Percentage:0.##}% discount)";
     }
 
     public void BuyOrRetakeExam(Exam exam)

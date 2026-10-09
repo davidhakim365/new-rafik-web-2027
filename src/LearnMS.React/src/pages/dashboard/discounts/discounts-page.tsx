@@ -22,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
+import { LectureDiscountsPanel } from "@/pages/dashboard/discounts/lecture-discounts-panel";
 import { useGetAllStudents } from "@/generated/api";
 import { SingleStudent } from "@/generated/model";
 import { cn } from "@/lib/utils";
@@ -104,10 +106,16 @@ const DiscountsPage = () => {
   return (
     <DashboardPageShell
       title="Discounts"
-      description="Give selected students a percentage off the lecture price, the renewal price, or both."
+      description="Give a percentage off every lecture, or off one lecture for students who attended well."
       icon={BadgePercent}
       fullWidth
     >
+      <Tabs defaultValue="all">
+        <TabsList>
+          <TabsTrigger value="all">Every lecture</TabsTrigger>
+          <TabsTrigger value="one">One lecture</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="space-y-4">
       <DashboardCard>
         <h3 className="mb-1 text-lg font-semibold">Assign discount</h3>
         <p className="mb-4 text-sm text-muted-foreground">
@@ -307,6 +315,11 @@ const DiscountsPage = () => {
           </div>
         )}
       </DashboardCard>
+        </TabsContent>
+        <TabsContent value="one" className="space-y-4">
+          <LectureDiscountsPanel />
+        </TabsContent>
+      </Tabs>
     </DashboardPageShell>
   );
 };
