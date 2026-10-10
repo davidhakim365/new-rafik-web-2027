@@ -9,6 +9,7 @@ public static class ApplicationRequestPipelines
 {
     public static void UseApplicationRequestPipelines(this WebApplication app)
     {
+        app.UseResponseCompression();
         app.UseSerilogRequestLogging();
         app.UseHttpsRedirection();
         app.UseExceptionHandler(opt => { });
@@ -32,8 +33,29 @@ public static class ApplicationRequestPipelines
     {
         app.MapWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"), x =>
         {
-            x.UseSpaStaticFiles();
-            x.UseStaticFiles();
+            var staticFiles = new StaticFileOptions
+            {
+                OnPrepareResponse = ctx =>
+                {
+                    var name = ctx.File.Name;
+                    if (name.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ctx.Context.Response.Headers.CacheControl = "no-cache";
+                        return;
+                    }
+
+                    // Vite fingerprints built files as name-[hash].ext. Those can be cached for a year.
+                    var cacheable = name.Contains('-') &&
+                                    (name.EndsWith(".js", StringComparison.OrdinalIgnoreCase) ||
+                                     name.EndsWith(".css", StringComparison.OrdinalIgnoreCase) ||
+                                     name.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase));
+                    ctx.Context.Response.Headers.CacheControl = cacheable
+                        ? "public,max-age=31536000,immutable"
+                        : "public,max-age=3600";
+                }
+            };
+            x.UseSpaStaticFiles(staticFiles);
+            x.UseStaticFiles(staticFiles);
             x.UseSpa(spa =>
             {
                 spa.Options.SourcePath = "ClientApp";

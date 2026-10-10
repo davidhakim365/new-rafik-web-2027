@@ -11,8 +11,10 @@ using LearnMS.API.Security.JwtBearer;
 using LearnMS.API.Security.PasswordHasher;
 using LearnMS.API.ThirdParties.VdoCipher;
 using LearnMS.API.ThirdParties.GoogleForms;
+using System.IO.Compression;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.OpenApi.Models;
@@ -24,6 +26,22 @@ public static class ApplicationDependencyInjection
     public static IServiceCollection RegisterApplicationServices(this IServiceCollection services, IConfiguration cfg)
     {
         RegisterSwagger(services);
+        services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = true;
+            options.Providers.Add<BrotliCompressionProvider>();
+            options.Providers.Add<GzipCompressionProvider>();
+            options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                ["application/json", "application/problem+json"]);
+        });
+        services.Configure<BrotliCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
+        services.Configure<GzipCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
         services.AddHttpContextAccessor();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         RegisterDatabase(services, cfg);
@@ -114,6 +132,8 @@ services.AddEndpointsApiExplorer();
     private static void RegisterAuth(IServiceCollection services, IConfiguration cfg)
     {
         services.Configure<JwtBearerConfig>(cfg.GetSection(JwtBearerConfig.Section));
+        services.AddMemoryCache();
+        services.AddSingleton<IAuthSessionCache, AuthSessionCache>();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddScheme<JwtBearerOptions,
                 CustomJwtBearerHandler>(JwtBearerDefaults.AuthenticationScheme, options => { });
@@ -124,7 +144,7 @@ services.AddEndpointsApiExplorer();
 
     private static void RegisterDatabase(IServiceCollection services, IConfiguration cfg)
     {
-        services.AddDbContext<AppDbContext>(opt =>
+        services.AddDbContextPool<AppDbContext>(opt =>
         {
             opt.UseNpgsql(
                 cfg.GetConnectionString("DefaultConnection"),

@@ -14,6 +14,12 @@ public sealed class CurrentUserService(IServiceProvider _serviceProvider,
     {
         var _httpContext = _serviceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext!;
 
+        var alreadyLoaded = _httpContext.CurrentUser();
+        if (alreadyLoaded is not null)
+        {
+            return alreadyLoaded;
+        }
+
         if (_httpContext.User.Identity is null or { IsAuthenticated: false })
         {
             return null;

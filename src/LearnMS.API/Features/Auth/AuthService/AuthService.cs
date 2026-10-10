@@ -9,6 +9,7 @@ using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Auth.Contracts;
 using LearnMS.API.Features.CreditCodes;
+using LearnMS.API.Security;
 using LearnMS.API.Security.JwtBearer;
 using LearnMS.API.Security.PasswordHasher;
 using Microsoft.EntityFrameworkCore;
@@ -24,15 +25,17 @@ public sealed class AuthService : IAuthService
     private readonly ICodeGenerator _codeGenerator;
     private readonly IEmailService _emailService;
     private readonly JwtBearerConfig _jwtConfig;
+    private readonly IAuthSessionCache _sessions;
 
 
-    public AuthService(AppDbContext dbContext, IPasswordHasher passwordHasher, IOptions<JwtBearerConfig> jwtOptions, ICodeGenerator codeGenerator, IEmailService emailService)
+    public AuthService(AppDbContext dbContext, IPasswordHasher passwordHasher, IOptions<JwtBearerConfig> jwtOptions, ICodeGenerator codeGenerator, IEmailService emailService, IAuthSessionCache sessions)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtConfig = jwtOptions.Value;
         _codeGenerator = codeGenerator;
         _emailService = emailService;
+        _sessions = sessions;
     }
 
 
@@ -157,6 +160,7 @@ public sealed class AuthService : IAuthService
         }
 
         var token = GetToken(GetClaims(account.User));
+        _sessions.Invalidate(account.Id);
 
         return new()
         {

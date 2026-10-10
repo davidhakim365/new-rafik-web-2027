@@ -1,55 +1,66 @@
+import { lazy, Suspense } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import AppErrorFallback from "@/components/app-error-fallback";
 import RequireAuth from "@/components/require-auth";
-import PasswordResetPage from "@/pages/auth/password-reset-page";
-import SignInSignUpPage from "@/pages/auth/sign-in-sign-up-page";
-import AssistantDetailsPage from "@/pages/dashboard/assistants/assistant-details-page";
-import AssistantTracesPage from "@/pages/dashboard/assistant-traces/assistant-traces-page";
-import AssistantsPage from "@/pages/dashboard/assistants/assistants-page";
-import AddCoursePage from "@/pages/dashboard/courses/add-course-page";
-import CoursesPage from "@/pages/dashboard/courses/courses-page";
-import DashboardCoursePage from "@/pages/dashboard/courses/dashboard-course-page";
-import CreditCodesPage from "@/pages/dashboard/credit-codes/credit-code-page";
-import ExamPage from "@/pages/dashboard/exams/exam-page";
-import ExamStudentsPage from "@/pages/dashboard/exams/exam-students-page";
-import DiscountsPage from "@/pages/dashboard/discounts/discounts-page";
-import ExpirationTimePage from "@/pages/dashboard/expiration-time/expiration-time-page";
-import FilesPage from "@/pages/dashboard/files/files-page";
-import GrantedAccessPage from "@/pages/dashboard/granted-access/granted-access-page";
-import ImportantLecturesPage from "@/pages/dashboard/important-lectures/important-lectures-page";
-import LectureDetailsPage from "@/pages/dashboard/lectures/lecture-details-page";
-import LectureStudentsPage from "@/pages/dashboard/lectures/lecture-students-page";
-import LectureBarcodeScannerPage from "@/pages/dashboard/lectures/lecture-barcode-scanner-page";
-import LessonDetailsPage from "@/pages/dashboard/lessons/lesson-details-page";
-import QuestionsPage from "@/pages/dashboard/questions/questions-page";
-import QuizPage from "@/pages/dashboard/quizzes/quiz-page";
-import AssistantRewardsScannerPage from "@/pages/dashboard/rewards/assistant-rewards-scanner-page";
-import MyProfilePage from "@/pages/dashboard/rewards/my-profile-page";
-import MyRewardsPage from "@/pages/dashboard/rewards/my-rewards-page";
-import RewardSystemSettingsPage from "@/pages/dashboard/rewards/reward-system-settings-page";
-import StudentApplesScannerPage from "@/pages/dashboard/rewards/student-apples-scanner-page";
-import AppleRewardsStorePage from "@/pages/dashboard/rewards/apple-rewards-store-page";
-import CallCenterPage from "@/pages/dashboard/call-center/call-center-page";
-import StatisticsPage from "@/pages/dashboard/statistics/statistics-page";
-import AddStudentsPage from "@/pages/dashboard/students/add-students-page";
-import StudentDetailsPage from "@/pages/dashboard/students/student-details-page";
-import PaymentRequestsPage from "@/pages/dashboard/payment-requests/payment-requests-page";
-import StudentsPage from "@/pages/dashboard/students/students-page";
-import { StudentCoursePage } from "@/pages/student/courses/student-course-page";
-import { StudentCoursesPage } from "@/pages/student/courses/student-courses-page";
-import StudentExamPage from "@/pages/student/exams/student-exam-page";
-import StudentHomePage2 from "@/pages/student/home/student-home.page";
-import StudentLecturePage from "@/pages/student/lectures/student-lecture-page";
-import StudentLessonPage from "@/pages/student/lessons/student-lesson-page";
-import StudentPayments from "@/pages/student/payment/student-payments";
-import StudentQuizPage from "@/pages/student/quizzes/student-quiz-page";
-import StudentAppleRewardsPage from "@/pages/student/rewards/student-apple-rewards-page";
-import ParentLoginPage from "@/pages/parent/parent-login-page";
-import ParentDashboardPage from "@/pages/parent/parent-dashboard-page";
+import LoadingPage from "@/pages/shared/loading-page";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { Route, Routes, useLocation } from "react-router-dom";
 import StudentLayout from "./components/student-layout";
+
+const PasswordResetPage = lazy(() => import("@/pages/auth/password-reset-page"));
+const SignInSignUpPage = lazy(() => import("@/pages/auth/sign-in-sign-up-page"));
+const AssistantDetailsPage = lazy(() => import("@/pages/dashboard/assistants/assistant-details-page"));
+const AssistantTracesPage = lazy(() => import("@/pages/dashboard/assistant-traces/assistant-traces-page"));
+const AssistantsPage = lazy(() => import("@/pages/dashboard/assistants/assistants-page"));
+const AddCoursePage = lazy(() => import("@/pages/dashboard/courses/add-course-page"));
+const CoursesPage = lazy(() => import("@/pages/dashboard/courses/courses-page"));
+const DashboardCoursePage = lazy(() => import("@/pages/dashboard/courses/dashboard-course-page"));
+const CreditCodesPage = lazy(() => import("@/pages/dashboard/credit-codes/credit-code-page"));
+const ExamPage = lazy(() => import("@/pages/dashboard/exams/exam-page"));
+const ExamStudentsPage = lazy(() => import("@/pages/dashboard/exams/exam-students-page"));
+const DiscountsPage = lazy(() => import("@/pages/dashboard/discounts/discounts-page"));
+const ExpirationTimePage = lazy(() => import("@/pages/dashboard/expiration-time/expiration-time-page"));
+const FilesPage = lazy(() => import("@/pages/dashboard/files/files-page"));
+const GrantedAccessPage = lazy(() => import("@/pages/dashboard/granted-access/granted-access-page"));
+const ImportantLecturesPage = lazy(() => import("@/pages/dashboard/important-lectures/important-lectures-page"));
+const LectureDetailsPage = lazy(() => import("@/pages/dashboard/lectures/lecture-details-page"));
+const LectureStudentsPage = lazy(() => import("@/pages/dashboard/lectures/lecture-students-page"));
+const LectureBarcodeScannerPage = lazy(() => import("@/pages/dashboard/lectures/lecture-barcode-scanner-page"));
+const LessonDetailsPage = lazy(() => import("@/pages/dashboard/lessons/lesson-details-page"));
+const QuestionsPage = lazy(() => import("@/pages/dashboard/questions/questions-page"));
+const QuizPage = lazy(() => import("@/pages/dashboard/quizzes/quiz-page"));
+const AssistantRewardsScannerPage = lazy(() => import("@/pages/dashboard/rewards/assistant-rewards-scanner-page"));
+const MyProfilePage = lazy(() => import("@/pages/dashboard/rewards/my-profile-page"));
+const MyRewardsPage = lazy(() => import("@/pages/dashboard/rewards/my-rewards-page"));
+const RewardSystemSettingsPage = lazy(() => import("@/pages/dashboard/rewards/reward-system-settings-page"));
+const StudentApplesScannerPage = lazy(() => import("@/pages/dashboard/rewards/student-apples-scanner-page"));
+const AppleRewardsStorePage = lazy(() => import("@/pages/dashboard/rewards/apple-rewards-store-page"));
+const CallCenterPage = lazy(() => import("@/pages/dashboard/call-center/call-center-page"));
+const StatisticsPage = lazy(() => import("@/pages/dashboard/statistics/statistics-page"));
+const AddStudentsPage = lazy(() => import("@/pages/dashboard/students/add-students-page"));
+const StudentDetailsPage = lazy(() => import("@/pages/dashboard/students/student-details-page"));
+const PaymentRequestsPage = lazy(() => import("@/pages/dashboard/payment-requests/payment-requests-page"));
+const StudentsPage = lazy(() => import("@/pages/dashboard/students/students-page"));
+const StudentCoursePage = lazy(() =>
+  import("@/pages/student/courses/student-course-page").then((module) => ({
+    default: module.StudentCoursePage,
+  }))
+);
+const StudentCoursesPage = lazy(() =>
+  import("@/pages/student/courses/student-courses-page").then((module) => ({
+    default: module.StudentCoursesPage,
+  }))
+);
+const StudentExamPage = lazy(() => import("@/pages/student/exams/student-exam-page"));
+const StudentHomePage2 = lazy(() => import("@/pages/student/home/student-home.page"));
+const StudentLecturePage = lazy(() => import("@/pages/student/lectures/student-lecture-page"));
+const StudentLessonPage = lazy(() => import("@/pages/student/lessons/student-lesson-page"));
+const StudentPayments = lazy(() => import("@/pages/student/payment/student-payments"));
+const StudentQuizPage = lazy(() => import("@/pages/student/quizzes/student-quiz-page"));
+const StudentAppleRewardsPage = lazy(() => import("@/pages/student/rewards/student-apple-rewards-page"));
+const ParentLoginPage = lazy(() => import("@/pages/parent/parent-login-page"));
+const ParentDashboardPage = lazy(() => import("@/pages/parent/parent-dashboard-page"));
 
 function App() {
   const location = useLocation();
@@ -65,6 +76,7 @@ function App() {
           onReset={reset}
           FallbackComponent={AppErrorFallback}
         >
+          <Suspense fallback={<LoadingPage />}>
           <Routes>
             <Route path="/sign-in-sign-up" element={<SignInSignUpPage />} />
             <Route
@@ -498,6 +510,7 @@ function App() {
               />
             </Route>
           </Routes>
+          </Suspense>
         </ErrorBoundary>
       )}
     </QueryErrorResetBoundary>

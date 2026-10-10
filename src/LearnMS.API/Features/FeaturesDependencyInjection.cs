@@ -1,4 +1,5 @@
 using LearnMS.API.Features.Administration;
+using LearnMS.API.Features.AssistantTraces;
 using LearnMS.API.Features.Auth;
 using LearnMS.API.Features.CallCenter;
 using LearnMS.API.Features.Courses;
@@ -44,6 +45,8 @@ public static class FeaturesDependencyInjection
         services.AddScoped<IPaymentRequestsService, PaymentRequestsService>();
 
         services.AddHostedService<ChooseHomeworkSyncHostedService>();
+        services.AddSingleton<AssistantTraceBackgroundWriter>();
+        services.AddHostedService(sp => sp.GetRequiredService<AssistantTraceBackgroundWriter>());
 
         services.AddAssets();
 

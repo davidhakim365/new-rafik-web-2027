@@ -3,6 +3,7 @@ using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Administration.Contracts;
 using LearnMS.API.Features.Assistants.Contracts;
+using LearnMS.API.Security;
 using LearnMS.API.Security.PasswordHasher;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,11 +13,13 @@ public sealed class AdministrationService : IAdministrationService
 {
     private readonly AppDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IAuthSessionCache _sessions;
 
-    public AdministrationService(AppDbContext dbContext, IPasswordHasher passwordHasher)
+    public AdministrationService(AppDbContext dbContext, IPasswordHasher passwordHasher, IAuthSessionCache sessions)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _sessions = sessions;
     }
 
     public async Task ExecuteAsync(UpdateAssistantCommand command)
@@ -67,6 +70,7 @@ public sealed class AdministrationService : IAdministrationService
 
         _dbContext.Assistants.Update(assistant);
         await _dbContext.SaveChangesAsync();
+        _sessions.Invalidate(assistant.Id);
     }
 
     public async Task ExecuteAsync(CreateTeacherCommand command)
@@ -129,6 +133,7 @@ public sealed class AdministrationService : IAdministrationService
 
         _dbContext.Assistants.Remove(assistant);
         await _dbContext.SaveChangesAsync();
+        _sessions.Invalidate(assistant.Id);
     }
 
     public async Task ExecuteAsync(ClaimAssistantIncomesCommand command)

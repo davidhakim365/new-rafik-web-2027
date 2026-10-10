@@ -3,6 +3,7 @@ using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.Auth;
 using LearnMS.API.Features.Students.Contracts;
+using LearnMS.API.Security;
 using LearnMS.API.Security.PasswordHasher;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -11,7 +12,7 @@ using System.Globalization;
 
 namespace LearnMS.API.Features.Students;
 
-public sealed class StudentsService(AppDbContext db, IPasswordHasher passwordHasher)
+public sealed class StudentsService(AppDbContext db, IPasswordHasher passwordHasher, IAuthSessionCache sessions)
     : IStudentsService
 {
     public async Task ExecuteAsync(CreateStudentCommand command)
@@ -175,6 +176,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
 
         db.Update(student);
         await db.SaveChangesAsync();
+        sessions.Invalidate(student.Id);
     }
 
     public async Task<SetStudentBlockedResult> ExecuteAsync(SetStudentBlockedCommand command)
@@ -208,6 +210,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
 
         db.Update(student);
         await db.SaveChangesAsync();
+        sessions.Invalidate(student.Id);
 
         return new SetStudentBlockedResult
         {
@@ -224,6 +227,8 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
         var unlinkedCount = await db.Set<Student>()
             .Where(x => x.DeviceKey != null && x.DeviceKey != "")
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.DeviceKey, emptyDeviceKey));
+
+        sessions.InvalidateAll();
 
         return new UnlinkAllStudentDevicesResult
         {

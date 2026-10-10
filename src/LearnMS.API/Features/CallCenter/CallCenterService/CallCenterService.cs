@@ -2,11 +2,12 @@ using LearnMS.API.Common;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.CallCenter.Contracts;
+using LearnMS.API.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearnMS.API.Features.CallCenter;
 
-public sealed class CallCenterService(AppDbContext db) : ICallCenterService
+public sealed class CallCenterService(AppDbContext db, IAuthSessionCache sessions) : ICallCenterService
 {
     public async Task<PageList<CallCenterStudentDto>> QueryAsync(GetCallCenterStudentsQuery query)
     {
@@ -218,6 +219,7 @@ public sealed class CallCenterService(AppDbContext db) : ICallCenterService
 
         db.Update(student);
         await db.SaveChangesAsync();
+        sessions.Invalidate(student.Id);
 
         return new SetCallCenterStudentBlockedResult
         {

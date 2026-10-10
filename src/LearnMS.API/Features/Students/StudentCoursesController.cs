@@ -34,6 +34,7 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         var effectiveLevel = student?.Level ?? level;
 
         var result = await context.Courses
+            .AsNoTracking()
             .Where(c => c.Level == effectiveLevel && c.IsPublished)
             .Select(c => new
                 {
@@ -98,6 +99,8 @@ public class StudentCoursesController(ICurrentUserService currentUserService, Ap
         Guid? studentId = studentInfo?.Id;
 
         var course = await context.Courses
+            .AsNoTracking()
+            .AsSplitQuery()
             .Where(c => c.IsPublished && c.Id == courseId)
             .Select(c => new
                 {

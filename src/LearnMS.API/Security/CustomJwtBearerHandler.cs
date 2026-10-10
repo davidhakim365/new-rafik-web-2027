@@ -21,6 +21,7 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
 
     JwtBearerConfig config;
     AppDbContext db;
+    IAuthSessionCache sessions;
 
     [Obsolete]
     public CustomJwtBearerHandler(IOptionsMonitor<JwtBearerOptions> options,
@@ -28,10 +29,12 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
                                   UrlEncoder encoder,
                                   ISystemClock clock,
                                   IOptions<JwtBearerConfig> config,
-                                  AppDbContext db) : base(options, logger, encoder, clock)
+                                  AppDbContext db,
+                                  IAuthSessionCache sessions) : base(options, logger, encoder, clock)
     {
         this.config = config.Value;
         this.db = db;
+        this.sessions = sessions;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -81,15 +84,29 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
 
         if (Guid.TryParse(id as string, out var userId) == false) return AuthenticateResult.Fail("Authorization header was not found.");
 
-
-        var account = await db.Set<Account>()
-             .Include(x => x.User)
-             .FirstOrDefaultAsync(x => x.Id == userId) ?? throw new ApiException(AuthErrors.Unauthorized);
-
-
-        if (account.User is Student student)
+        if (!sessions.TryGet(userId, out var session))
         {
-            if (student.IsBlocked)
+            var account = await db.Set<Account>()
+                 .AsNoTracking()
+                 .Include(x => x.User)
+                 .FirstOrDefaultAsync(x => x.Id == userId) ?? throw new ApiException(AuthErrors.Unauthorized);
+
+            session = new AuthSession
+            {
+                Id = account.Id,
+                Role = account.User.Role,
+                IsBlocked = account.User is Student blocked && blocked.IsBlocked,
+                DeviceKey = account.User is Student linked ? linked.DeviceKey : null,
+                Permissions = account.User is Assistant assistant
+                    ? assistant.Permissions.ToArray()
+                    : []
+            };
+            sessions.Set(session);
+        }
+
+        if (session.Role == UserRole.Student)
+        {
+            if (session.IsBlocked)
             {
                 return AuthenticateResult.Fail("your account is block and please contact web support");
             }
@@ -98,7 +115,7 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
             {
                 return AuthenticateResult.Fail("DeviceKey header was not found.");
             }
-            else if (deviceKey.FirstOrDefault() != student.DeviceKey)
+            else if (deviceKey.FirstOrDefault() != session.DeviceKey)
             {
                 return AuthenticateResult.Fail("Another device is linked with this account.");
             }
@@ -106,20 +123,20 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-            new Claim(ClaimTypes.Role, account.User.Role.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, session.Id.ToString()),
+            new Claim(ClaimTypes.Role, session.Role.ToString()),
         };
 
         var currentUser = new CurrentUser
         {
-            Id = account.Id,
-            Role = account.User.Role
+            Id = session.Id,
+            Role = session.Role
         };
 
-        if (account.User is Assistant assistant)
+        if (session.Role == UserRole.Assistant)
         {
-            claims.AddRange(assistant.Permissions.Select(x => new Claim("Permission", x.ToString())));
-            currentUser.Permissions = assistant.Permissions;
+            claims.AddRange(session.Permissions.Select(x => new Claim("Permission", x.ToString())));
+            currentUser.Permissions = session.Permissions.ToArray();
         }
 
         var claimIdentity = new ClaimsIdentity(claims, JwtBearerDefaults.AuthenticationScheme);

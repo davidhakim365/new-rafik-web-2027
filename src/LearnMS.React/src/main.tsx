@@ -19,6 +19,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
+      // Reuse a page's data for a short time so moving around the site does not
+      // refetch every list. Mutations still refresh the data they change.
+      staleTime: 15_000,
+      gcTime: 5 * 60_000,
       // Background refetch failures (tablet sleep, flaky network) must not
       // unmount an in-progress quiz/exam. Only throw when we have nothing to show.
       throwOnError: (_error, query) => query.state.data === undefined,

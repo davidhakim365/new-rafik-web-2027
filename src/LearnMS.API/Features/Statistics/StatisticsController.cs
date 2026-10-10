@@ -102,14 +102,10 @@ public class StatisticsController(AppDbContext context, ICurrentUserService curr
             studentsQuery = studentsQuery.Where(s => s.Level == query.Level);
         }
 
-        var studentBalances = await studentsQuery
-            .Select(s => new { s.Id, s.FullName, s.StudentCode, s.Apples, s.Level })
-            .ToListAsync();
+        var studentsWithApples = await studentsQuery.LongCountAsync(s => s.Apples > 0);
+        var totalApplesOutstanding = await studentsQuery.SumAsync(s => (long?)s.Apples) ?? 0;
 
-        var studentsWithApples = studentBalances.Count(s => s.Apples > 0);
-        var totalApplesOutstanding = studentBalances.Sum(s => (long)s.Apples);
-
-        var topStudents = studentBalances
+        var topStudents = await studentsQuery
             .Where(s => s.Apples > 0)
             .OrderByDescending(s => s.Apples)
             .ThenBy(s => s.FullName)
@@ -120,14 +116,15 @@ public class StatisticsController(AppDbContext context, ICurrentUserService curr
                 s.StudentCode,
                 s.Apples,
                 s.Level))
-            .ToList();
+            .ToListAsync();
 
-        var applesByLevel = studentBalances
+        var applesByLevel = (await studentsQuery
             .GroupBy(s => s.Level)
             .Select(g => new StudentAppleLevelBucket(
                 g.Key,
-                g.Count(s => s.Apples > 0),
+                g.Sum(s => s.Apples > 0 ? 1L : 0L),
                 g.Sum(s => (long)s.Apples)))
+            .ToListAsync())
             .OrderBy(x => x.Level)
             .ToList();
 
@@ -158,22 +155,32 @@ public class StatisticsController(AppDbContext context, ICurrentUserService curr
             transactionsQuery = transactionsQuery.Where(t => t.CreatedAt <= end);
         }
 
-        var transactionRows = await transactionsQuery
-            .Select(t => new { t.CreatedAt, t.Amount })
-            .ToListAsync();
-
-        var transactionsInRange = transactionRows.Count;
-        var applesAwardedInRange = transactionRows.Where(t => t.Amount > 0).Sum(t => (long)t.Amount);
-        var applesDeductedInRange = transactionRows.Where(t => t.Amount < 0).Sum(t => (long)(-t.Amount));
+        var transactionsInRange = await transactionsQuery.LongCountAsync();
+        var applesAwardedInRange = await transactionsQuery
+            .Where(t => t.Amount > 0)
+            .SumAsync(t => (long?)t.Amount) ?? 0;
+        var applesDeductedInRange = await transactionsQuery
+            .Where(t => t.Amount < 0)
+            .SumAsync(t => (long?)-t.Amount) ?? 0;
         var netApplesInRange = applesAwardedInRange - applesDeductedInRange;
 
-        var applesByDay = transactionRows
-            .GroupBy(t => DateOnly.FromDateTime(t.CreatedAt))
+        var dailyRows = await transactionsQuery
+            .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month, t.CreatedAt.Day })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                g.Key.Day,
+                Awarded = g.Sum(t => t.Amount > 0 ? (long)t.Amount : 0L),
+                Deducted = g.Sum(t => t.Amount < 0 ? (long)-t.Amount : 0L)
+            })
+            .ToListAsync();
+
+        var applesByDay = dailyRows
             .Select(g =>
             {
-                var awarded = g.Where(t => t.Amount > 0).Sum(t => (long)t.Amount);
-                var deducted = g.Where(t => t.Amount < 0).Sum(t => (long)(-t.Amount));
-                return new StudentAppleDailyBucket(g.Key, awarded, deducted, awarded - deducted);
+                var date = new DateOnly(g.Year, g.Month, g.Day);
+                return new StudentAppleDailyBucket(date, g.Awarded, g.Deducted, g.Awarded - g.Deducted);
             })
             .OrderBy(x => x.Date)
             .ToList();

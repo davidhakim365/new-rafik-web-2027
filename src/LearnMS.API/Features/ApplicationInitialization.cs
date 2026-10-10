@@ -56,6 +56,16 @@ public static class ApplicationInitialization
             Console.WriteLine($"EnsureAssistantTraces failed: {ex.Message}");
         }
 
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await QueryPerformanceSchema.EnsureAsync(db);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EnsureQueryPerformanceIndexes failed: {ex.Message}");
+        }
+
         var administrationService = scope.ServiceProvider.GetRequiredService<IAdministrationService>();
         var administrationConfig = scope.ServiceProvider.GetRequiredService<IOptions<AdministrationConfig>>();
 
