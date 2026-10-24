@@ -77,9 +77,51 @@ const PaymentRequestSchema = z.object({
 
 type PaymentRequestForm = z.infer<typeof PaymentRequestSchema>;
 
-function CopyableMethod({ label, value }: { label: string; value: string }) {
+function InstapayMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} aria-hidden="true">
+      <rect x="6" y="10" width="46" height="60" rx="12" fill="currentColor" />
+      <path
+        d="M28 28h16M36 20v24"
+        stroke="white"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M44 46l22-8-8 22-4-10z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function WalletMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} aria-hidden="true">
+      <rect x="8" y="18" width="64" height="46" rx="10" fill="currentColor" />
+      <path
+        d="M8 30h64"
+        stroke="white"
+        strokeWidth="4"
+      />
+      <circle cx="58" cy="46" r="6" fill="white" />
+      <rect x="18" y="12" width="28" height="12" rx="4" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CopyableMethod({
+  label,
+  value,
+  variant,
+}: {
+  label: string;
+  value: string;
+  variant: "instapay" | "wallet";
+}) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const isInstapay = variant === "instapay";
 
   const copy = async () => {
     try {
@@ -96,26 +138,41 @@ function CopyableMethod({ label, value }: { label: string; value: string }) {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-      <button
-        type="button"
-        className="min-w-0 flex-1 text-start"
-        onClick={() => void copy()}
-      >
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate font-mono text-base font-semibold" dir="ltr">
+    <button
+      type="button"
+      onClick={() => void copy()}
+      className={cn(
+        "relative w-full overflow-hidden rounded-2xl px-4 py-5 text-start text-white shadow-md transition active:scale-[0.99] sm:px-5 sm:py-6",
+        isInstapay
+          ? "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-violet-800"
+          : "bg-gradient-to-br from-rose-500 via-red-600 to-red-800"
+      )}
+    >
+      {isInstapay ? (
+        <InstapayMark className="pointer-events-none absolute -bottom-6 end-0 h-36 w-36 text-white/20 sm:h-44 sm:w-44" />
+      ) : (
+        <WalletMark className="pointer-events-none absolute -bottom-5 end-0 h-36 w-36 text-white/20 sm:h-44 sm:w-44" />
+      )}
+      <div className="relative pe-16 sm:pe-24">
+        <p className="text-sm font-semibold uppercase tracking-wide text-white/80">
+          {label}
+        </p>
+        <p
+          className="mt-2 break-all font-mono text-3xl font-bold leading-none tracking-wide sm:text-4xl"
+          dir="ltr"
+        >
           {value}
         </p>
-      </button>
-      <Button type="button" variant="outline" size="sm" onClick={() => void copy()}>
+      </div>
+      <span className="relative mt-5 inline-flex items-center rounded-full bg-white/20 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
         {copied ? (
           <Check className="me-1.5 h-4 w-4" />
         ) : (
           <Copy className="me-1.5 h-4 w-4" />
         )}
         {copied ? t("payments.methods.copied") : t("payments.methods.copy")}
-      </Button>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -306,17 +363,19 @@ const StudentPayments = () => {
                   {t("payments.methods.description")}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2 px-6 pb-6">
+              <CardContent className="space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
                 {instapayNumber && (
                   <CopyableMethod
                     label={t("payments.methods.instapay")}
                     value={instapayNumber}
+                    variant="instapay"
                   />
                 )}
                 {walletNumber && (
                   <CopyableMethod
                     label={t("payments.methods.wallet")}
                     value={walletNumber}
+                    variant="wallet"
                   />
                 )}
               </CardContent>
