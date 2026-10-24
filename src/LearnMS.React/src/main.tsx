@@ -12,8 +12,11 @@ import App from "./App.tsx";
 import ModalProvider from "./components/modals/modal-provider.tsx";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./i18n";
+import { restoreDeviceKey } from "@/lib/device-key";
 
 import "./index.css";
+
+restoreDeviceKey();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -3,6 +3,7 @@ import { toast } from "@/components/ui/use-toast";
 import { getGetProfileQueryKey } from "@/generated/api";
 import { components } from "@/lib/api";
 import { ApiError } from "@/lib/axiosCustomInstant";
+import { rememberDeviceKey, selectDeviceKeyForLogin } from "@/lib/device-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
@@ -89,17 +90,18 @@ export function useLoginMutation() {
   >({
     mutationKey: ["login"],
     throwOnError: false,
-    mutationFn: (data) =>
-      api.post("/api/auth/login", data).then((res) => res.data),
-    onSuccess: (res) => {
+    mutationFn: (data) => {
+      selectDeviceKeyForLogin(data.email);
+      return api.post("/api/auth/login", data).then((res) => res.data);
+    },
+    onSuccess: (res, variables) => {
       if (!res.status) return;
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       localStorage.setItem("token", res.data.token);
-      if (res.data.deviceKey)
-        localStorage.setItem("deviceKey", res.data.deviceKey);
+      rememberDeviceKey(variables.email, res.data.deviceKey);
       qrc.invalidateQueries({ queryKey: ["account"] });
     },
   });

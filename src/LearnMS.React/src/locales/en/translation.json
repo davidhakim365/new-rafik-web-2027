@@ -577,7 +577,8 @@
         "welcomeBack": "Welcome back!",
         "idTaken": "ID already assigned with another account",
         "phoneTaken": "Phone number already assigned with another account",
-        "emailTaken": "Email already exists"
+        "emailTaken": "Email already exists",
+        "deviceLocked": "This account is locked to one device. Open the site from the same phone and browser you used the first time. If you changed phones, ask an assistant to unlink that device."
       }
     }
   },

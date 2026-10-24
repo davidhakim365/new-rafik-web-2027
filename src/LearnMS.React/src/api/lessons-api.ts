@@ -2,6 +2,7 @@ import { ApiResponse, api } from "@/api";
 import { getGetProfileQueryKey } from "@/generated/api";
 import { LessonDetails } from "@/types/lessons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { readActiveDeviceKey } from "@/lib/device-key";
 import { z } from "zod";
 
 export const useLessonsQuery = ({
@@ -316,7 +317,7 @@ export async function uploadLessonVideo({
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     }
 
-    const deviceKey = localStorage.getItem("deviceKey");
+    const deviceKey = readActiveDeviceKey();
     if (deviceKey) {
       xhr.setRequestHeader("DeviceKey", deviceKey);
     }

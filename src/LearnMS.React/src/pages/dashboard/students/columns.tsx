@@ -23,6 +23,7 @@ import {
   SingleStudentExam,
   SingleStudentLecture,
 } from "@/generated/model";
+import Confirmation from "@/components/confirmation";
 import { useModalStore } from "@/store/use-modal-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
@@ -230,15 +231,21 @@ const onQuickAddCredit = () => {
               )}
               Copy Credentials
             </Button>
-            <Button
-              onClick={onUnlink}
-              className="w-full gap-1 text-red-500 border-none hover:bg-red-500 hover:text-white text-xs"
-              variant="outline"
-              size="sm"
-            >
-              <Network className="w-3 h-3" />
-              Unlink
-            </Button>
+            <Confirmation
+              title="Unlink this device?"
+              description="The account stays closed until this student signs in again. That next sign-in locks the account to that one device, and every other device stays blocked."
+              onConfirm={onUnlink}
+              button={
+                <Button
+                  className="w-full gap-1 text-red-500 border-none hover:bg-red-500 hover:text-white text-xs"
+                  variant="outline"
+                  size="sm"
+                >
+                  <Network className="w-3 h-3" />
+                  Unlink
+                </Button>
+              }
+            />
             <Button
               onClick={onQuickAddCredit}
               className="w-full gap-1 text-green-600 hover:bg-green-100 hover:text-green-800 text-xs"
@@ -277,15 +284,21 @@ const onQuickAddCredit = () => {
               )}
               <span className="hidden lg:inline">Copy Credentials</span>
             </Button>
-            <Button
-              onClick={onUnlink}
-              className="gap-2 text-red-500 border-none hover:bg-red-500 hover:text-white"
-              variant="outline"
-              size="sm"
-            >
-              <Network className="w-4 h-4" />
-              <span className="hidden lg:inline">Unlink</span>
-            </Button>
+            <Confirmation
+              title="Unlink this device?"
+              description="The account stays closed until this student signs in again. That next sign-in locks the account to that one device, and every other device stays blocked."
+              onConfirm={onUnlink}
+              button={
+                <Button
+                  className="gap-2 text-red-500 border-none hover:bg-red-500 hover:text-white"
+                  variant="outline"
+                  size="sm"
+                >
+                  <Network className="w-4 h-4" />
+                  <span className="hidden lg:inline">Unlink</span>
+                </Button>
+              }
+            />
             <Button
               onClick={onQuickAddCredit}
               className="gap-2 text-green-600 hover:bg-green-100 hover:text-green-800"

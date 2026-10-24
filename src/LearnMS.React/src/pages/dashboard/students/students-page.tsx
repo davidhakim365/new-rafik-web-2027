@@ -179,8 +179,8 @@ const StudentsPage = () => {
               title="Unlink all student devices?"
               description={
                 level === "all" && linkedDeviceCount > 0
-                  ? `This will unlink ${linkedDeviceCount} linked device${linkedDeviceCount === 1 ? "" : "s"} across all students. They will need to log in again.`
-                  : "This will unlink every linked student device, not just the current page or level. Students will need to log in again."
+                  ? `This clears ${linkedDeviceCount} device lock${linkedDeviceCount === 1 ? "" : "s"}. Each account can then be claimed by whatever device signs in next, and that device becomes the only one allowed.`
+                  : "This clears every student device lock, not just the current page or level. The next sign-in on each account locks it to that device."
               }
               disabled={unlinkAllDevices.isPending}
               onConfirm={onUnlinkAllDevices}

@@ -115,7 +115,10 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
             {
                 return AuthenticateResult.Fail("DeviceKey header was not found.");
             }
-            else if (deviceKey.FirstOrDefault() != session.DeviceKey)
+
+            var presentedKey = deviceKey.FirstOrDefault()?.Trim();
+            if (string.IsNullOrEmpty(presentedKey) ||
+                !string.Equals(presentedKey, session.DeviceKey, StringComparison.OrdinalIgnoreCase))
             {
                 return AuthenticateResult.Fail("Another device is linked with this account.");
             }

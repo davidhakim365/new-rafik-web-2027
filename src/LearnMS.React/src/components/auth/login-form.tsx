@@ -77,8 +77,7 @@ const LoginForm = () => {
       onError: (error) => {
         if (error.code === "auth/already-device-associated") {
           openModal("error-modal", {
-            render: () =>
-              "Another device is linked with this account, please contact assistants to register this device for you",
+            render: () => t("auth.forms.errors.deviceLocked"),
           });
         } else if (error.code === "auth/account-blocked") {
           openModal("error-modal", {

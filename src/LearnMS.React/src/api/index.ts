@@ -1,5 +1,6 @@
 import { toast } from "@/components/ui/use-toast";
 import { ApiError } from "@/lib/axiosCustomInstant";
+import { readActiveDeviceKey } from "@/lib/device-key";
 import axios from "axios";
 
 export class ApiResponse<TData> {
@@ -11,7 +12,7 @@ export const api = axios.create();
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  const deviceKey = localStorage.getItem("deviceKey");
+  const deviceKey = readActiveDeviceKey();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

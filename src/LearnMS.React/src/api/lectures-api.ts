@@ -8,6 +8,7 @@ import {
 import { LectureDetails, SingleLectureStudent } from "@/types/lectures";
 import { PageList } from "@/types/page-list";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { readActiveDeviceKey } from "@/lib/device-key";
 import { z } from "zod";
 
 export const useLectureQuery = ({
@@ -418,7 +419,7 @@ export async function uploadLecturePdf({
   }
 
   const token = localStorage.getItem("token");
-  const deviceKey = localStorage.getItem("deviceKey");
+  const deviceKey = readActiveDeviceKey();
 
   return new Promise<{ id: string; name: string }>((resolve, reject) => {
     const xhr = new XMLHttpRequest();

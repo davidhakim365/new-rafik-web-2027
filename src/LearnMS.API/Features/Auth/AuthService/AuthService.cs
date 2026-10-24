@@ -139,24 +139,29 @@ public sealed class AuthService : IAuthService
             throw new ApiException(AuthErrors.AccountBlocked);
         }
 
-        if (student != null && !string.IsNullOrEmpty(student.DeviceKey) && student.DeviceKey != command.DeviceKey)
-        {
-            throw new ApiException(AuthErrors.AlreadyDeviceAssociated);
-        }
-
         if (!_passwordHasher.Verify(account.PasswordHash, command.Password.Trim()))
         {
             throw new ApiException(AuthErrors.InCorrectPassword);
         }
 
-
-
-
-        if (student != null && string.IsNullOrEmpty(student.DeviceKey))
+        if (student != null)
         {
-            student.DeviceKey = Guid.NewGuid().ToString();
-            _dbContext.Update(account);
-            await _dbContext.SaveChangesAsync();
+            var linkedKey = NormalizeDeviceKey(student.DeviceKey);
+            var presentedKey = NormalizeDeviceKey(command.DeviceKey);
+
+            if (linkedKey != null && !string.Equals(linkedKey, presentedKey, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ApiException(AuthErrors.AlreadyDeviceAssociated);
+            }
+
+            // Bind this browser's id once. A new id on every login made the same
+            // phone look like another device, so assistants had to unlink it.
+            if (linkedKey == null)
+            {
+                student.DeviceKey = presentedKey ?? Guid.NewGuid().ToString();
+                _dbContext.Update(account);
+                await _dbContext.SaveChangesAsync();
+            }
         }
 
         var token = GetToken(GetClaims(account.User));
@@ -169,6 +174,12 @@ public sealed class AuthService : IAuthService
             DeviceKey = student?.DeviceKey,
             Role = account.User.Role
         };
+    }
+
+    private static string? NormalizeDeviceKey(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        return Guid.TryParse(raw.Trim(), out var parsed) ? parsed.ToString() : null;
     }
 
     public Task<LoginResult> ExecuteAsync(LoginExternalCommand command)
