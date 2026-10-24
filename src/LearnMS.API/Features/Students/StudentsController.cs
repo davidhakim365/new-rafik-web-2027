@@ -257,6 +257,28 @@ public sealed class StudentsController(IStudentsService studentsService, ICurren
         };
     }
 
+    [HttpPut("{studentId:guid}/multiple-devices")]
+    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
+    [SwaggerOperation(OperationId = "SetStudentMultipleDevices")]
+    public async Task<ApiWrapper.Success<SetStudentMultipleDevicesResult>> SetMultipleDevices(
+        Guid studentId,
+        [FromBody] SetStudentMultipleDevicesRequest request)
+    {
+        var result = await studentsService.ExecuteAsync(new SetStudentMultipleDevicesCommand
+        {
+            StudentId = studentId,
+            AllowMultipleDevices = request.AllowMultipleDevices
+        });
+
+        return new ApiWrapper.Success<SetStudentMultipleDevicesResult>
+        {
+            Data = result,
+            Message = result.AllowMultipleDevices
+                ? "This account can now sign in from more than one device"
+                : "This account is locked to one device again"
+        };
+    }
+
     [HttpPut("{studentId:guid}/block")]
     [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageStudents])]
     [SwaggerOperation(OperationId = "SetStudentBlocked")]

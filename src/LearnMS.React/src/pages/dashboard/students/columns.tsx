@@ -1,6 +1,7 @@
 import {
   useDeleteStudentMutation,
   useSetStudentBlockedMutation,
+  useSetStudentMultipleDevicesMutation,
 } from "@/api/students-api";
 import { getStudent, useAddStudentCredit } from "@/generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,11 +40,11 @@ import {
   Network,
   ShieldCheck,
   Trash,
+  Users,
 } from "lucide-react";
 import { FaChrome } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { getFirstCharacters } from "../../../lib/utils";
-import Confirmation from "@/components/confirmation";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -87,7 +88,9 @@ export const studentsColumns: ColumnDef<SingleStudent>[] = [
       const qc = useQueryClient();
       const deleteStudentMutation = useDeleteStudentMutation();
       const setBlockedMutation = useSetStudentBlockedMutation();
+      const setMultipleDevicesMutation = useSetStudentMultipleDevicesMutation();
       const isBlocked = student.isBlocked === true;
+      const allowMultipleDevices = student.allowMultipleDevices === true;
       const [isCopyingCredentials, setIsCopyingCredentials] = useState(false);
 
       const onCopyCredentials = async () => {
@@ -145,6 +148,31 @@ export const studentsColumns: ColumnDef<SingleStudent>[] = [
        const onUnlink = () => {
     unlinkDeviceMutation.mutate({ studentId: student.id });
   };
+
+      const onToggleMultipleDevices = () => {
+        const next = !allowMultipleDevices;
+        setMultipleDevicesMutation.mutate(
+          { studentId: student.id, allowMultipleDevices: next },
+          {
+            onSuccess: () => {
+              qc.invalidateQueries({ queryKey: getGetAllStudentsQueryKey() });
+              toast({
+                title: next ? "Multiple devices allowed" : "Locked to one device",
+                description: next
+                  ? `${student.fullName} can sign in from other phones.`
+                  : `${student.fullName} can only use the original device.`,
+              });
+            },
+            onError: () => {
+              toast({
+                title: "Could not update devices",
+                description: "The account device setting was not changed.",
+                variant: "destructive",
+              });
+            },
+          }
+        );
+      };
 
       const onDeleting = () => {
         deleteStudentMutation.mutate({ id: student.id });
@@ -246,6 +274,35 @@ const onQuickAddCredit = () => {
                 </Button>
               }
             />
+            <Confirmation
+              title={
+                allowMultipleDevices
+                  ? "Lock this account to one device?"
+                  : "Allow this account on multiple devices?"
+              }
+              description={
+                allowMultipleDevices
+                  ? "Only the original linked device can keep using this account. Other phones are signed out."
+                  : "Anyone with this student's email and password can sign in from other phones. Turning this off later locks the account back to the original device."
+              }
+              disabled={setMultipleDevicesMutation.isPending}
+              onConfirm={onToggleMultipleDevices}
+              button={
+                <Button
+                  className={
+                    allowMultipleDevices
+                      ? "w-full gap-1 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "w-full gap-1 text-xs"
+                  }
+                  variant={allowMultipleDevices ? "default" : "outline"}
+                  size="sm"
+                  disabled={setMultipleDevicesMutation.isPending}
+                >
+                  <Users className="w-3 h-3" />
+                  {allowMultipleDevices ? "One device" : "Multiple"}
+                </Button>
+              }
+            />
             <Button
               onClick={onQuickAddCredit}
               className="w-full gap-1 text-green-600 hover:bg-green-100 hover:text-green-800 text-xs"
@@ -296,6 +353,33 @@ const onQuickAddCredit = () => {
                 >
                   <Network className="w-4 h-4" />
                   <span className="hidden lg:inline">Unlink</span>
+                </Button>
+              }
+            />
+            <Confirmation
+              title={
+                allowMultipleDevices
+                  ? "Lock this account to one device?"
+                  : "Allow this account on multiple devices?"
+              }
+              description={
+                allowMultipleDevices
+                  ? "Only the original linked device can keep using this account. Other phones are signed out."
+                  : "Anyone with this student's email and password can sign in from other phones. Turning this off later locks the account back to the original device."
+              }
+              disabled={setMultipleDevicesMutation.isPending}
+              onConfirm={onToggleMultipleDevices}
+              button={
+                <Button
+                  className="gap-2"
+                  variant={allowMultipleDevices ? "default" : "outline"}
+                  size="sm"
+                  disabled={setMultipleDevicesMutation.isPending}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden lg:inline">
+                    {allowMultipleDevices ? "One device" : "Multiple"}
+                  </span>
                 </Button>
               }
             />
@@ -488,7 +572,13 @@ const onQuickAddCredit = () => {
     cell: ({ row }) => {
       const student = row.original;
       return (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center gap-1">
+          {student.allowMultipleDevices ? (
+            <Users
+              className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
+              title="Multiple devices allowed"
+            />
+          ) : null}
           {student.deviceLinked ? (
             <FaChrome className="w-4 h-4 sm:w-6 sm:h-6 text-primary" title="Device Linked" />
           ) : (

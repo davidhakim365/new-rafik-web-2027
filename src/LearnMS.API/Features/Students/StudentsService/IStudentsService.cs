@@ -12,6 +12,7 @@ public interface IStudentsService
     public Task ExecuteAsync(UnlinkStudentDeviceCommand command);
     public Task<UnlinkAllStudentDevicesResult> ExecuteAsync(UnlinkAllStudentDevicesCommand command);
     public Task<SetStudentBlockedResult> ExecuteAsync(SetStudentBlockedCommand command);
+    public Task<SetStudentMultipleDevicesResult> ExecuteAsync(SetStudentMultipleDevicesCommand command);
     public Task ExecuteAsync(UpdateLectureEnrollmentExpirationCommand command);
 
     public Task<PageList<SingleStudent>> QueryAsync(GetStudentsQuery query);

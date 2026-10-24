@@ -96,6 +96,7 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
                 Id = account.Id,
                 Role = account.User.Role,
                 IsBlocked = account.User is Student blocked && blocked.IsBlocked,
+                AllowMultipleDevices = account.User is Student multi && multi.AllowMultipleDevices,
                 DeviceKey = account.User is Student linked ? linked.DeviceKey : null,
                 Permissions = account.User is Assistant assistant
                     ? assistant.Permissions.ToArray()
@@ -111,16 +112,19 @@ public sealed class CustomJwtBearerHandler : JwtBearerHandler
                 return AuthenticateResult.Fail("your account is block and please contact web support");
             }
 
-            if (!Request.Headers.TryGetValue("DeviceKey", out var deviceKey))
+            if (!session.AllowMultipleDevices)
             {
-                return AuthenticateResult.Fail("DeviceKey header was not found.");
-            }
+                if (!Request.Headers.TryGetValue("DeviceKey", out var deviceKey))
+                {
+                    return AuthenticateResult.Fail("DeviceKey header was not found.");
+                }
 
-            var presentedKey = deviceKey.FirstOrDefault()?.Trim();
-            if (string.IsNullOrEmpty(presentedKey) ||
-                !string.Equals(presentedKey, session.DeviceKey, StringComparison.OrdinalIgnoreCase))
-            {
-                return AuthenticateResult.Fail("Another device is linked with this account.");
+                var presentedKey = deviceKey.FirstOrDefault()?.Trim();
+                if (string.IsNullOrEmpty(presentedKey) ||
+                    !string.Equals(presentedKey, session.DeviceKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return AuthenticateResult.Fail("Another device is linked with this account.");
+                }
             }
         }
 

@@ -144,23 +144,31 @@ public sealed class AuthService : IAuthService
             throw new ApiException(AuthErrors.InCorrectPassword);
         }
 
+        string? deviceKeyToReturn = null;
         if (student != null)
         {
             var linkedKey = NormalizeDeviceKey(student.DeviceKey);
             var presentedKey = NormalizeDeviceKey(command.DeviceKey);
+            var sameDevice = linkedKey != null
+                && string.Equals(linkedKey, presentedKey, StringComparison.OrdinalIgnoreCase);
 
-            if (linkedKey != null && !string.Equals(linkedKey, presentedKey, StringComparison.OrdinalIgnoreCase))
+            if (!student.AllowMultipleDevices && linkedKey != null && !sameDevice)
             {
                 throw new ApiException(AuthErrors.AlreadyDeviceAssociated);
             }
 
-            // Bind this browser's id once. A new id on every login made the same
-            // phone look like another device, so assistants had to unlink it.
+            // Bind the first browser once. While multiple devices are allowed,
+            // a different browser can sign in without receiving that key.
             if (linkedKey == null)
             {
                 student.DeviceKey = presentedKey ?? Guid.NewGuid().ToString();
                 _dbContext.Update(account);
                 await _dbContext.SaveChangesAsync();
+                deviceKeyToReturn = student.DeviceKey;
+            }
+            else if (!student.AllowMultipleDevices || sameDevice)
+            {
+                deviceKeyToReturn = student.DeviceKey;
             }
         }
 
@@ -171,7 +179,7 @@ public sealed class AuthService : IAuthService
         {
             Id = account.Id,
             Token = token,
-            DeviceKey = student?.DeviceKey,
+            DeviceKey = deviceKeyToReturn,
             Role = account.User.Role
         };
     }

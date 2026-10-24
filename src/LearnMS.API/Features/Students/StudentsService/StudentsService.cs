@@ -221,6 +221,29 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
         };
     }
 
+    public async Task<SetStudentMultipleDevicesResult> ExecuteAsync(SetStudentMultipleDevicesCommand command)
+    {
+        var student =
+            await db.Set<Student>().FirstOrDefaultAsync(x => x.Id == command.StudentId)
+            ?? throw new ApiException(StudentsErrors.NotFound);
+
+        if (student.AllowMultipleDevices != command.AllowMultipleDevices)
+        {
+            student.AllowMultipleDevices = command.AllowMultipleDevices;
+            db.Update(student);
+            await db.SaveChangesAsync();
+            sessions.Invalidate(student.Id);
+        }
+
+        return new SetStudentMultipleDevicesResult
+        {
+            Id = student.Id,
+            FullName = student.FullName,
+            StudentCode = student.StudentCode,
+            AllowMultipleDevices = student.AllowMultipleDevices
+        };
+    }
+
     public async Task<UnlinkAllStudentDevicesResult> ExecuteAsync(UnlinkAllStudentDevicesCommand _)
     {
         string? emptyDeviceKey = null;
@@ -258,6 +281,7 @@ public async Task ExecuteAsync(DeleteStudentCommand command)
             {
                 Id = students.Id,
                 DeviceLinked = !string.IsNullOrWhiteSpace(students.DeviceKey),
+                AllowMultipleDevices = students.AllowMultipleDevices,
                 IsBlocked = students.IsBlocked,
                 Email = accounts.Email,
                 Credit = students.Credit,

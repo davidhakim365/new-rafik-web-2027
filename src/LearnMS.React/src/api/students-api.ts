@@ -256,6 +256,34 @@ export const useSetStudentBlockedMutation = () => {
   });
 };
 
+export type SetStudentMultipleDevicesResult = {
+  id: string;
+  fullName: string;
+  studentCode: string;
+  allowMultipleDevices: boolean;
+};
+
+export const useSetStudentMultipleDevicesMutation = () => {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiResponse<SetStudentMultipleDevicesResult>,
+    Error,
+    { studentId: string; allowMultipleDevices: boolean }
+  >({
+    throwOnError: false,
+    mutationFn: ({ studentId, allowMultipleDevices }) =>
+      api
+        .put(`/api/students/${studentId}/multiple-devices`, {
+          allowMultipleDevices,
+        })
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["/api/students"] });
+    },
+  });
+};
+
 export const useStudentQuery = ({ id }: { id: string }) => {
   return useQuery<ApiResponse<Student>>({
     queryKey: ["student", { id }],

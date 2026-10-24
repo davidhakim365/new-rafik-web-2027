@@ -10,6 +10,8 @@ export interface SingleStudent {
   apples?: number;
   credit: number;
   deviceLinked: boolean;
+  /** When true, this account may sign in from more than one device. */
+  allowMultipleDevices?: boolean;
   /** When true, student cannot sign in until unblocked. */
   isBlocked?: boolean;
   email: string;

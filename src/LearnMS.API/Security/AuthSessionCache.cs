@@ -8,6 +8,7 @@ public sealed class AuthSession
     public required Guid Id { get; init; }
     public required UserRole Role { get; init; }
     public bool IsBlocked { get; init; }
+    public bool AllowMultipleDevices { get; init; }
     public string? DeviceKey { get; init; }
     public Permission[] Permissions { get; init; } = [];
 }

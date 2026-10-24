@@ -26,5 +26,6 @@ public sealed record SingleStudent
     [Required] public required int Apples { get; init; }
     [Required] public required StudentLevel Level { get; init; }
     [Required] public required bool DeviceLinked { get; init; }
+    [Required] public required bool AllowMultipleDevices { get; init; }
     [Required] public required bool IsBlocked { get; init; }
 }

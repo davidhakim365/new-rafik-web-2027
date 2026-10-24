@@ -88,6 +88,7 @@ public static class AssistantTraceDescription
             ("POST", "students/apples") => "Changed student apples",
             ("POST", "students/unlink-device") => "Unlinked a student device",
             ("PUT", "students/block") => "Changed a student block",
+            ("PUT", "students/multiple-devices") => "Changed whether a student can use multiple devices",
             ("POST", "students/unlink-all-devices") => "Unlinked every student device",
             ("PATCH", "students/lectures/enrollment") => "Changed lecture expiration",
 
