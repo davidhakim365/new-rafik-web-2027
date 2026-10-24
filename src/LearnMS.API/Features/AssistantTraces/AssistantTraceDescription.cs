@@ -127,6 +127,7 @@ public static class AssistantTraceDescription
             ("DELETE", "questions") => "Deleted a question",
 
             ("PATCH", "profile") => "Updated their profile",
+            ("POST", "uploads/cloudinary") => "Uploaded an image",
             ("POST", "uploads/imgbb") => "Uploaded an image",
             ("POST", "assets/delete") => "Deleted a file",
             ("PUT", "assets") => "Updated a file",

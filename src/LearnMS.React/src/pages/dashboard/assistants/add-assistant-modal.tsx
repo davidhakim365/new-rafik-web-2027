@@ -61,7 +61,7 @@ const AddAssistantModal: React.FC<AddAssistantModalProps> = ({ onClose }) => {
         <DialogHeader>
           <DialogTitle>Create Assistant</DialogTitle>
           <DialogDescription>
-            Add name, login credentials, and an optional profile photo (ImgBB).
+            Add name, login credentials, and an optional profile photo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

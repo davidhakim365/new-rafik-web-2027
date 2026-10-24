@@ -1,10 +1,10 @@
 import { api } from "@/api";
 
-export async function uploadToImgBb(file: File): Promise<string> {
+export async function uploadToCloudinary(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   const res = await api.post<{ status: boolean; data: { url: string }; message: string }>(
-    "/api/uploads/imgbb",
+    "/api/uploads/cloudinary",
     formData,
     { headers: { "Content-Type": "multipart/form-data" } }
   );

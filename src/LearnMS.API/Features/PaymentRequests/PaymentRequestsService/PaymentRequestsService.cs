@@ -1,5 +1,5 @@
 using LearnMS.API.Common;
-using LearnMS.API.Common.ImgBb;
+using LearnMS.API.Common.Cloudinary;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.PaymentRequests.Contracts;
@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LearnMS.API.Features.PaymentRequests;
 
-public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbService) : IPaymentRequestsService
+public sealed class PaymentRequestsService(AppDbContext db, ICloudinaryService cloudinary) : IPaymentRequestsService
 {
     private const decimal MinAmount = 1;
     private const decimal MaxAmount = 100_000;
@@ -39,7 +39,7 @@ public sealed class PaymentRequestsService(AppDbContext db, IImgBbService imgBbS
         if (hasPending)
             throw new ApiException(PaymentRequestsErrors.PendingExists);
 
-        var upload = await imgBbService.UploadWithThumbAsync(command.Image, ct);
+        var upload = await cloudinary.UploadWithThumbAsync(command.Image, ct);
 
         var note = string.IsNullOrWhiteSpace(command.Note) ? null : command.Note.Trim();
         if (note is { Length: > 500 })

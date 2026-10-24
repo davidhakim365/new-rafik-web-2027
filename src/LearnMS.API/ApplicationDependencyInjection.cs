@@ -123,10 +123,10 @@ services.AddEndpointsApiExplorer();
         services.Configure<EmailConfig>(cfg.GetSection(EmailConfig.Section));
         services.AddSingleton<IEmailService, EmailService>();
         services.AddSingleton<StorageService>();
-        services.Configure<LearnMS.API.Common.ImgBb.ImgBbConfig>(
-            cfg.GetSection(LearnMS.API.Common.ImgBb.ImgBbConfig.Section));
-        services.AddHttpClient("ImgBb");
-        services.AddScoped<LearnMS.API.Common.ImgBb.IImgBbService, LearnMS.API.Common.ImgBb.ImgBbService>();
+        services.Configure<LearnMS.API.Common.Cloudinary.CloudinaryConfig>(
+            cfg.GetSection(LearnMS.API.Common.Cloudinary.CloudinaryConfig.Section));
+        services.AddHttpClient("Cloudinary");
+        services.AddScoped<LearnMS.API.Common.Cloudinary.ICloudinaryService, LearnMS.API.Common.Cloudinary.CloudinaryService>();
     }
 
     private static void RegisterAuth(IServiceCollection services, IConfiguration cfg)

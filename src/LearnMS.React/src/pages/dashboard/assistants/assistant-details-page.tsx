@@ -429,7 +429,7 @@ function AssistantDetails({ assistant }: { assistant: Assistant }) {
             control={form.control}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Profile photo (ImgBB)</FormLabel>
+                <FormLabel>Profile photo</FormLabel>
                 <FormControl>
                   <ImageUploadField
                     value={field.value}

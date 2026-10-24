@@ -6,7 +6,7 @@ public sealed record AddQuestionRequest
 {
     public required string Text { get; set; }
     public required string Description { get; set; }
-    /// <summary>ImgBB URL for the question image.</summary>
+    /// <summary>Hosted URL for the question image.</summary>
     public string? Image { get; set; }
 
     public string? SourceTitle { get; set; }

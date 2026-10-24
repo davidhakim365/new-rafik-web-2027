@@ -5,7 +5,7 @@ import {
   imageFileFromClipboardEvent,
   imageFileFromDropEvent,
 } from "@/lib/clipboard-image";
-import { uploadToImgBb } from "@/lib/imgbb-upload";
+import { uploadToCloudinary } from "@/lib/cloudinary-upload";
 import { cn } from "@/lib/utils";
 import { ClipboardPaste, ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -89,7 +89,7 @@ function unbindDocumentPasteIfIdle() {
   lastTargetId = null;
 }
 
-/** Upload an image via ImgBB. Supports file picker, drag-and-drop, and clipboard paste. */
+/** Upload an image via Cloudinary. Supports file picker, drag-and-drop, and clipboard paste. */
 export function ImageUploadField({
   value,
   onChange,
@@ -128,7 +128,7 @@ export function ImageUploadField({
 
       setBusy(true);
       try {
-        const url = await uploadToImgBb(file);
+        const url = await uploadToCloudinary(file);
         onChange(url);
       } catch (e) {
         toast({
