@@ -48,6 +48,12 @@ export type PaymentRequestRejectionReason = {
   sortOrder: number;
 };
 
+export type PaymentSettings = {
+  instapayNumber?: string | null;
+  walletNumber?: string | null;
+  updatedAt: string;
+};
+
 type ApiSuccess<T> = {
   data: T;
   message?: string;
@@ -79,6 +85,10 @@ export function getPaymentRequestStatsQueryKey() {
 
 export function getPaymentRequestRejectionReasonsQueryKey() {
   return [PAYMENT_REQUESTS_QUERY_KEY, "rejection-reasons"] as const;
+}
+
+export function getPaymentSettingsQueryKey() {
+  return [PAYMENT_REQUESTS_QUERY_KEY, "settings"] as const;
 }
 
 const getPaymentRequests = (params: GetPaymentRequestsParams) => {
@@ -129,6 +139,19 @@ const createPaymentRequestRejectionReason = (text: string) =>
     )
     .then((res) => res.data);
 
+const getPaymentSettings = () =>
+  api
+    .get<ApiSuccess<PaymentSettings>>("/api/payment-requests/settings")
+    .then((res) => res.data);
+
+const updatePaymentSettings = (body: {
+  instapayNumber?: string | null;
+  walletNumber?: string | null;
+}) =>
+  api
+    .put<ApiSuccess<PaymentSettings>>("/api/payment-requests/settings", body)
+    .then((res) => res.data);
+
 const createPaymentRequest = (formData: FormData) =>
   api
     .post<ApiSuccess<PaymentRequestItem>>("/api/payment-requests", formData)
@@ -168,6 +191,24 @@ export function usePaymentRequestStatsQuery() {
   return useQuery({
     queryKey: getPaymentRequestStatsQueryKey(),
     queryFn: getPaymentRequestStats,
+  });
+}
+
+export function usePaymentSettingsQuery() {
+  return useQuery({
+    queryKey: getPaymentSettingsQueryKey(),
+    queryFn: getPaymentSettings,
+  });
+}
+
+export function useUpdatePaymentSettingsMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    throwOnError: false,
+    mutationFn: updatePaymentSettings,
+    onSuccess: (res) => {
+      qc.setQueryData(getPaymentSettingsQueryKey(), res);
+    },
   });
 }
 

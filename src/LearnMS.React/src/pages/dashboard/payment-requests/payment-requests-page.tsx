@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -38,8 +39,11 @@ import {
   usePaymentRequestRejectionReasonsQuery,
   usePaymentRequestStatsQuery,
   usePaymentRequestsQuery,
+  usePaymentSettingsQuery,
   useRejectPaymentRequestMutation,
+  useUpdatePaymentSettingsMutation,
 } from "@/api/payment-requests-api";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { CheckCircle2, Clock, Plus, Search, Wallet, XCircle } from "lucide-react";
@@ -106,6 +110,7 @@ function StatusCountCard({
 }
 
 const PaymentRequestsPage = () => {
+  const { isTeacher } = useDashboardPermissions();
   const [searchParams, setSearchParams] = useSearchParams();
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: parseInt(searchParams.get("page") || "1", 10) - 1,
@@ -119,6 +124,8 @@ const PaymentRequestsPage = () => {
   );
   const [rejectOption, setRejectOption] = useState("");
   const [otherReason, setOtherReason] = useState("");
+  const [instapayNumber, setInstapayNumber] = useState("");
+  const [walletNumber, setWalletNumber] = useState("");
 
   const query = usePaymentRequestsQuery({
     page: pageIndex + 1,
@@ -131,7 +138,15 @@ const PaymentRequestsPage = () => {
   const confirmMutation = useConfirmPaymentRequestMutation();
   const rejectMutation = useRejectPaymentRequestMutation();
   const addReasonMutation = useCreatePaymentRequestRejectionReasonMutation();
+  const settingsQuery = usePaymentSettingsQuery();
+  const updateSettings = useUpdatePaymentSettingsMutation();
   const rejectionReasons = reasonsQuery.data?.data ?? [];
+
+  useEffect(() => {
+    if (!isTeacher || !settingsQuery.data?.data) return;
+    setInstapayNumber(settingsQuery.data.data.instapayNumber ?? "");
+    setWalletNumber(settingsQuery.data.data.walletNumber ?? "");
+  }, [isTeacher, settingsQuery.data?.data]);
 
   const pendingId = confirmMutation.isPending
     ? confirmMutation.variables
@@ -386,6 +401,72 @@ const PaymentRequestsPage = () => {
       icon={Wallet}
       fullWidth
     >
+      {isTeacher && (
+        <DashboardCard>
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Payment methods</h3>
+            <p className="text-sm text-muted-foreground">
+              Students see these numbers on the transfer request page and can copy them.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="instapay-number">InstaPay number</Label>
+              <Input
+                id="instapay-number"
+                value={instapayNumber}
+                maxLength={64}
+                placeholder="InstaPay number"
+                onChange={(e) => setInstapayNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wallet-number">Wallet number</Label>
+              <Input
+                id="wallet-number"
+                value={walletNumber}
+                maxLength={64}
+                placeholder="Wallet number"
+                onChange={(e) => setWalletNumber(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="button"
+              disabled={updateSettings.isPending}
+              onClick={() => {
+                updateSettings.mutate(
+                  {
+                    instapayNumber: instapayNumber.trim(),
+                    walletNumber: walletNumber.trim(),
+                  },
+                  {
+                    onSuccess: () => {
+                      toast({
+                        title: "Payment methods saved",
+                        description:
+                          "Students can now copy these numbers when they request a transfer.",
+                      });
+                    },
+                    onError: (error) => {
+                      toast({
+                        title: "Could not save payment methods",
+                        description:
+                          error instanceof Error ? error.message : "Try again.",
+                        variant: "destructive",
+                      });
+                    },
+                  }
+                );
+              }}
+            >
+              {updateSettings.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </DashboardCard>
+      )}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatusCountCard
           title="Pending"

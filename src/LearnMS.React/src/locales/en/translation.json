@@ -348,6 +348,15 @@
     "paymentCard": {
       "title": "Payment"
     },
+    "methods": {
+      "title": "Send the transfer to",
+      "description": "Copy the number, send the amount, then upload the screenshot below.",
+      "instapay": "InstaPay",
+      "wallet": "Wallet",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the number and copy it manually."
+    },
     "request": {
       "title": "Transfer request",
       "description": "Upload your InstaPay, Vodafone Cash, or bank transfer screenshot.",

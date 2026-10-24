@@ -14,6 +14,22 @@ public sealed class CreatePaymentRequestRequest
     public IFormFile? Image { get; init; }
 }
 
+public sealed record PaymentSettingsResult
+{
+    public string? InstapayNumber { get; init; }
+    public string? WalletNumber { get; init; }
+    public required DateTime UpdatedAt { get; init; }
+}
+
+public sealed class UpdatePaymentSettingsRequest
+{
+    [MaxLength(64)]
+    public string? InstapayNumber { get; init; }
+
+    [MaxLength(64)]
+    public string? WalletNumber { get; init; }
+}
+
 public sealed class RejectPaymentRequestRequest
 {
     [MaxLength(500)]

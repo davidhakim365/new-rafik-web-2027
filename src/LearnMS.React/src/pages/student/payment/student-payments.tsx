@@ -29,12 +29,13 @@ import {
   PaymentRequestItem,
   useCreatePaymentRequestMutation,
   useMyPaymentRequestsQuery,
+  usePaymentSettingsQuery,
 } from "@/api/payment-requests-api";
 import { useGetProfile, useRedeemCreditCode } from "@/generated/api";
 import { toast, cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { ImageIcon, Upload, Wallet, X } from "lucide-react";
+import { Check, Copy, ImageIcon, Upload, Wallet, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
@@ -76,6 +77,48 @@ const PaymentRequestSchema = z.object({
 
 type PaymentRequestForm = z.infer<typeof PaymentRequestSchema>;
 
+function CopyableMethod({ label, value }: { label: string; value: string }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+      toast({ title: t("payments.methods.copied") });
+    } catch {
+      toast({
+        title: t("payments.methods.copyFailed"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
+      <button
+        type="button"
+        className="min-w-0 flex-1 text-start"
+        onClick={() => void copy()}
+      >
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="truncate font-mono text-base font-semibold" dir="ltr">
+          {value}
+        </p>
+      </button>
+      <Button type="button" variant="outline" size="sm" onClick={() => void copy()}>
+        {copied ? (
+          <Check className="me-1.5 h-4 w-4" />
+        ) : (
+          <Copy className="me-1.5 h-4 w-4" />
+        )}
+        {copied ? t("payments.methods.copied") : t("payments.methods.copy")}
+      </Button>
+    </div>
+  );
+}
+
 function statusBadgeClass(status: string) {
   if (status === "Confirmed") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300";
@@ -90,6 +133,7 @@ const StudentPayments = () => {
   const { t } = useTranslation();
   const { data: profile, isLoading, refetch } = useGetProfile();
   const myRequests = useMyPaymentRequestsQuery();
+  const paymentSettings = usePaymentSettingsQuery();
   const createRequest = useCreatePaymentRequestMutation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewRequest, setPreviewRequest] = useState<PaymentRequestItem | null>(
@@ -136,6 +180,8 @@ const StudentPayments = () => {
 
   const image = requestForm.watch("image");
   const requests = myRequests.data?.data?.items ?? [];
+  const instapayNumber = paymentSettings.data?.data?.instapayNumber?.trim() ?? "";
+  const walletNumber = paymentSettings.data?.data?.walletNumber?.trim() ?? "";
   const hasPending = requests.some((item) => item.status === "Pending");
   const formLocked = createRequest.isPending || hasPending;
 
@@ -249,6 +295,33 @@ const StudentPayments = () => {
               </div>
             </CardContent>
           </Card>
+
+          {(instapayNumber || walletNumber) && (
+            <Card className="w-full border-0 shadow-lg bg-card/95 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  {t("payments.methods.title")}
+                </CardTitle>
+                <CardDescription>
+                  {t("payments.methods.description")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 px-6 pb-6">
+                {instapayNumber && (
+                  <CopyableMethod
+                    label={t("payments.methods.instapay")}
+                    value={instapayNumber}
+                  />
+                )}
+                {walletNumber && (
+                  <CopyableMethod
+                    label={t("payments.methods.wallet")}
+                    value={walletNumber}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="w-full border-0 shadow-lg bg-card/95 backdrop-blur-sm">
             <CardHeader className="pb-4">

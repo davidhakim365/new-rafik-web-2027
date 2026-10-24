@@ -34,6 +34,11 @@ public static class PaymentRequestsErrors
         "You already have a pending transfer request. Wait until it is confirmed or rejected before sending another.",
         StatusCodes.Status400BadRequest);
 
+    public static readonly ApiError InvalidPaymentMethod = new(
+        "payment-request/invalid-payment-method",
+        "InstaPay and wallet numbers must be 64 characters or fewer.",
+        StatusCodes.Status400BadRequest);
+
     public static readonly ApiError InvalidRejectionReason = new(
         "payment-request/invalid-rejection-reason",
         "A rejection comment is required.",

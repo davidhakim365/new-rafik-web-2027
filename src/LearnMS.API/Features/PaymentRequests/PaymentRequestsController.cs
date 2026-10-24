@@ -1,5 +1,6 @@
 using LearnMS.API.Common;
 using LearnMS.API.Entities;
+using LearnMS.API.Features.Auth;
 using LearnMS.API.Features.PaymentRequests.Contracts;
 using LearnMS.API.Security;
 using Microsoft.AspNetCore.Mvc;
@@ -43,6 +44,39 @@ public sealed class PaymentRequestsController(
         {
             Data = result,
             Message = "Payment request submitted. It will be added to your balance after the teacher confirms it."
+        };
+    }
+
+    [HttpGet("settings")]
+    [ApiAuthorize]
+    [SwaggerOperation(OperationId = "GetPaymentSettings")]
+    public async Task<ApiWrapper.Success<PaymentSettingsResult>> GetSettings(CancellationToken ct)
+    {
+        var result = await paymentRequestsService.GetSettingsAsync(ct);
+        return new ApiWrapper.Success<PaymentSettingsResult>
+        {
+            Data = result,
+            Message = "successfully retrieved payment settings"
+        };
+    }
+
+    [HttpPut("settings")]
+    [ApiAuthorize]
+    [SwaggerOperation(OperationId = "UpdatePaymentSettings")]
+    public async Task<ApiWrapper.Success<PaymentSettingsResult>> UpdateSettings(
+        [FromBody] UpdatePaymentSettingsRequest request,
+        CancellationToken ct)
+    {
+        var currentUser = await currentUserService.GetUserAsync()
+            ?? throw new ApiException(AuthErrors.Unauthorized);
+        if (currentUser.Role != UserRole.Teacher)
+            throw new ApiException(AuthErrors.Forbidden);
+
+        var result = await paymentRequestsService.UpdateSettingsAsync(request, ct);
+        return new ApiWrapper.Success<PaymentSettingsResult>
+        {
+            Data = result,
+            Message = "Payment methods updated"
         };
     }
 

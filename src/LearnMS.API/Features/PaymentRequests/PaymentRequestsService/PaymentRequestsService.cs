@@ -22,6 +22,30 @@ public sealed class PaymentRequestsService(AppDbContext db, ICloudinaryService c
         "image/gif"
     ];
 
+    public async Task<PaymentSettingsResult> GetSettingsAsync(CancellationToken ct = default)
+    {
+        var settings = await GetOrCreateSettingsAsync(ct);
+        return MapSettings(settings);
+    }
+
+    public async Task<PaymentSettingsResult> UpdateSettingsAsync(
+        UpdatePaymentSettingsRequest request,
+        CancellationToken ct = default)
+    {
+        var instapay = NormalizeMethod(request.InstapayNumber);
+        var wallet = NormalizeMethod(request.WalletNumber);
+        if (instapay is { Length: > 64 } || wallet is { Length: > 64 })
+            throw new ApiException(PaymentRequestsErrors.InvalidPaymentMethod);
+
+        var settings = await GetOrCreateSettingsAsync(ct);
+        settings.InstapayNumber = instapay;
+        settings.WalletNumber = wallet;
+        settings.UpdatedAt = DateTime.UtcNow;
+        db.PaymentSettings.Update(settings);
+        await db.SaveChangesAsync(ct);
+        return MapSettings(settings);
+    }
+
     public async Task<PaymentRequestItem> ExecuteAsync(CreatePaymentRequestCommand command, CancellationToken ct = default)
     {
         if (command.Amount < MinAmount || command.Amount > MaxAmount)
@@ -355,7 +379,52 @@ public sealed class PaymentRequestsService(AppDbContext db, ICloudinaryService c
                 SELECT 1 FROM "PaymentRequestRejectionReasons"
                 WHERE LOWER("Text") = LOWER('تاريخ التحويل مش ظاهر فى الصوره')
             );
+
+            CREATE TABLE IF NOT EXISTS "PaymentSettings" (
+                "Id" integer NOT NULL,
+                "InstapayNumber" character varying(64) NULL,
+                "WalletNumber" character varying(64) NULL,
+                "UpdatedAt" timestamp with time zone NOT NULL,
+                CONSTRAINT "PK_PaymentSettings" PRIMARY KEY ("Id")
+            );
+
+            INSERT INTO "PaymentSettings" ("Id", "InstapayNumber", "WalletNumber", "UpdatedAt")
+            SELECT 1, NULL, NULL, TIMESTAMPTZ '2026-10-24 00:00:00+00'
+            WHERE NOT EXISTS (
+                SELECT 1 FROM "PaymentSettings" WHERE "Id" = 1
+            );
             """);
+    }
+
+    private async Task<PaymentSettings> GetOrCreateSettingsAsync(CancellationToken ct)
+    {
+        var settings = await db.PaymentSettings
+            .FirstOrDefaultAsync(x => x.Id == PaymentSettings.SingletonId, ct);
+
+        if (settings is not null)
+            return settings;
+
+        settings = new PaymentSettings
+        {
+            Id = PaymentSettings.SingletonId,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await db.PaymentSettings.AddAsync(settings, ct);
+        await db.SaveChangesAsync(ct);
+        return settings;
+    }
+
+    private static PaymentSettingsResult MapSettings(PaymentSettings settings) => new()
+    {
+        InstapayNumber = settings.InstapayNumber,
+        WalletNumber = settings.WalletNumber,
+        UpdatedAt = settings.UpdatedAt
+    };
+
+    private static string? NormalizeMethod(string? value)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 
     private IQueryable<PaymentRequestItem> MapItems(IQueryable<PaymentRequest> requests)

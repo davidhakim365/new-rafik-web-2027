@@ -113,6 +113,7 @@ public static class AssistantTraceDescription
             ("POST", "call-center/courses/lectures/students/notify") => "Sent a call center notification",
             ("PUT", "call-center/students/block") => "Blocked a student from the call center",
 
+            ("PUT", "payment-requests/settings") => "Updated payment methods",
             ("POST", "payment-requests/confirm") => "Confirmed a payment",
             ("POST", "payment-requests/reject") => "Rejected a payment",
             ("POST", "payment-requests/rejection-reasons") => "Saved a payment rejection reason",
