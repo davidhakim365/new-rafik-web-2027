@@ -3,14 +3,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useBarcodeScanner(
   onDetected: (code: string) => void,
-  options?: { readPrintedCode?: boolean }
+  options?: {
+    readPrintedCode?: boolean;
+    onReaderStatus?: (message: string) => void;
+  }
 ) {
   const scannerRef = useRef<HTMLDivElement>(null);
   const onDetectedRef = useRef(onDetected);
+  const onReaderStatusRef = useRef(options?.onReaderStatus);
   const stopRef = useRef<(() => void) | null>(null);
   const generationRef = useRef(0);
 
   onDetectedRef.current = onDetected;
+  onReaderStatusRef.current = options?.onReaderStatus;
 
   const [cameraStatus, setCameraStatus] = useState<"starting" | "ready" | "error">(
     "starting"
@@ -33,7 +38,10 @@ export function useBarcodeScanner(
         (code) => {
           onDetectedRef.current(code);
         },
-        { readPrintedCode: options?.readPrintedCode }
+        {
+          readPrintedCode: options?.readPrintedCode,
+          onReaderStatus: (message) => onReaderStatusRef.current?.(message),
+        }
       );
       if (generation !== generationRef.current) {
         stop();

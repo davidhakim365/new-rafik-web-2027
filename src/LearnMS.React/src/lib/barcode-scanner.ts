@@ -1,3 +1,4 @@
+import { normalizeScannedCode } from "@/lib/scan-code";
 import Quagga, { type QuaggaJSResultObject } from "@ericblade/quagga2";
 
 /**
@@ -147,7 +148,10 @@ function stopQuaggaQuietly() {
 export async function startBarcodeScanner(
   target: HTMLElement,
   onDetected: (code: string) => void,
-  options?: { readPrintedCode?: boolean }
+  options?: {
+    readPrintedCode?: boolean;
+    onReaderStatus?: (message: string) => void;
+  }
 ): Promise<() => void> {
   await warmUpPermission();
 
@@ -175,12 +179,28 @@ export async function startBarcodeScanner(
       : new Error(describeCameraError(lastError));
   }
 
-  let lastBarcodeAt = 0;
+  let pendingCode = "";
+  let pendingAt = 0;
   const handleDetected = (result: QuaggaJSResultObject) => {
-    const code = result?.codeResult?.code;
-    if (!code) return;
-    lastBarcodeAt = Date.now();
-    onDetected(code);
+    const raw = result?.codeResult?.code;
+    if (!raw) return;
+    if (!options?.readPrintedCode) {
+      onDetected(raw);
+      return;
+    }
+
+    // A finger on a bad barcode makes the bars flicker into junk codes.
+    // Only accept a code the camera sees twice, and long enough to be an id.
+    const code = normalizeScannedCode(raw);
+    if (code.length < 6) return;
+    const now = Date.now();
+    if (code === pendingCode && now - pendingAt < 1200) {
+      pendingCode = "";
+      onDetected(code);
+      return;
+    }
+    pendingCode = code;
+    pendingAt = now;
   };
 
   Quagga.onDetected(handleDetected);
@@ -193,16 +213,15 @@ export async function startBarcodeScanner(
         if (printedCancelled) return;
         const video = target.querySelector("video");
         if (!(video instanceof HTMLVideoElement)) return;
-        stopPrinted = startPrintedCodeReader(
-          video,
-          (code) => {
-            if (Date.now() - lastBarcodeAt < 2500) return;
-            onDetected(code);
-          },
-          { isPaused: () => Date.now() - lastBarcodeAt < 2500 }
-        );
+        stopPrinted = startPrintedCodeReader(video, onDetected, {
+          onStatus: options.onReaderStatus,
+        });
       })
-      .catch(() => undefined);
+      .catch(() => {
+        options.onReaderStatus?.(
+          "Number reader did not start. Type the code under the barcode."
+        );
+      });
   }
 
   return () => {

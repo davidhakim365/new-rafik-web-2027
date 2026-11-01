@@ -55,5 +55,11 @@ export function extractPrintedCode(raw: string | null | undefined): string | nul
     }
   }
 
+  if (!bestNumeric) {
+    // Camera OCR often splits one id with a space, like "1234 5678".
+    const joined = normalizeToken(upper.replace(/[^A-Z0-9]/g, ""));
+    if (joined && /^\d{6,}$/.test(joined)) bestNumeric = joined;
+  }
+
   return bestNumeric || bestMixed || null;
 }
