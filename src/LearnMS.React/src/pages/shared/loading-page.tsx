@@ -2,7 +2,7 @@ import Loading from "@/components/loading/loading";
 
 const LoadingPage = () => {
   return (
-    <div className='flex items-center justify-center w-screen h-screen'>
+    <div className="flex min-h-dvh w-full items-center justify-center">
       <Loading />
     </div>
   );

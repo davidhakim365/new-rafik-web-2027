@@ -87,12 +87,12 @@ const NavBar: React.FC<NavBarProps> = ({
       document.addEventListener("mousedown", handleClickOutside);
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     };
   }, [menuState]);
 

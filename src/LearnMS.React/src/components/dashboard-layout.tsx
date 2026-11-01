@@ -22,7 +22,7 @@ export const DashboardLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-dashboard lg:flex-row">
+    <div className="relative flex h-[100dvh] w-full min-w-0 max-w-full flex-col overflow-x-clip overflow-y-hidden bg-dashboard lg:flex-row">
       <PhysicsGrid className="opacity-50" />
       <GlowOrb
         className="pointer-events-none absolute right-0 top-0 h-96 w-96 opacity-25 blur-3xl"
@@ -58,13 +58,13 @@ export const DashboardLayout = () => {
         </SheetContent>
       </Sheet>
 
-      <div className="relative z-10 flex min-h-0 flex-1 gap-0 p-2 md:p-3">
+      <div className="relative z-10 flex min-h-0 w-full min-w-0 max-w-full flex-1 gap-0 p-2 md:p-3">
         <div className="hidden h-full shrink-0 lg:block">
           <DashboardSideBar variant="desktop" />
         </div>
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-color2/10 bg-background/60 shadow-xl backdrop-blur-md">
-          <div className="h-full min-h-0 touch-pan-y overflow-y-auto overscroll-y-contain">
+          <div className="h-full min-h-0 min-w-0 touch-pan-y overflow-x-auto overflow-y-auto overscroll-y-contain">
             <Outlet />
           </div>
         </main>

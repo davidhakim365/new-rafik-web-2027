@@ -8,7 +8,7 @@ const StudentLayout = () => {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-dvh w-full max-w-full flex-col overflow-x-clip bg-background text-foreground">
       <StudentSecurityLock />
       <NavBar />
       <ErrorBoundary

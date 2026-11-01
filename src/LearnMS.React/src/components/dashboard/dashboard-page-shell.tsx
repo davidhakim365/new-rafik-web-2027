@@ -27,7 +27,7 @@ export function DashboardPageShell({
   decorative = false,
 }: DashboardPageShellProps) {
   return (
-    <div className={cn("relative min-h-full w-full", className)}>
+    <div className={cn("relative min-h-full w-full min-w-0 max-w-full overflow-x-clip", className)}>
       <PhysicsGrid className="opacity-60" />
       {decorative && <FloatingFormulas className="opacity-40" />}
       <GlowOrb
@@ -41,12 +41,12 @@ export function DashboardPageShell({
 
       <div
         className={cn(
-          "relative z-10 mx-auto flex w-full flex-col gap-4 p-3 sm:gap-6 sm:p-4 md:p-6",
+          "relative z-10 mx-auto flex w-full min-w-0 max-w-full flex-col gap-4 p-3 sm:gap-6 sm:p-4 md:p-6",
           !fullWidth && "max-w-7xl"
         )}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <div className="flex items-center gap-3">
               {Icon && (
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-color1 to-color2 text-white shadow-lg shadow-color2/20">

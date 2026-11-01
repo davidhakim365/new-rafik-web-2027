@@ -51,7 +51,7 @@ const PasswordResetPage = () => {
   };
 
   return (
-    <div className='bg-no-repeat w-screen h-screen bg-right-bottom flex items-center justify-center object-fill bg-[url("/courses.svg")]'>
+    <div className='flex min-h-dvh w-full items-center justify-center bg-[url("/courses.svg")] bg-right-bottom bg-no-repeat object-fill'>
       <div className="flex flex-col items-center justify-center gap-2 md:w-[50%] backdrop-blur-xl shadow-lg border border-border p-4 rounded-3xl bg-card/90 dark:bg-card/90">
         <h1 className="text-3xl italic font-bold text-primary dark:text-primary">
           Password Reset
