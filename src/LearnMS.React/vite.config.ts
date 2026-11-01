@@ -21,7 +21,8 @@ export default defineConfig({
             id.includes("hast")
           )
             return "markdown";
-          if (id.includes("quagga") || id.includes("@ericblade")) return "scanner";
+          if (id.includes("quagga") || id.includes("@ericblade") || id.includes("tesseract"))
+            return "scanner";
           if (id.includes("@uppy") || id.includes("filepond")) return "uploads";
           if (id.includes("framer-motion")) return "motion";
         },

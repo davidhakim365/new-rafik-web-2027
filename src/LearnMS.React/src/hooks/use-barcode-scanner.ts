@@ -1,7 +1,10 @@
 import { describeCameraError, startBarcodeScanner } from "@/lib/barcode-scanner";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useBarcodeScanner(onDetected: (code: string) => void) {
+export function useBarcodeScanner(
+  onDetected: (code: string) => void,
+  options?: { readPrintedCode?: boolean }
+) {
   const scannerRef = useRef<HTMLDivElement>(null);
   const onDetectedRef = useRef(onDetected);
   const stopRef = useRef<(() => void) | null>(null);
@@ -25,9 +28,13 @@ export function useBarcodeScanner(onDetected: (code: string) => void) {
     setCameraError("");
 
     try {
-      const stop = await startBarcodeScanner(target, (code) => {
-        onDetectedRef.current(code);
-      });
+      const stop = await startBarcodeScanner(
+        target,
+        (code) => {
+          onDetectedRef.current(code);
+        },
+        { readPrintedCode: options?.readPrintedCode }
+      );
       if (generation !== generationRef.current) {
         stop();
         return;
@@ -39,7 +46,7 @@ export function useBarcodeScanner(onDetected: (code: string) => void) {
       setCameraStatus("error");
       setCameraError(describeCameraError(err));
     }
-  }, []);
+  }, [options?.readPrintedCode]);
 
   useEffect(() => {
     void startCamera();

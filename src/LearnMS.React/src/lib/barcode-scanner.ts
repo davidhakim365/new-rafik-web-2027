@@ -146,7 +146,8 @@ function stopQuaggaQuietly() {
 
 export async function startBarcodeScanner(
   target: HTMLElement,
-  onDetected: (code: string) => void
+  onDetected: (code: string) => void,
+  options?: { readPrintedCode?: boolean }
 ): Promise<() => void> {
   await warmUpPermission();
 
@@ -174,14 +175,39 @@ export async function startBarcodeScanner(
       : new Error(describeCameraError(lastError));
   }
 
+  let lastBarcodeAt = 0;
   const handleDetected = (result: QuaggaJSResultObject) => {
     const code = result?.codeResult?.code;
-    if (code) onDetected(code);
+    if (!code) return;
+    lastBarcodeAt = Date.now();
+    onDetected(code);
   };
 
   Quagga.onDetected(handleDetected);
 
+  let stopPrinted: (() => void) | null = null;
+  let printedCancelled = false;
+  if (options?.readPrintedCode) {
+    void import("@/lib/printed-code-reader")
+      .then(({ startPrintedCodeReader }) => {
+        if (printedCancelled) return;
+        const video = target.querySelector("video");
+        if (!(video instanceof HTMLVideoElement)) return;
+        stopPrinted = startPrintedCodeReader(
+          video,
+          (code) => {
+            if (Date.now() - lastBarcodeAt < 2500) return;
+            onDetected(code);
+          },
+          { isPaused: () => Date.now() - lastBarcodeAt < 2500 }
+        );
+      })
+      .catch(() => undefined);
+  }
+
   return () => {
+    printedCancelled = true;
+    stopPrinted?.();
     Quagga.offDetected(handleDetected);
     stopQuaggaQuietly();
   };

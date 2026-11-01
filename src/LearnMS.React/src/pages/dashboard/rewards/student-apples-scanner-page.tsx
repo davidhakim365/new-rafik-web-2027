@@ -177,7 +177,7 @@ const StudentApplesScannerPage = () => {
   );
 
   const { scannerRef, cameraStatus, cameraError, retryCamera } =
-    useBarcodeScanner(lookupCode);
+    useBarcodeScanner(lookupCode, { readPrintedCode: true });
 
   const clearStudent = useCallback(() => {
     setStudent(null);
@@ -228,7 +228,8 @@ const StudentApplesScannerPage = () => {
       ? "Starting camera..."
       : cameraStatus === "error"
         ? cameraError
-        : feedback || "Point camera at student barcode, or type code below";
+        : feedback ||
+          "Point at the barcode. If it will not scan, hold the number under it in the frame.";
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#06100c] text-white">
@@ -252,7 +253,7 @@ const StudentApplesScannerPage = () => {
           <div className="min-w-0">
             <p className="truncate font-semibold">Student Apples Scanner</p>
             <p className="truncate text-xs text-emerald-200/70">
-              Scan or type student code, then add +1 / +5 / +20
+              Scan the barcode, or the number printed under it
             </p>
           </div>
         </div>
@@ -276,7 +277,7 @@ const StudentApplesScannerPage = () => {
             cameraStatus === "ready" &&
             (status === "scanning" || status === "initializing")
           }
-          label="Align student barcode"
+          label="Align barcode or the number under it"
         />
         {cameraStatus === "error" && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center">
@@ -381,7 +382,7 @@ const StudentApplesScannerPage = () => {
                     <Input
                       {...field}
                       className="border-emerald-500/25 bg-white/5 text-white placeholder:text-white/40 focus-visible:ring-emerald-500/40"
-                      placeholder="Scan or type student barcode / code"
+                      placeholder="Scan barcode, the number under it, or type the code"
                     />
                   </FormControl>
                   <FormMessage />
