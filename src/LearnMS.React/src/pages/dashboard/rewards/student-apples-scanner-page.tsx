@@ -238,7 +238,7 @@ const StudentApplesScannerPage = () => {
       : cameraStatus === "error"
         ? cameraError
         : feedback ||
-          "Cover the barcode with your finger and hold the number under it in the frame.";
+          "Point at the barcode. If it will not scan, hold the number under it in the frame.";
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#06100c] text-white">
@@ -262,7 +262,7 @@ const StudentApplesScannerPage = () => {
           <div className="min-w-0">
             <p className="truncate font-semibold">Student Apples Scanner</p>
             <p className="truncate text-xs text-emerald-200/70">
-              Cover a bad barcode and hold the number under it
+              Scan the barcode, or the number printed under it
             </p>
           </div>
         </div>
@@ -286,7 +286,7 @@ const StudentApplesScannerPage = () => {
             cameraStatus === "ready" &&
             (status === "scanning" || status === "initializing")
           }
-          label="Hold the printed number here"
+          label="Barcode, or the number under it"
         />
         {cameraStatus === "error" && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center">

@@ -179,30 +179,18 @@ export async function startBarcodeScanner(
       : new Error(describeCameraError(lastError));
   }
 
-  let pendingCode = "";
-  let pendingAt = 0;
-  let lastAcceptedAt = 0;
+  let lastBarcodeAt = 0;
   const handleDetected = (result: QuaggaJSResultObject) => {
     const raw = result?.codeResult?.code;
     if (!raw) return;
-    if (!options?.readPrintedCode) {
-      onDetected(raw);
-      return;
-    }
-
-    // A finger on a bad barcode makes the bars flicker into junk codes.
-    // Only accept a code the camera sees twice, and long enough to be an id.
-    const code = normalizeScannedCode(raw);
-    if (code.length < 6) return;
-    const now = Date.now();
-    if (code === pendingCode && now - pendingAt < 1200) {
-      pendingCode = "";
-      lastAcceptedAt = now;
+    if (options?.readPrintedCode) {
+      const code = normalizeScannedCode(raw);
+      if (code.length < 6) return;
+      lastBarcodeAt = Date.now();
       onDetected(code);
       return;
     }
-    pendingCode = code;
-    pendingAt = now;
+    onDetected(raw);
   };
 
   Quagga.onDetected(handleDetected);
@@ -218,7 +206,7 @@ export async function startBarcodeScanner(
         stopPrinted = startPrintedCodeReader(
           video,
           (code) => {
-            if (Date.now() - lastAcceptedAt < 2500) return;
+            if (Date.now() - lastBarcodeAt < 2500) return;
             onDetected(code);
           },
           { onStatus: options.onReaderStatus }

@@ -1,4 +1,4 @@
-import { findDigitBand, stretchContrast } from "@/lib/printed-code-image";
+import { stretchContrast } from "@/lib/printed-code-image";
 import { extractPrintedCode } from "@/lib/printed-code";
 
 type OcrPage = {
@@ -42,12 +42,12 @@ function visibleFrame(video: HTMLVideoElement) {
     sy = Math.round((frameHeight - sh) / 2);
   }
 
-  // The printed id sits in the middle/lower part of what the user is framing.
-  const cropW = Math.round(sw * 0.9);
-  const cropH = Math.round(sh * 0.58);
+  // The Cambria id is the line under the bars, so read the lower middle of the screen.
+  const cropW = Math.round(sw * 0.92);
+  const cropH = Math.round(sh * 0.34);
   return {
     sx: sx + Math.round((sw - cropW) / 2),
-    sy: sy + Math.round(sh * 0.28),
+    sy: sy + Math.round(sh * 0.48),
     sw: cropW,
     sh: cropH,
   };
@@ -84,35 +84,18 @@ function captureNumber(
   stretchContrast(image.data);
   sourceCtx.putImageData(image, 0, 0);
 
-  const band = findDigitBand(image.data, targetWidth, targetHeight);
-  const slice = band ?? {
-    y: Math.round(targetHeight * 0.35),
-    h: Math.round(targetHeight * 0.45),
-  };
-  const scale = band
-    ? Math.min(3, Math.max(2, Math.ceil(64 / Math.max(slice.h, 1))))
-    : 2;
-  const pad = 24;
+  const scale = 2;
+  const pad = 28;
   output.width = targetWidth * scale + pad * 2;
-  output.height = slice.h * scale + pad * 2;
+  output.height = targetHeight * scale + pad * 2;
   const outputCtx = output.getContext("2d");
   if (!outputCtx) return null;
   outputCtx.fillStyle = "#fff";
   outputCtx.fillRect(0, 0, output.width, output.height);
   outputCtx.imageSmoothingEnabled = true;
   outputCtx.imageSmoothingQuality = "high";
-  outputCtx.drawImage(
-    source,
-    0,
-    slice.y,
-    targetWidth,
-    slice.h,
-    pad,
-    pad,
-    targetWidth * scale,
-    slice.h * scale
-  );
-  return { canvas: output, singleLine: Boolean(band) };
+  outputCtx.drawImage(source, pad, pad, targetWidth * scale, targetHeight * scale);
+  return { canvas: output, singleLine: true };
 }
 
 /**
@@ -151,7 +134,7 @@ export function startPrintedCodeReader(
         workerPath: assetUrl("ocr/worker.min.js"),
         corePath: assetUrl("ocr/tesseract-core-simd-lstm.wasm.js"),
         langPath: assetUrl("ocr"),
-        workerBlobURL: false,
+        workerBlobURL: true,
         gzip: true,
         logger: () => undefined,
       })) as OcrWorker;
@@ -164,7 +147,7 @@ export function startPrintedCodeReader(
         user_defined_dpi: "300",
       });
       worker = created;
-      report("Cover the barcode and hold the number under it in the frame.");
+      report("Point at the barcode. If it will not scan, hold the number under it in the frame.");
       return created;
     })
     .catch(() => {
@@ -186,7 +169,7 @@ export function startPrintedCodeReader(
         await current.setParameters({ tessedit_pageseg_mode: mode });
         pageMode = mode;
       }
-      const result = await current.recognize(region.canvas, { rotateAuto: true }, { text: true });
+      const result = await current.recognize(region.canvas, {}, { text: true });
       if (stopped) return;
 
       const code = extractPrintedCode(result.data.text);
@@ -198,7 +181,7 @@ export function startPrintedCodeReader(
             misses = 0;
             lastCode = "";
             hits = 0;
-            report("Cover the barcode and hold the number under it in the frame.");
+            report("Point at the barcode. If it will not scan, hold the number under it in the frame.");
           }
         }
         return;
