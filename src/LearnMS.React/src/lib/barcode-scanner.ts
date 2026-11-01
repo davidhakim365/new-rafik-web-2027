@@ -116,7 +116,7 @@ function initQuagga(
           readers: [...QUAGGA_READERS],
         },
         locate: true,
-        frequency: 10,
+        frequency: 15,
       },
       (err) => {
         if (err) reject(err);
@@ -209,7 +209,10 @@ export async function startBarcodeScanner(
             if (Date.now() - lastBarcodeAt < 2500) return;
             onDetected(code);
           },
-          { onStatus: options.onReaderStatus }
+          {
+            onStatus: options.onReaderStatus,
+            shouldWait: () => Date.now() - lastBarcodeAt < 1200,
+          }
         );
       })
       .catch(() => {

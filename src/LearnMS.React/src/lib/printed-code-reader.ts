@@ -1,4 +1,4 @@
-import { stretchContrast } from "@/lib/printed-code-image";
+import { locatePrintedNumber, stretchContrast } from "@/lib/printed-code-image";
 import { extractPrintedCode } from "@/lib/printed-code";
 
 type OcrPage = {
@@ -21,8 +21,8 @@ function assetUrl(path: string): string {
   return new URL(path, new URL(base, window.location.origin)).href;
 }
 
-/** Map the on-screen video (object-fit: cover) back to camera pixels. */
-function visibleFrame(video: HTMLVideoElement) {
+/** The on-screen brackets, mapped back through object-fit: cover. */
+function aimedFrame(video: HTMLVideoElement) {
   const frameWidth = video.videoWidth;
   const frameHeight = video.videoHeight;
   const box = video.getBoundingClientRect();
@@ -42,12 +42,12 @@ function visibleFrame(video: HTMLVideoElement) {
     sy = Math.round((frameHeight - sh) / 2);
   }
 
-  // The Cambria id is the line under the bars, so read the lower middle of the screen.
-  const cropW = Math.round(sw * 0.92);
-  const cropH = Math.round(sh * 0.34);
+  // Brackets are 72% by 46%. A little extra keeps the line at the bottom edge.
+  const cropW = Math.round(sw * 0.78);
+  const cropH = Math.round(sh * 0.52);
   return {
     sx: sx + Math.round((sw - cropW) / 2),
-    sy: sy + Math.round(sh * 0.48),
+    sy: sy + Math.round((sh - cropH) / 2),
     sw: cropW,
     sh: cropH,
   };
@@ -57,12 +57,12 @@ function captureNumber(
   video: HTMLVideoElement,
   source: HTMLCanvasElement,
   output: HTMLCanvasElement
-): { canvas: HTMLCanvasElement; singleLine: boolean } | null {
+): HTMLCanvasElement | null {
   if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return null;
-  const region = visibleFrame(video);
+  const region = aimedFrame(video);
   if (!region) return null;
 
-  const targetWidth = 960;
+  const targetWidth = 640;
   const targetHeight = Math.max(1, Math.round(targetWidth * (region.sh / region.sw)));
   source.width = targetWidth;
   source.height = targetHeight;
@@ -81,21 +81,25 @@ function captureNumber(
   );
 
   const image = sourceCtx.getImageData(0, 0, targetWidth, targetHeight);
-  stretchContrast(image.data);
-  sourceCtx.putImageData(image, 0, 0);
+  const detect = new Uint8ClampedArray(image.data);
+  stretchContrast(detect);
+  const line = locatePrintedNumber(detect, targetWidth, targetHeight);
+  if (!line || line.w < 24 || line.h < 4) return null;
 
-  const scale = 2;
-  const pad = 28;
-  output.width = targetWidth * scale + pad * 2;
-  output.height = targetHeight * scale + pad * 2;
+  const scale = Math.min(8, Math.max(4, Math.ceil(110 / line.h)));
+  const pad = 26;
+  const dw = line.w * scale;
+  const dh = line.h * scale;
+  output.width = dw + pad * 2;
+  output.height = dh + pad * 2;
   const outputCtx = output.getContext("2d");
   if (!outputCtx) return null;
   outputCtx.fillStyle = "#fff";
   outputCtx.fillRect(0, 0, output.width, output.height);
   outputCtx.imageSmoothingEnabled = true;
   outputCtx.imageSmoothingQuality = "high";
-  outputCtx.drawImage(source, pad, pad, targetWidth * scale, targetHeight * scale);
-  return { canvas: output, singleLine: true };
+  outputCtx.drawImage(source, line.x, line.y, line.w, line.h, pad, pad, dw, dh);
+  return output;
 }
 
 /**
@@ -105,17 +109,17 @@ function captureNumber(
 export function startPrintedCodeReader(
   video: HTMLVideoElement,
   onDetected: (code: string) => void,
-  options?: { onStatus?: (message: string) => void }
+  options?: { onStatus?: (message: string) => void; shouldWait?: () => boolean }
 ): () => void {
   let stopped = false;
   let busy = false;
   let worker: OcrWorker | null = null;
-  let pageMode = "";
   let lastCode = "";
   let hits = 0;
   let held = "";
   let misses = 0;
   let lastStatus = "";
+  const armAt = Date.now() + 600;
   const source = document.createElement("canvas");
   const output = document.createElement("canvas");
 
@@ -144,6 +148,7 @@ export function startPrintedCodeReader(
       }
       await created.setParameters({
         tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-",
+        tessedit_pageseg_mode: "7",
         user_defined_dpi: "300",
       });
       worker = created;
@@ -156,25 +161,21 @@ export function startPrintedCodeReader(
     });
 
   const tick = async () => {
-    if (stopped || busy) return;
+    if (stopped || busy || Date.now() < armAt || options?.shouldWait?.()) return;
     busy = true;
     try {
       const current = worker ?? (await ready);
       if (!current || stopped) return;
-      const region = captureNumber(video, source, output);
-      if (!region || stopped) return;
+      const frame = captureNumber(video, source, output);
+      if (!frame || stopped) return;
 
-      const mode = region.singleLine ? "7" : "6";
-      if (mode !== pageMode) {
-        await current.setParameters({ tessedit_pageseg_mode: mode });
-        pageMode = mode;
-      }
-      const result = await current.recognize(region.canvas, {}, { text: true });
+      const result = await current.recognize(frame, {}, { text: true });
       if (stopped) return;
 
       const code = extractPrintedCode(result.data.text);
+      const confidence = result.data.confidence ?? 0;
       if (!code) {
-        if (held) {
+        if (held || lastCode) {
           misses += 1;
           if (misses >= 3) {
             held = "";
@@ -189,17 +190,20 @@ export function startPrintedCodeReader(
 
       misses = 0;
       if (code === held) return;
+      const confirmed =
+        confidence >= 55 || (code === lastCode && hits >= 1 && confidence >= 35);
       if (code === lastCode) hits += 1;
       else {
         lastCode = code;
         hits = 1;
       }
-      report(`Seeing ${code} — hold steady`);
-      if (hits >= 2) {
-        held = code;
-        hits = 0;
-        onDetected(code);
+      if (!confirmed) {
+        report(`Seeing ${code} — hold steady`);
+        return;
       }
+      held = code;
+      hits = 0;
+      onDetected(code);
     } catch {
       // Keep the camera up if one frame cannot be read.
     } finally {
@@ -210,7 +214,7 @@ export function startPrintedCodeReader(
   void tick();
   const timer = window.setInterval(() => {
     void tick();
-  }, 700);
+  }, 320);
 
   return () => {
     stopped = true;
