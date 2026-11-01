@@ -56,6 +56,21 @@ public static class ApplicationRequestPipelines
             };
             x.UseSpaStaticFiles(staticFiles);
             x.UseStaticFiles(staticFiles);
+            // A missing hashed script must not come back as index.html.
+            // The browser then refuses it and the lesson page shows the crash screen.
+            x.Use(async (ctx, next) =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/assets"))
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status404NotFound;
+                    ctx.Response.ContentType = "text/plain";
+                    ctx.Response.Headers.CacheControl = "no-store";
+                    await ctx.Response.WriteAsync("Not found");
+                    return;
+                }
+
+                await next();
+            });
             x.UseSpa(spa =>
             {
                 spa.Options.SourcePath = "ClientApp";

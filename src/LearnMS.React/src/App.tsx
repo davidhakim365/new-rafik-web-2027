@@ -1,4 +1,5 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { clearStaleAssetReload } from "@/lib/stale-asset";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import AppErrorFallback from "@/components/app-error-fallback";
 import RequireAuth from "@/components/require-auth";
@@ -64,6 +65,11 @@ const ParentDashboardPage = lazy(() => import("@/pages/parent/parent-dashboard-p
 
 function App() {
   const location = useLocation();
+
+  useEffect(() => {
+    const id = window.setTimeout(() => clearStaleAssetReload(), 15000);
+    return () => window.clearTimeout(id);
+  }, []);
 
   return (
     <QueryErrorResetBoundary>

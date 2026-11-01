@@ -6,11 +6,9 @@ import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { clearStaleAssetReload, isStaleAssetError } from "@/lib/stale-asset";
 
-const PageFallBackOnError: React.FC<FallbackProps> = ({
-  error,
-  resetErrorBoundary,
-}) => {
+const PageFallBackOnError: React.FC<FallbackProps> = ({ error }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
@@ -62,7 +60,10 @@ const PageFallBackOnError: React.FC<FallbackProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-col justify-center gap-4 pt-4 sm:flex-row">
           <Button
-            onClick={resetErrorBoundary}
+            onClick={() => {
+              if (isStaleAssetError(error)) clearStaleAssetReload();
+              window.location.reload();
+            }}
             size="lg"
             className="gap-3 px-8 py-6 text-lg transition-all rounded-full shadow-lg hover:shadow-primary/20 dark:hover:shadow-primary/10 active:scale-[0.98]"
           >
