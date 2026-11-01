@@ -1,3 +1,4 @@
+import { findDigitBand, stretchContrast } from "@/lib/printed-code-image";
 import { extractPrintedCode } from "@/lib/printed-code";
 
 type OcrPage = {
@@ -52,94 +53,6 @@ function visibleFrame(video: HTMLVideoElement) {
   };
 }
 
-function threshold(image: ImageData) {
-  const { data } = image;
-  const gray = new Uint8Array(data.length / 4);
-  const hist = new Uint32Array(256);
-  for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
-    const value = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) | 0;
-    gray[p] = value;
-    hist[value] += 1;
-  }
-
-  const total = gray.length;
-  let sum = 0;
-  for (let i = 0; i < 256; i += 1) sum += i * hist[i];
-  let sumBackground = 0;
-  let weightBackground = 0;
-  let best = 0;
-  let limit = 140;
-  for (let i = 0; i < 256; i += 1) {
-    weightBackground += hist[i];
-    if (!weightBackground) continue;
-    const weightForeground = total - weightBackground;
-    if (!weightForeground) break;
-    sumBackground += i * hist[i];
-    const meanBackground = sumBackground / weightBackground;
-    const meanForeground = (sum - sumBackground) / weightForeground;
-    const between = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
-    if (between > best) {
-      best = between;
-      limit = i;
-    }
-  }
-
-  for (let p = 0, i = 0; p < gray.length; p += 1, i += 4) {
-    const value = gray[p] < limit ? 0 : 255;
-    data[i] = data[i + 1] = data[i + 2] = value;
-  }
-}
-
-/** A row of digits is a thin band of black marks. A finger is a solid blob. */
-function findDigitBand(image: ImageData): { y: number; h: number } | null {
-  const { width, height, data } = image;
-  let bestY = -1;
-  let bestH = 0;
-  let bestScore = 0;
-  let start = -1;
-  let end = -1;
-  let score = 0;
-
-  const close = () => {
-    const bandH = end - start + 1;
-    if (start >= 0 && bandH >= 8 && score > bestScore) {
-      bestScore = score;
-      bestY = start;
-      bestH = bandH;
-    }
-    start = -1;
-    end = -1;
-    score = 0;
-  };
-
-  for (let y = 0; y < height; y += 1) {
-    let dark = 0;
-    let flips = 0;
-    let prev = 0;
-    for (let x = 0; x < width; x += 1) {
-      const bit = data[(y * width + x) * 4] < 128 ? 1 : 0;
-      if (bit) dark += 1;
-      if (x > 0 && bit !== prev) flips += 1;
-      prev = bit;
-    }
-    const ratio = dark / width;
-    const isText = ratio > 0.008 && ratio < 0.45 && flips >= 8;
-    if (!isText) {
-      if (start >= 0 && y > end + 3) close();
-      continue;
-    }
-    if (start < 0) start = y;
-    end = y;
-    score += flips;
-  }
-  close();
-  if (bestY < 0) return null;
-
-  const pad = 10;
-  const y = Math.max(0, bestY - pad);
-  return { y, h: Math.min(height - y, bestH + pad * 2) };
-}
-
 function captureNumber(
   video: HTMLVideoElement,
   source: HTMLCanvasElement,
@@ -168,10 +81,10 @@ function captureNumber(
   );
 
   const image = sourceCtx.getImageData(0, 0, targetWidth, targetHeight);
-  threshold(image);
+  stretchContrast(image.data);
   sourceCtx.putImageData(image, 0, 0);
 
-  const band = findDigitBand(image);
+  const band = findDigitBand(image.data, targetWidth, targetHeight);
   const slice = band ?? {
     y: Math.round(targetHeight * 0.35),
     h: Math.round(targetHeight * 0.45),
@@ -186,7 +99,8 @@ function captureNumber(
   if (!outputCtx) return null;
   outputCtx.fillStyle = "#fff";
   outputCtx.fillRect(0, 0, output.width, output.height);
-  outputCtx.imageSmoothingEnabled = false;
+  outputCtx.imageSmoothingEnabled = true;
+  outputCtx.imageSmoothingQuality = "high";
   outputCtx.drawImage(
     source,
     0,

@@ -181,6 +181,7 @@ export async function startBarcodeScanner(
 
   let pendingCode = "";
   let pendingAt = 0;
+  let lastAcceptedAt = 0;
   const handleDetected = (result: QuaggaJSResultObject) => {
     const raw = result?.codeResult?.code;
     if (!raw) return;
@@ -196,6 +197,7 @@ export async function startBarcodeScanner(
     const now = Date.now();
     if (code === pendingCode && now - pendingAt < 1200) {
       pendingCode = "";
+      lastAcceptedAt = now;
       onDetected(code);
       return;
     }
@@ -213,9 +215,14 @@ export async function startBarcodeScanner(
         if (printedCancelled) return;
         const video = target.querySelector("video");
         if (!(video instanceof HTMLVideoElement)) return;
-        stopPrinted = startPrintedCodeReader(video, onDetected, {
-          onStatus: options.onReaderStatus,
-        });
+        stopPrinted = startPrintedCodeReader(
+          video,
+          (code) => {
+            if (Date.now() - lastAcceptedAt < 2500) return;
+            onDetected(code);
+          },
+          { onStatus: options.onReaderStatus }
+        );
       })
       .catch(() => {
         options.onReaderStatus?.(
