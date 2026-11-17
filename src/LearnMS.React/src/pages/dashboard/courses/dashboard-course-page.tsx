@@ -49,7 +49,7 @@ import {
 import { GetDashboardCourseResult, SingleCourseItem } from "@/generated/model";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Edit2, ListCollapse, LucideMove, Menu, Settings2, BookOpen, Users } from "lucide-react";
+import { Edit2, ListCollapse, LucideMove, Menu, Settings2, BookOpen, Trash, Users } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -58,6 +58,7 @@ import { z } from "zod";
 const DashboardCoursePage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { hasPermission } = useDashboardPermissions();
   const canManageCourses = hasPermission(Permission.ManageCourses);
 
@@ -92,6 +93,7 @@ const DashboardCoursePage = () => {
           title: "Deleting",
           description: data.message,
         });
+        queryClient.invalidateQueries({ queryKey: ["courses"] });
         navigate("/dashboard/courses", { replace: true });
       },
     },
@@ -134,8 +136,18 @@ const DashboardCoursePage = () => {
         canManageCourses ? (
           <div className="flex gap-2">
             <Confirmation
+              button={
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={deleteCourseMutation.isPending}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              }
               disabled={deleteCourseMutation.isPending}
-              description="Are you sure you want to delete this course?"
+              description="Are you sure you want to delete this course? This action cannot be undone."
               title="Delete Course"
               onConfirm={onDeleting}
             />
