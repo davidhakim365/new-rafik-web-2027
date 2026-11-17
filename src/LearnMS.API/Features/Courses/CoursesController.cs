@@ -1,5 +1,6 @@
 using LearnMS.API.Common;
 using LearnMS.API.Entities;
+using LearnMS.API.Features.Auth;
 using LearnMS.API.Features.Courses.Contracts;
 using LearnMS.API.Security;
 using Microsoft.AspNetCore.Mvc;
@@ -40,10 +41,15 @@ public sealed class CoursesController : ControllerBase
     }
 
     [HttpDelete("{courseId:guid}")]
-    [ApiAuthorize(Role = UserRole.Assistant, Permissions = [Permission.ManageCourses])]
+    [ApiAuthorize(Role = UserRole.Teacher)]
     [SwaggerOperation(OperationId = "DeleteCourse")]
     public async Task<ApiWrapper.Success<object?>> Delete(Guid courseId)
     {
+        var currentUser = await _currentUserService.GetUserAsync()
+            ?? throw new ApiException(AuthErrors.Unauthorized);
+        if (currentUser.Role != UserRole.Teacher)
+            throw new ApiException(AuthErrors.Forbidden);
+
         await _coursesService.ExecuteAsync(new DeleteCourseCommand
         {
             Id = courseId

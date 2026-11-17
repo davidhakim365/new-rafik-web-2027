@@ -59,7 +59,7 @@ const DashboardCoursePage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { hasPermission } = useDashboardPermissions();
+  const { hasPermission, isTeacher } = useDashboardPermissions();
   const canManageCourses = hasPermission(Permission.ManageCourses);
 
   const { data, isLoading, isError, refetch } = useGetCourse(courseId!);
@@ -135,22 +135,24 @@ const DashboardCoursePage = () => {
       actions={
         canManageCourses ? (
           <div className="flex gap-2">
-            <Confirmation
-              button={
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={deleteCourseMutation.isPending}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              }
-              disabled={deleteCourseMutation.isPending}
-              description="Are you sure you want to delete this course? This action cannot be undone."
-              title="Delete Course"
-              onConfirm={onDeleting}
-            />
+            {isTeacher && (
+              <Confirmation
+                button={
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={deleteCourseMutation.isPending}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                }
+                disabled={deleteCourseMutation.isPending}
+                description="Are you sure you want to delete this course? This action cannot be undone."
+                title="Delete Course"
+                onConfirm={onDeleting}
+              />
+            )}
             <Button
               onClick={onPublishing}
               className="border border-color2/40 bg-gradient-to-r from-color1 to-color2 text-white shadow-md shadow-color2/20 hover:opacity-90"
