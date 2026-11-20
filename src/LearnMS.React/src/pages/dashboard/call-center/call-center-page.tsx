@@ -6,6 +6,7 @@ import {
   openWhatsApp,
   resolveCallCenterAttendance,
   resolveCallCenterStudyMode,
+  toWhatsAppDigits,
   useCallCenterHistoryQuery,
   useCallCenterStudentLecturesQuery,
   useCallCenterStudentsQuery,
@@ -49,6 +50,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronUp,
+  Copy,
   FileSpreadsheet,
   History,
   Loader2,
@@ -69,6 +71,77 @@ const LEVEL_LABELS: Record<string, string> = {
 
 function formatScore(value?: number | null) {
   return value == null ? "—" : String(value);
+}
+
+function dialHref(phone: string) {
+  const digits = toWhatsAppDigits(phone);
+  if (digits) return `tel:+${digits}`;
+  const raw = phone.replace(/[^\d+]/g, "");
+  return raw ? `tel:${raw}` : null;
+}
+
+function PhoneActions({
+  label,
+  phone,
+}: {
+  label: string;
+  phone?: string | null;
+}) {
+  const value = phone?.trim() ?? "";
+  const href = value ? dialHref(value) : null;
+
+  const copy = async () => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({
+        title: "Number copied",
+        description: `${label} number is ready to paste.`,
+      });
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy this number.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span>
+        {label}:{" "}
+        <span className="font-medium text-foreground">{value || "—"}</span>
+      </span>
+      {value && (
+        <>
+          {href && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              asChild
+            >
+              <a href={href}>
+                <Phone className="h-3.5 w-3.5" />
+                Call
+              </a>
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => void copy()}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copy
+          </Button>
+        </>
+      )}
+    </span>
+  );
 }
 
 function formatScoreWithMark(
@@ -586,13 +659,10 @@ function CallCenterStudentCard({
               </Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Parent:{" "}
-            <span className="font-medium text-foreground">
-              {student.parentPhoneNumber || "—"}
-            </span>
-            {" · "}
-            Student: {student.phoneNumber || "—"}
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
+            <PhoneActions label="Parent" phone={student.parentPhoneNumber} />
+            <span aria-hidden="true">·</span>
+            <PhoneActions label="Student" phone={student.phoneNumber} />
           </p>
           <div className="flex flex-wrap gap-3 text-sm">
             <span>
