@@ -40,13 +40,14 @@ import {
   usePaymentRequestStatsQuery,
   usePaymentRequestsQuery,
   usePaymentSettingsQuery,
+  useRefreshPaymentRequestsOnWake,
   useRejectPaymentRequestMutation,
   useUpdatePaymentSettingsMutation,
 } from "@/api/payment-requests-api";
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CheckCircle2, Clock, Plus, Search, Wallet, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Plus, RefreshCw, Search, Wallet, XCircle } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -111,6 +112,7 @@ function StatusCountCard({
 
 const PaymentRequestsPage = () => {
   const { isTeacher } = useDashboardPermissions();
+  useRefreshPaymentRequestsOnWake();
   const [searchParams, setSearchParams] = useSearchParams();
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: parseInt(searchParams.get("page") || "1", 10) - 1,
@@ -380,6 +382,13 @@ const PaymentRequestsPage = () => {
     );
   };
 
+  const refreshing = query.isFetching || statsQuery.isFetching;
+
+  const onRefresh = () => {
+    void query.refetch();
+    void statsQuery.refetch();
+  };
+
   const onSaveOtherOption = () => {
     const text = otherReason.trim();
     if (!text) return;
@@ -400,6 +409,19 @@ const PaymentRequestsPage = () => {
       description="Review transfer screenshots and confirm or reject student credit requests."
       icon={Wallet}
       fullWidth
+      actions={
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={onRefresh}
+        >
+          <RefreshCw
+            className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
+          />
+          Refresh
+        </Button>
+      }
     >
       {isTeacher && (
         <DashboardCard>

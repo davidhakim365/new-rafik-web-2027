@@ -1,5 +1,13 @@
 import { api } from "@/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+/** How often an open payment inbox asks the server for new requests. */
+const PAYMENT_REQUESTS_POLL_MS = 5_000;
+
+function isPaymentInboxVisible() {
+  return typeof document === "undefined" || document.visibilityState === "visible";
+}
 
 export type PaymentRequestStatus = "Pending" | "Confirmed" | "Rejected";
 
@@ -99,10 +107,13 @@ const getPaymentRequests = (params: GetPaymentRequestsParams) => {
   if (params.status && params.status !== "all") {
     searchParams.set("status", params.status);
   }
+  // Some phones reuse an identical GET and keep showing an old queue.
+  searchParams.set("_", String(Date.now()));
 
   return api
     .get<ApiSuccess<PaymentRequestsPage>>(
-      `/api/payment-requests?${searchParams.toString()}`
+      `/api/payment-requests?${searchParams.toString()}`,
+      { headers: { "Cache-Control": "no-cache", Pragma: "no-cache" } }
     )
     .then((res) => res.data);
 };
@@ -121,7 +132,10 @@ const getMyPaymentRequests = (params?: { page?: number; pageSize?: number }) => 
 
 const getPaymentRequestStats = () =>
   api
-    .get<ApiSuccess<PaymentRequestStats>>("/api/payment-requests/stats")
+    .get<ApiSuccess<PaymentRequestStats>>(
+      `/api/payment-requests/stats?_=${Date.now()}`,
+      { headers: { "Cache-Control": "no-cache", Pragma: "no-cache" } }
+    )
     .then((res) => res.data);
 
 const getPaymentRequestRejectionReasons = () =>
@@ -174,6 +188,12 @@ export function usePaymentRequestsQuery(params: GetPaymentRequestsParams) {
   return useQuery({
     queryKey: getPaymentRequestsQueryKey(params),
     queryFn: () => getPaymentRequests(params),
+    staleTime: 0,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
+    refetchIntervalInBackground: false,
+    refetchInterval: () =>
+      isPaymentInboxVisible() ? PAYMENT_REQUESTS_POLL_MS : false,
   });
 }
 
@@ -191,7 +211,39 @@ export function usePaymentRequestStatsQuery() {
   return useQuery({
     queryKey: getPaymentRequestStatsQueryKey(),
     queryFn: getPaymentRequestStats,
+    staleTime: 0,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
+    refetchIntervalInBackground: false,
+    refetchInterval: () =>
+      isPaymentInboxVisible() ? PAYMENT_REQUESTS_POLL_MS : false,
   });
+}
+
+/** Phones often freeze timers while the screen is off and skip the normal focus refresh. */
+export function useRefreshPaymentRequestsOnWake() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      void qc.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          if (key[0] !== PAYMENT_REQUESTS_QUERY_KEY) return false;
+          // List and counts only. Settings stay put so a half-typed number is not wiped.
+          return key[1] === "stats" || typeof key[1] === "object";
+        },
+      });
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("pageshow", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("pageshow", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [qc]);
 }
 
 export function usePaymentSettingsQuery() {

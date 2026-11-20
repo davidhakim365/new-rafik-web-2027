@@ -96,6 +96,7 @@ public sealed class PaymentRequestsController(
             PageSize = pageSize
         });
 
+        DisableListCache();
         return new ApiWrapper.Success<PageList<PaymentRequestItem>>
         {
             Data = result,
@@ -110,6 +111,7 @@ public sealed class PaymentRequestsController(
     {
         var result = await paymentRequestsService.QueryStatsAsync(ct);
 
+        DisableListCache();
         return new ApiWrapper.Success<PaymentRequestStats>
         {
             Data = result,
@@ -173,6 +175,7 @@ public sealed class PaymentRequestsController(
             Status = parsedStatus
         });
 
+        DisableListCache();
         return new ApiWrapper.Success<PageList<PaymentRequestItem>>
         {
             Data = result,
@@ -222,5 +225,13 @@ public sealed class PaymentRequestsController(
             Data = result,
             Message = "Payment request rejected"
         };
+    }
+
+    // Phones were keeping the previous queue and showing new requests late.
+    private void DisableListCache()
+    {
+        Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers.Expires = "0";
     }
 }
