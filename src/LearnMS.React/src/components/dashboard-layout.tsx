@@ -7,13 +7,16 @@ import {
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useIsFetching } from "@tanstack/react-query";
+import { PaymentRequestAlerts } from "@/pages/dashboard/payment-requests/payment-request-alerts";
 import { DownloadCloud, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import DashboardSideBar from "./dashboard-side-bar";
 
 export const DashboardLayout = () => {
-  const isFetching = useIsFetching();
+  const isFetching = useIsFetching({
+    predicate: (query) => query.meta?.background !== true,
+  });
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -69,6 +72,8 @@ export const DashboardLayout = () => {
           </div>
         </main>
       </div>
+
+      <PaymentRequestAlerts />
 
       {isFetching > 0 && (
         <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-color2/20 bg-card/90 px-4 py-2 text-sm text-foreground shadow-lg backdrop-blur-md">

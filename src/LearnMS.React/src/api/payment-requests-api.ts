@@ -72,6 +72,7 @@ export type GetPaymentRequestsParams = {
   pageSize?: number;
   search?: string;
   status?: PaymentRequestStatus | "all" | string;
+  sort?: "newest" | "oldest";
 };
 
 export const PAYMENT_REQUESTS_QUERY_KEY = "payment-requests";
@@ -107,6 +108,7 @@ const getPaymentRequests = (params: GetPaymentRequestsParams) => {
   if (params.status && params.status !== "all") {
     searchParams.set("status", params.status);
   }
+  if (params.sort) searchParams.set("sort", params.sort);
   // Some phones reuse an identical GET and keep showing an old queue.
   searchParams.set("_", String(Date.now()));
 
@@ -184,7 +186,10 @@ const rejectPaymentRequest = (vars: { id: string; reason?: string }) =>
     )
     .then((res) => res.data);
 
-export function usePaymentRequestsQuery(params: GetPaymentRequestsParams) {
+export function usePaymentRequestsQuery(
+  params: GetPaymentRequestsParams,
+  options?: { background?: boolean }
+) {
   return useQuery({
     queryKey: getPaymentRequestsQueryKey(params),
     queryFn: () => getPaymentRequests(params),
@@ -194,6 +199,7 @@ export function usePaymentRequestsQuery(params: GetPaymentRequestsParams) {
     refetchIntervalInBackground: false,
     refetchInterval: () =>
       isPaymentInboxVisible() ? PAYMENT_REQUESTS_POLL_MS : false,
+    meta: options?.background ? { background: true } : undefined,
   });
 }
 

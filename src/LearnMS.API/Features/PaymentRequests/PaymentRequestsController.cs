@@ -157,7 +157,8 @@ public sealed class PaymentRequestsController(
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         [FromQuery] string? search,
-        [FromQuery] string? status)
+        [FromQuery] string? status,
+        [FromQuery] string? sort)
     {
         PaymentRequestStatus? parsedStatus = null;
         if (!string.IsNullOrWhiteSpace(status)
@@ -172,7 +173,8 @@ public sealed class PaymentRequestsController(
             Page = page,
             PageSize = pageSize,
             Search = search,
-            Status = parsedStatus
+            Status = parsedStatus,
+            Sort = sort
         });
 
         DisableListCache();

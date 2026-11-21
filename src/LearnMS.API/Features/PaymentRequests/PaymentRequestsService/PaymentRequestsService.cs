@@ -194,9 +194,12 @@ public sealed class PaymentRequestsService(AppDbContext db, ICloudinaryService c
                 StudentCode = student.StudentCode
             };
 
-        var ordered = query.Status == PaymentRequestStatus.Confirmed
-            ? source.OrderByDescending(x => x.ReviewedAt ?? x.CreatedAt)
-            : source.OrderBy(x => x.CreatedAt);
+        var newestFirst = string.Equals(query.Sort, "newest", StringComparison.OrdinalIgnoreCase);
+        var ordered = newestFirst
+            ? source.OrderByDescending(x => x.CreatedAt)
+            : query.Status == PaymentRequestStatus.Confirmed
+                ? source.OrderByDescending(x => x.ReviewedAt ?? x.CreatedAt)
+                : source.OrderBy(x => x.CreatedAt);
 
         var result = await PageList<PaymentRequestItem>.CreateAsync(ordered, page, pageSize);
         await AttachPreviousRequestsAsync(result.Items);

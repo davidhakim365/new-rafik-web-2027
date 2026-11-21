@@ -45,6 +45,7 @@ import {
   useUpdatePaymentSettingsMutation,
 } from "@/api/payment-requests-api";
 import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
+import { PaymentRequestAlertsSwitch } from "@/pages/dashboard/payment-requests/payment-request-alerts";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { CheckCircle2, Clock, Plus, RefreshCw, Search, Wallet, XCircle } from "lucide-react";
@@ -410,17 +411,20 @@ const PaymentRequestsPage = () => {
       icon={Wallet}
       fullWidth
       actions={
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={onRefresh}
-        >
-          <RefreshCw
-            className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
-          />
-          Refresh
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <PaymentRequestAlertsSwitch />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={onRefresh}
+          >
+            <RefreshCw
+              className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
+            />
+            Refresh
+          </Button>
+        </div>
       }
     >
       {isTeacher && (

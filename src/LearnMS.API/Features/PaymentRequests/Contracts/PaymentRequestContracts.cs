@@ -57,6 +57,7 @@ public sealed record GetPaymentRequestsQuery
     public int? PageSize { get; init; }
     public string? Search { get; init; }
     public PaymentRequestStatus? Status { get; init; }
+    public string? Sort { get; init; }
 }
 
 public sealed record ConfirmPaymentRequestCommand
