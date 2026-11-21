@@ -16,7 +16,8 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             await httpContext.Response.WriteAsJsonAsync(new ApiWrapper.Failure
             {
                 Code = apiException.Error.Code,
-                Message = apiException.Error.Message
+                Message = apiException.Error.Message,
+                Data = apiException.Data
             }, cancellationToken: cancellationToken);
             return true;
         }

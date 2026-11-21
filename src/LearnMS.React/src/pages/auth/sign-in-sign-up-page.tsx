@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, GraduationCap } from "lucide-react";
 import LoginForm from "@/components/auth/login-form";
+import DeviceLockedScreen from "@/components/auth/device-locked-screen";
 import RegisterForm from "@/components/auth/register-form";
 import { useStudentSignupEnabledQuery } from "@/api/auth-api";
 import { useGetProfile } from "@/generated/api";
@@ -22,6 +23,9 @@ const SignInSignUpPage = () => {
   const [showInstructionsModal, setShowInstructionsModal] = useState(false);
   const [hasAcceptedInstructions, setHasAcceptedInstructions] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [lockedStudentCode, setLockedStudentCode] = useState<string | null>(
+    null
+  );
   const { data: profile, isFetching: profileFetching } = useGetProfile();
   const { data: signupStatus } = useStudentSignupEnabledQuery();
   const isSignupEnabled = signupStatus?.data?.isSignupEnabled ?? true;
@@ -203,6 +207,15 @@ const SignInSignUpPage = () => {
     setHasAcceptedInstructions(true);
   };
 
+  if (lockedStudentCode !== null) {
+    return (
+      <DeviceLockedScreen
+        studentCode={lockedStudentCode}
+        onBack={() => setLockedStudentCode(null)}
+      />
+    );
+  }
+
   if (profileFetching) {
     return <LoadingPage />;
   }
@@ -368,7 +381,10 @@ const SignInSignUpPage = () => {
               variants={isInitialLoad ? childVariants : formSwitchVariants}
             >
               {isLoginView ? (
-                <LoginForm key="login" />
+                <LoginForm
+                  key="login"
+                  onDeviceLocked={setLockedStudentCode}
+                />
               ) : (
                 <RegisterForm
                   key="register"

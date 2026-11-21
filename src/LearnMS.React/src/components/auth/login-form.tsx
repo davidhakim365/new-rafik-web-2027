@@ -10,8 +10,13 @@ import { useTranslation } from "react-i18next";
 import { Button as ShadButton } from "@/components/ui/button";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { readLockedStudentCode } from "./device-locked-screen";
 
-const LoginForm = () => {
+type LoginFormProps = {
+  onDeviceLocked?: (studentCode: string) => void;
+};
+
+const LoginForm = ({ onDeviceLocked }: LoginFormProps) => {
   const { openModal } = useModalStore();
   const [passwordShown, setPasswordShown] = useState(false);
   const loginMutation = useLoginMutation();
@@ -76,9 +81,7 @@ const LoginForm = () => {
     loginMutation.mutate(data, {
       onError: (error) => {
         if (error.code === "auth/already-device-associated") {
-          openModal("error-modal", {
-            render: () => t("auth.forms.errors.deviceLocked"),
-          });
+          onDeviceLocked?.(readLockedStudentCode(error.data));
         } else if (error.code === "auth/account-blocked") {
           openModal("error-modal", {
             render: () =>

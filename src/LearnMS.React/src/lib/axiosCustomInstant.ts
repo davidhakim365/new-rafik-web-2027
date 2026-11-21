@@ -32,7 +32,7 @@ AXIOS_INSTANCE.interceptors.response.use(
         variant: "destructive",
       });
 
-      throw new ApiError(data.code, data.message);
+      throw new ApiError(data.code, data.message, data.data);
     }
 
 
@@ -45,7 +45,11 @@ AXIOS_INSTANCE.interceptors.response.use(
 
 export class ApiError extends Error {
   public status: false = false;
-  constructor(public code: string, public message: string) {
+  constructor(
+    public code: string,
+    public message: string,
+    public data?: unknown
+  ) {
     super(message);
   }
 }

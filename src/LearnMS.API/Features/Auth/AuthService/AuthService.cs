@@ -154,7 +154,10 @@ public sealed class AuthService : IAuthService
 
             if (!student.AllowMultipleDevices && linkedKey != null && !sameDevice)
             {
-                throw new ApiException(AuthErrors.AlreadyDeviceAssociated);
+                throw new ApiException(
+                    AuthErrors.AlreadyDeviceAssociated,
+                    new { studentCode = student.StudentCode }
+                );
             }
 
             // Bind the first browser once. While multiple devices are allowed,

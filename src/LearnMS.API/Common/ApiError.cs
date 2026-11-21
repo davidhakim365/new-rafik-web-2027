@@ -1,9 +1,10 @@
 
 namespace LearnMS.API.Common;
 
-public class ApiException(ApiError error) : Exception
+public class ApiException(ApiError error, object? data = null) : Exception
 {
     public ApiError Error => error;
+    public object? Data { get; } = data;
 }
 
 public static class ServerErrors

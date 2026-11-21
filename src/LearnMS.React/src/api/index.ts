@@ -32,13 +32,16 @@ api.interceptors.response.use(
         localStorage.removeItem("token");
       }
 
-      toast({
-        title: "Error",
-        description: data.message,
-        variant: "destructive",
-      });
+      // The lock screen explains this case. A toast would cover the student ID.
+      if (data?.code !== "auth/already-device-associated") {
+        toast({
+          title: "Error",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
 
-      throw new ApiError(data.code, data.message);
+      throw new ApiError(data.code, data.message, data.data);
     }
 
     toast({
