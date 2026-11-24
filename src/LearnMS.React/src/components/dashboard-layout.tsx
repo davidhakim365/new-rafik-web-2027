@@ -14,9 +14,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import DashboardSideBar from "./dashboard-side-bar";
 
 export const DashboardLayout = () => {
-  const isFetching = useIsFetching({
-    predicate: (query) => query.meta?.background !== true,
-  });
+  const isFetching = useIsFetching();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 

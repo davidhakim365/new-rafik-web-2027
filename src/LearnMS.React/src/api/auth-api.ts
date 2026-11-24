@@ -4,6 +4,11 @@ import { getGetProfileQueryKey } from "@/generated/api";
 import { components } from "@/lib/api";
 import { ApiError } from "@/lib/axiosCustomInstant";
 import { rememberDeviceKey, selectDeviceKeyForLogin } from "@/lib/device-key";
+import {
+  readPaymentAlertsFlag,
+  unsubscribeThisPhone,
+  writePaymentAlertsFlag,
+} from "@/lib/payment-push";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
@@ -161,7 +166,13 @@ export function useLogoutMutation() {
   const qrc = useQueryClient();
   return useMutation({
     mutationKey: ["logout"],
-    mutationFn: async () => {},
+    mutationFn: async () => {
+      // A signed-out phone must stop getting payment alerts for that account.
+      if (readPaymentAlertsFlag()) {
+        await unsubscribeThisPhone().catch(() => undefined);
+        writePaymentAlertsFlag(false);
+      }
+    },
     onSuccess: () => {
       localStorage.removeItem("token");
       qrc.invalidateQueries({ queryKey: getGetProfileQueryKey() });

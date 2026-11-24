@@ -1,157 +1,90 @@
-import {
-  PaymentRequestItem,
-  usePaymentRequestsQuery,
-} from "@/api/payment-requests-api";
+import { PAYMENT_REQUESTS_QUERY_KEY } from "@/api/payment-requests-api";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
-import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
 import { Permission } from "@/generated/model";
-import { Label } from "@/components/ui/label";
-import { useEffect, useRef, useState } from "react";
+import { useDashboardPermissions } from "@/hooks/use-dashboard-permissions";
+import {
+  getPushSupport,
+  onPaymentAlertsFlagChange,
+  readPaymentAlertsFlag,
+  sendTestPaymentAlert,
+  subscribeThisPhone,
+  unsubscribeThisPhone,
+  writePaymentAlertsFlag,
+} from "@/lib/payment-push";
+import { useQueryClient } from "@tanstack/react-query";
+import { BellRing, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-const ALERTS_KEY = "payment-request-notifications";
-const SEEN_KEY = "payment-request-alert-seen";
-const ALERTS_EVENT = "payment-request-alerts";
-
-function readAlertsEnabled() {
-  return localStorage.getItem(ALERTS_KEY) === "1";
-}
-
-function loadSeenIds() {
-  const raw = localStorage.getItem(SEEN_KEY);
-  if (!raw) return null;
-  try {
-    const ids = JSON.parse(raw) as unknown;
-    if (!Array.isArray(ids)) return null;
-    return new Set(ids.filter((id): id is string => typeof id === "string"));
-  } catch {
-    return null;
-  }
-}
-
-function saveSeenIds(ids: Set<string>) {
-  localStorage.setItem(SEEN_KEY, JSON.stringify([...ids].slice(-200)));
-}
-
-function publishAlertsChange() {
-  window.dispatchEvent(new Event(ALERTS_EVENT));
-}
-
-function usePaymentRequestAlertsEnabled() {
-  const [enabled, setEnabled] = useState(readAlertsEnabled);
-
-  useEffect(() => {
-    const sync = () => setEnabled(readAlertsEnabled());
-    window.addEventListener(ALERTS_EVENT, sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener(ALERTS_EVENT, sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
-
+function usePaymentAlertsFlag() {
+  const [enabled, setEnabled] = useState(readPaymentAlertsFlag);
+  useEffect(
+    () => onPaymentAlertsFlagChange(() => setEnabled(readPaymentAlertsFlag())),
+    []
+  );
   return enabled;
 }
 
-function alertCopy(items: PaymentRequestItem[]) {
-  const title =
-    items.length === 1
-      ? "New payment request"
-      : `${items.length} new payment requests`;
-  const body =
-    items.length === 1
-      ? `${items[0].studentName} sent ${items[0].amount} LE`
-      : items
-          .slice(0, 3)
-          .map((item) => `${item.studentName} · ${item.amount} LE`)
-          .join(", ");
-  return { title, body };
-}
-
-function showPhoneNotification(title: string, body: string) {
-  if (typeof Notification === "undefined" || Notification.permission !== "granted") {
-    return;
-  }
-  try {
-    const notification = new Notification(title, {
-      body,
-      tag: "payment-requests",
-    });
-    notification.onclick = () => {
-      window.focus();
-      if (!window.location.pathname.startsWith("/dashboard/payment-requests")) {
-        window.location.assign("/dashboard/payment-requests");
-      }
-      notification.close();
-    };
-  } catch {
-    // This phone only shows notifications from an installed home-screen app.
-  }
-}
-
-function PaymentRequestAlertWatcher() {
-  const query = usePaymentRequestsQuery(
-    { page: 1, pageSize: 30, status: "Pending", sort: "newest" },
-    { background: true }
-  );
-  const seen = useRef<Set<string> | null>(loadSeenIds());
+/**
+ * Keeps this phone's subscription current and refreshes the open list when an alert arrives.
+ * The alert itself comes from the service worker, so it also shows with the site closed.
+ */
+export function PaymentRequestAlerts() {
+  const { hasPermission } = useDashboardPermissions();
+  const canReview = hasPermission(Permission.ManagePaymentRequests);
+  const enabled = usePaymentAlertsFlag();
+  const qc = useQueryClient();
 
   useEffect(() => {
-    const items = query.data?.data?.items;
-    if (!items) return;
-
-    if (seen.current === null) {
-      seen.current = new Set(items.map((item) => item.id));
-      saveSeenIds(seen.current);
+    if (!canReview || !enabled) return;
+    if (getPushSupport() !== "ok" || Notification.permission !== "granted") {
+      writePaymentAlertsFlag(false);
       return;
     }
+    subscribeThisPhone().catch(() => undefined);
+  }, [canReview, enabled]);
 
-    const fresh = items.filter((item) => !seen.current!.has(item.id));
-    if (fresh.length === 0) return;
-
-    for (const item of fresh) seen.current.add(item.id);
-    saveSeenIds(seen.current);
-
-    const { title, body } = alertCopy(fresh);
-    toast({ title, description: body });
-    showPhoneNotification(title, body);
-    navigator.vibrate?.(200);
-  }, [query.data]);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== "payment-request-push") return;
+      void qc.invalidateQueries({ queryKey: [PAYMENT_REQUESTS_QUERY_KEY] });
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [qc]);
 
   return null;
 }
 
-export function PaymentRequestAlerts() {
-  const { hasPermission } = useDashboardPermissions();
-  const enabled = usePaymentRequestAlertsEnabled();
-  if (!hasPermission(Permission.ManagePaymentRequests) || !enabled) return null;
-  return <PaymentRequestAlertWatcher />;
-}
-
 export function PaymentRequestAlertsSwitch() {
-  const enabled = usePaymentRequestAlertsEnabled();
+  const enabled = usePaymentAlertsFlag();
+  const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
 
-  const onChange = async (checked: boolean) => {
-    if (!checked) {
-      localStorage.setItem(ALERTS_KEY, "0");
-      publishAlertsChange();
+  const turnOn = async () => {
+    const support = getPushSupport();
+    if (support === "ios-install") {
+      toast({
+        title: "Add the site to your Home Screen first",
+        description:
+          "On iPhone: tap Share, then Add to Home Screen. Open Mr Rafik from the new icon, sign in, and turn this on there.",
+        variant: "destructive",
+      });
       return;
     }
-
-    if (typeof Notification === "undefined") {
+    if (support === "unsupported") {
       toast({
-        title: "This phone cannot show notifications",
-        description: "Open the site in Chrome or Safari, then turn the switch on again.",
+        title: "This browser cannot get alerts",
+        description: "Open the site in Chrome on Android, or Safari on iPhone, and turn this on again.",
         variant: "destructive",
       });
       return;
     }
 
-    const permission =
-      Notification.permission === "default"
-        ? await Notification.requestPermission()
-        : Notification.permission;
-
+    const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       toast({
         title: "Notifications are blocked",
@@ -162,12 +95,52 @@ export function PaymentRequestAlertsSwitch() {
       return;
     }
 
-    localStorage.setItem(ALERTS_KEY, "1");
-    publishAlertsChange();
-    toast({
-      title: "Payment alerts are on",
-      description: "This phone will notify you when a new payment request arrives.",
-    });
+    setBusy(true);
+    try {
+      await subscribeThisPhone();
+      writePaymentAlertsFlag(true);
+      toast({
+        title: "Payment alerts are on",
+        description:
+          "This phone will be notified of new payment requests, even with the site closed or the screen off.",
+      });
+    } catch {
+      toast({
+        title: "Could not turn on alerts",
+        description: "Check the connection and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const turnOff = async () => {
+    setBusy(true);
+    try {
+      await unsubscribeThisPhone();
+    } finally {
+      writePaymentAlertsFlag(false);
+      setBusy(false);
+    }
+  };
+
+  const onTest = async () => {
+    setTesting(true);
+    try {
+      const res = await sendTestPaymentAlert();
+      toast({
+        title: res.data > 0 ? "Test alert sent" : "No phone is subscribed yet",
+        description:
+          res.data > 0
+            ? "Lock the screen now. The alert should arrive within a few seconds."
+            : "Turn the switch off and on again.",
+      });
+    } catch {
+      // The API layer already shows the error.
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (
@@ -175,13 +148,33 @@ export function PaymentRequestAlertsSwitch() {
       <Label htmlFor="payment-request-alerts" className="text-sm font-medium">
         Notify on new requests
       </Label>
-      <Switch
-        id="payment-request-alerts"
-        checked={enabled}
-        onCheckedChange={(checked) => {
-          void onChange(checked);
-        }}
-      />
+      <div className="flex items-center gap-2">
+        {enabled && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2"
+            disabled={testing || busy}
+            onClick={() => void onTest()}
+          >
+            {testing ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <BellRing className="mr-1 h-4 w-4" />
+            )}
+            Test
+          </Button>
+        )}
+        <Switch
+          id="payment-request-alerts"
+          checked={enabled}
+          disabled={busy}
+          onCheckedChange={(checked) => {
+            void (checked ? turnOn() : turnOff());
+          }}
+        />
+      </div>
     </div>
   );
 }

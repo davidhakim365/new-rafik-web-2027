@@ -186,10 +186,7 @@ const rejectPaymentRequest = (vars: { id: string; reason?: string }) =>
     )
     .then((res) => res.data);
 
-export function usePaymentRequestsQuery(
-  params: GetPaymentRequestsParams,
-  options?: { background?: boolean }
-) {
+export function usePaymentRequestsQuery(params: GetPaymentRequestsParams) {
   return useQuery({
     queryKey: getPaymentRequestsQueryKey(params),
     queryFn: () => getPaymentRequests(params),
@@ -199,7 +196,6 @@ export function usePaymentRequestsQuery(
     refetchIntervalInBackground: false,
     refetchInterval: () =>
       isPaymentInboxVisible() ? PAYMENT_REQUESTS_POLL_MS : false,
-    meta: options?.background ? { background: true } : undefined,
   });
 }
 

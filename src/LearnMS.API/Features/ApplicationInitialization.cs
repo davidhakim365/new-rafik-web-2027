@@ -6,6 +6,7 @@ using LearnMS.API.Features.AssistantTraces;
 using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Discounts;
 using LearnMS.API.Features.PaymentRequests;
+using LearnMS.API.Features.PushNotifications;
 using Microsoft.Extensions.Options;
 
 namespace LearnMS.API.Features;
@@ -24,6 +25,16 @@ public static class ApplicationInitialization
         catch (Exception ex)
         {
             Console.WriteLine($"EnsurePaymentRequestsTable failed: {ex.Message}");
+        }
+
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await PushNotificationsService.EnsureSchemaAsync(db);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EnsureWebPush failed: {ex.Message}");
         }
 
         try

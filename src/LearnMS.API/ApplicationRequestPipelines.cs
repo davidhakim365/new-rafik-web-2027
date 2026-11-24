@@ -38,7 +38,10 @@ public static class ApplicationRequestPipelines
                 OnPrepareResponse = ctx =>
                 {
                     var name = ctx.File.Name;
-                    if (name.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+                    // A cached sw.js keeps phones on an old alert handler.
+                    if (name.Equals("index.html", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("sw.js", StringComparison.OrdinalIgnoreCase) ||
+                        name.Equals("manifest.webmanifest", StringComparison.OrdinalIgnoreCase))
                     {
                         ctx.Context.Response.Headers.CacheControl = "no-cache";
                         return;

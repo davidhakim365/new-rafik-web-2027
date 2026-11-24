@@ -3,12 +3,16 @@ using LearnMS.API.Common.Cloudinary;
 using LearnMS.API.Data;
 using LearnMS.API.Entities;
 using LearnMS.API.Features.PaymentRequests.Contracts;
+using LearnMS.API.Features.PushNotifications;
 using LearnMS.API.Features.Students;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearnMS.API.Features.PaymentRequests;
 
-public sealed class PaymentRequestsService(AppDbContext db, ICloudinaryService cloudinary) : IPaymentRequestsService
+public sealed class PaymentRequestsService(
+    AppDbContext db,
+    ICloudinaryService cloudinary,
+    PaymentRequestPushNotifier pushNotifier) : IPaymentRequestsService
 {
     private const decimal MinAmount = 1;
     private const decimal MaxAmount = 100_000;
@@ -92,6 +96,8 @@ public sealed class PaymentRequestsService(AppDbContext db, ICloudinaryService c
         {
             throw new ApiException(PaymentRequestsErrors.PendingExists);
         }
+
+        pushNotifier.Enqueue(new NewPaymentRequestAlert(request.Id, student.FullName, request.Amount));
 
         return await GetItemAsync(request.Id) ?? throw new ApiException(PaymentRequestsErrors.NotFound);
     }

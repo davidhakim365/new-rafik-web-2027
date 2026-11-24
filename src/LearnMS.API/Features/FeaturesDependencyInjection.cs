@@ -9,6 +9,7 @@ using LearnMS.API.Features.CreditCodes;
 using LearnMS.API.Features.Parent;
 using LearnMS.API.Features.PaymentRequests;
 using LearnMS.API.Features.Profile;
+using LearnMS.API.Features.PushNotifications;
 using LearnMS.API.Features.Questions;
 using LearnMS.API.Features.Rewards;
 using LearnMS.API.Features.Students;
@@ -43,6 +44,9 @@ public static class FeaturesDependencyInjection
         services.AddScoped<IQuestionsService, QuestionsService>();
         services.AddScoped<ICallCenterService, CallCenterService>();
         services.AddScoped<IPaymentRequestsService, PaymentRequestsService>();
+        services.AddScoped<PushNotificationsService>();
+        services.AddSingleton<PaymentRequestPushNotifier>();
+        services.AddHostedService(sp => sp.GetRequiredService<PaymentRequestPushNotifier>());
 
         services.AddHostedService<ChooseHomeworkSyncHostedService>();
         services.AddSingleton<AssistantTraceBackgroundWriter>();

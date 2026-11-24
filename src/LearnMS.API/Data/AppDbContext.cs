@@ -72,4 +72,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LectureStudentDiscount> LectureStudentDiscounts => Set<LectureStudentDiscount>();
     public DbSet<AssistantTrace> AssistantTraces => Set<AssistantTrace>();
     public DbSet<PaymentRequestRejectionReason> PaymentRequestRejectionReasons => Set<PaymentRequestRejectionReason>();
+    public DbSet<WebPushSubscription> WebPushSubscriptions => Set<WebPushSubscription>();
+    public DbSet<WebPushKeys> WebPushKeys => Set<WebPushKeys>();
 }
