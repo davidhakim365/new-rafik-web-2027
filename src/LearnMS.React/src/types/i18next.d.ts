@@ -445,6 +445,15 @@ declare module "i18next" {
           reloadPage: string;
           goToHomepage: string;
         };
+        installApp: {
+          title: string;
+          description: string;
+          install: string;
+          notNow: string;
+          iosStep1: string;
+          iosStep2: string;
+          iosStep3: string;
+        };
       };
     };
   }

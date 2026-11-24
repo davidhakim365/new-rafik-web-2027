@@ -13,10 +13,13 @@ import ModalProvider from "./components/modals/modal-provider.tsx";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./i18n";
 import { restoreDeviceKey } from "@/lib/device-key";
+import { setupInstallApp } from "@/lib/install-app";
+import { InstallAppBanner } from "@/components/install-app-banner";
 
 import "./index.css";
 
 restoreDeviceKey();
+setupInstallApp();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +52,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <ModalProvider />
         <App />
+        <InstallAppBanner />
         <Toaster />
         <Sonner />
       </BrowserRouter>

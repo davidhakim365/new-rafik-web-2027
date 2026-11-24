@@ -652,5 +652,14 @@
     "noErrorDetails": "No error details available",
     "reloadPage": "Reload Page",
     "goToHomepage": "Go to Homepage"
+  },
+  "installApp": {
+    "title": "Install the Mr Rafik app",
+    "description": "Open it from your home screen like any app, full screen, with alerts.",
+    "install": "Install",
+    "notNow": "Not now",
+    "iosStep1": "Tap Share",
+    "iosStep2": "Choose Add to Home Screen",
+    "iosStep3": "Tap Add, then open Mr Rafik from the new icon"
   }
 }
