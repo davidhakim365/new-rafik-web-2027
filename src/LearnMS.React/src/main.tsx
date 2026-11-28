@@ -15,6 +15,7 @@ import "./i18n";
 import { restoreDeviceKey } from "@/lib/device-key";
 import { setupInstallApp } from "@/lib/install-app";
 import { ChristmasDecorations } from "@/components/christmas/christmas-decorations";
+import { RamadanDecorations } from "@/components/ramadan/ramadan-decorations";
 import { InstallAppBanner } from "@/components/install-app-banner";
 
 import "./index.css";
@@ -54,6 +55,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ModalProvider />
         <App />
         <ChristmasDecorations />
+        <RamadanDecorations />
         <InstallAppBanner />
         <Toaster />
         <Sonner />

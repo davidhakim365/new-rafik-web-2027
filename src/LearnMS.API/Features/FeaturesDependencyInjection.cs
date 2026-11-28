@@ -3,6 +3,7 @@ using LearnMS.API.Features.AssistantTraces;
 using LearnMS.API.Features.Auth;
 using LearnMS.API.Features.CallCenter;
 using LearnMS.API.Features.Christmas;
+using LearnMS.API.Features.Ramadan;
 using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Courses.Lectures;
 using LearnMS.API.Features.Courses.Lectures.Lessons;
@@ -46,6 +47,7 @@ public static class FeaturesDependencyInjection
         services.AddScoped<ICallCenterService, CallCenterService>();
         services.AddScoped<IPaymentRequestsService, PaymentRequestsService>();
         services.AddScoped<IChristmasService, ChristmasService>();
+        services.AddScoped<IRamadanService, RamadanService>();
         services.AddScoped<PushNotificationsService>();
         services.AddSingleton<PaymentRequestPushNotifier>();
         services.AddHostedService(sp => sp.GetRequiredService<PaymentRequestPushNotifier>());

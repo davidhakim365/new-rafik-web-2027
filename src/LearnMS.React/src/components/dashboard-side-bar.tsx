@@ -30,6 +30,7 @@ import {
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChristmasToggle } from "./christmas/christmas-toggle";
+import { RamadanToggle } from "./ramadan/ramadan-toggle";
 import { ThemeToggle } from "./theme-toggle";
 
 type NavItem = {
@@ -366,8 +367,9 @@ const DashboardSideBar = ({
         </nav>
 
         {isTeacher && (
-          <div className={cn(isCollapsed && "flex justify-center")}>
+          <div className={cn("flex flex-col gap-2", isCollapsed && "items-center")}>
             <ChristmasToggle collapsed={isCollapsed} />
+            <RamadanToggle collapsed={isCollapsed} />
           </div>
         )}
 
