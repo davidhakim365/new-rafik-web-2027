@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ChristmasToggle } from "./christmas/christmas-toggle";
 import { ThemeToggle } from "./theme-toggle";
 
 type NavItem = {
@@ -363,6 +364,12 @@ const DashboardSideBar = ({
             </div>
           ))}
         </nav>
+
+        {isTeacher && (
+          <div className={cn(isCollapsed && "flex justify-center")}>
+            <ChristmasToggle collapsed={isCollapsed} />
+          </div>
+        )}
 
         <Button
           variant="outline"

@@ -210,3 +210,190 @@ body,
     @apply prose-invert;
   }
 }
+
+.christmas-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.christmas-lights {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-evenly;
+  height: 22px;
+}
+
+.christmas-lights::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #166534;
+}
+
+.christmas-bulb {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 13px;
+  margin-top: 7px;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 0 10px currentColor;
+  animation: christmas-twinkle 1.5s ease-in-out infinite;
+}
+
+.christmas-ornaments {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.christmas-ornament {
+  position: absolute;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: top center;
+  animation: christmas-sway 3.4s ease-in-out infinite;
+}
+
+.christmas-ornament-string {
+  width: 1px;
+  background: rgba(120, 113, 108, 0.7);
+}
+
+.christmas-ornament-ball {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  box-shadow:
+    inset -4px -3px 0 rgba(0, 0, 0, 0.18),
+    inset 4px 3px 0 rgba(255, 255, 255, 0.45),
+    0 6px 10px rgba(15, 23, 42, 0.18);
+}
+
+.christmas-snow {
+  position: absolute;
+  inset: 0;
+}
+
+.christmas-flake {
+  position: absolute;
+  top: -12vh;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow:
+    0 0 0 1px rgba(100, 116, 139, 0.45),
+    0 1px 4px rgba(15, 23, 42, 0.2);
+  animation-name: christmas-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.dark .christmas-flake {
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+}
+
+.christmas-flake-shape {
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  line-height: 1;
+  color: #e2e8f0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.35);
+}
+
+.dark .christmas-flake-shape {
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+}
+
+.christmas-tree {
+  position: absolute;
+  right: 12px;
+  bottom: 84px;
+  z-index: 2;
+  width: 92px;
+  height: auto;
+  filter: drop-shadow(0 8px 10px rgba(15, 23, 42, 0.25));
+}
+
+@keyframes christmas-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift, 16px), 110vh, 0);
+    opacity: 0.9;
+  }
+}
+
+@keyframes christmas-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+  50% {
+    opacity: 0.4;
+    filter: brightness(0.65);
+  }
+}
+
+@keyframes christmas-sway {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .christmas-ornament:nth-child(n + 4) {
+    display: none;
+  }
+
+  .christmas-flake:nth-child(n + 16) {
+    display: none;
+  }
+
+  .christmas-tree {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .christmas-bulb,
+  .christmas-ornament,
+  .christmas-flake {
+    animation: none;
+  }
+
+  .christmas-flake {
+    top: var(--rest, 30%);
+    opacity: 0.65;
+  }
+}

@@ -3,6 +3,7 @@ using LearnMS.API.Data;
 using LearnMS.API.Features.Administration;
 using LearnMS.API.Features.Administration.Contracts;
 using LearnMS.API.Features.AssistantTraces;
+using LearnMS.API.Features.Christmas;
 using LearnMS.API.Features.Courses;
 using LearnMS.API.Features.Discounts;
 using LearnMS.API.Features.PaymentRequests;
@@ -65,6 +66,16 @@ public static class ApplicationInitialization
         catch (Exception ex)
         {
             Console.WriteLine($"EnsureAssistantTraces failed: {ex.Message}");
+        }
+
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await ChristmasSchema.EnsureAsync(db);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EnsureChristmasSettings failed: {ex.Message}");
         }
 
         try
